@@ -1,0 +1,39 @@
+name: Publish dashboard to Vercel
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: dashboard-production
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Build and publish dashboard
+    runs-on: [ubuntu-latest, x64, small]
+    steps:
+      - name: Checkout repository
+        uses: checkout
+      - name: Build and validate dashboard
+        run: |
+          set -eu
+          node scripts/dashboard/build_vercel.mjs
+          node --check build/vercel-dashboard/app.js
+          node -e 'const fs=require("fs"); const runs=JSON.parse(fs.readFileSync("build/vercel-dashboard/runs.json")); if(!runs.length) throw new Error("No results to publish");'
+          mkdir -p .vercel/output/static
+          cp build/vercel-dashboard/index.html build/vercel-dashboard/app.js build/vercel-dashboard/style.css build/vercel-dashboard/runs.json .vercel/output/static/
+          printf '{"version":3}\n' > .vercel/output/config.json
+      - name: Publish production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo 'Missing GitCode repository secret VERCEL_TOKEN' >&2
+            exit 1
+          fi
+          npx --yes vercel@65.4.0 deploy --prebuilt --prod --yes \
+            --scope slm-lab --project prj_fYPZgi11ORFPOcwOZdtIvoZ0X1TT \
+            --token "$VERCEL_TOKEN"
