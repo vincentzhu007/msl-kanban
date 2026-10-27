@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "qwen3-4b-msl-s16s4-kirin9030",
+  "description": "Migration of archived 2026-10-26 measurement. Probe v1 needs device qualification before baseline approval.",
+  "model": {
+    "name": "Qwen3-4B",
+    "variant": "base",
+    "sha256": "60056f613c4d5ff5721d92f46486f01fd0b4bf573aefd41e40954f642111ea17",
+    "bytes": 2285402624,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "s16s4",
+      "group_size": 128,
+      "decode_layout": 0
+    },
+    "provenance": {
+      "source": "/home/zhugd/code/llm/model/Qwen3-4B",
+      "model_sha256": "60056f613c4d5ff5721d92f46486f01fd0b4bf573aefd41e40954f642111ea17",
+      "bytes": 2285402624,
+      "export_adapter_pr": "mindspore-lite!1362@a6cd83f6a6d4fc8afe426f153d63491fe4a7bb50",
+      "operator_pr": "mslite_internal!62@abaea09acf6a4cb1e0cf8b6af4ef84f415925941",
+      "decode_layout": 0
+    }
+  },
+  "backend": {
+    "name": "msl",
+    "target": "npu",
+    "options": {}
+  },
+  "build": {
+    "commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+    "sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046",
+    "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261026/master_20261026010016_5501731a356ffb4ec017a4dc37c3f5631be79489_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+    "components": {
+      "export_adapter": "a6cd83f6a6d4fc8afe426f153d63491fe4a7bb50",
+      "operators": "abaea09acf6a4cb1e0cf8b6af4ef84f415925941"
+    }
+  },
+  "device_pool": "Kirin9030",
+  "preparation": "frozen_model",
+  "workload": {
+    "context_tokens": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "repetitions": 5,
+    "warmup_runs": 0,
+    "generation": "greedy",
+    "prompt": "hello-repeat-v1",
+    "input_verification": {
+      "model_sha256": "60056f613c4d5ff5721d92f46486f01fd0b4bf573aefd41e40954f642111ea17",
+      "tokens": 1024,
+      "evidence": "2026-10-26 fixed model/tokenizer verification; see dashboard/data/20261026-qwen3-kirin9030-pr.json and corresponding archived measurement report"
+    }
+  },
+  "measurement": {
+    "version": 1,
+    "collector": "hidumper",
+    "stable_runs": [
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+}

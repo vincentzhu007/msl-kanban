@@ -1,0 +1,1 @@
+https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261026/master_20261026010016_5501731a356ffb4ec017a4dc37c3f5631be79489_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz

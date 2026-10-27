@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.venv/
+build/
+*.msl
+*.gguf
+*.omc
+*.safetensors
+*.tar
+*.tar.gz
+*.run
+*.so
+*.a
+
+# Local OAuth secrets and access policy
+/dashboard/auth-config/
+
+# Vercel local project association and generated output
+.vercel/

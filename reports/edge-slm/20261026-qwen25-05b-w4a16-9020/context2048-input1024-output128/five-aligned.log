@@ -1,0 +1,120 @@
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+>>> exec bench2k args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl","5"]
+exit=0 timedOut=false
+--- stdout ---
+META model.name=qwen2.5-0.5b-q4_0-9020-2048-fixed
+META model.version=1.0.0
+META model.dtype=fp16
+META arch.num_layers=24
+META arch.hidden_size=896
+META arch.intermediate_size=4864
+META arch.num_heads=14
+META arch.num_kv_heads=2
+META arch.head_dim=64
+META arch.vocab_size=151936
+META arch.max_position_embeddings=32768
+META arch.tie_word_embeddings=0
+META npu.max_length=2048
+META npu.chunk_size=64
+META npu.scale_gp_size=32
+META npu.embedding_quant=1
+META npu.q4_0_weight_layout=q4_0_nzf_compact_phase4
+META npu.om_weight_dir=weights
+META npu.embedding_format=W4A16
+MODEL_BYTES 295238144
+PID 18196 MONOTONIC_MS 3619607465.502500
+WALL_MS 1793014557212.819092 MONOTONIC_MS 3619607465.505625
+BUILD status=0 ms=727.698594 rss_before_kib=77780 rss_loaded_kib=178680
+PHASE inference run=1 monotonic_ms=3619608193.389844
+PHASE end run=1 monotonic_ms=3619613305.410625
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":1,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":1558.902500,"decode_ms":3553.024843,"decode_tps":35.744191,"total_ms":5112.020781,"rss_after_kib":178776,"process_hwm_kib":178776}
+PHASE inference run=2 monotonic_ms=3619613306.119531
+PHASE end run=2 monotonic_ms=3619618450.226406
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":2,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":1584.607813,"decode_ms":3559.417812,"decode_tps":35.679992,"total_ms":5144.106875,"rss_after_kib":178788,"process_hwm_kib":178788}
+PHASE inference run=3 monotonic_ms=3619618450.973125
+PHASE end run=3 monotonic_ms=3619623623.076875
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":3,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":1618.008750,"decode_ms":3554.028750,"decode_tps":35.734095,"total_ms":5172.103750,"rss_after_kib":178804,"process_hwm_kib":178804}
+PHASE inference run=4 monotonic_ms=3619623623.584687
+PHASE end run=4 monotonic_ms=3619628789.628281
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":4,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":1608.767344,"decode_ms":3557.227031,"decode_tps":35.701966,"total_ms":5166.043594,"rss_after_kib":178808,"process_hwm_kib":178808}
+PHASE inference run=5 monotonic_ms=3619628789.949531
+PHASE end run=5 monotonic_ms=3619633949.618750
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":5,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":1595.047188,"decode_ms":3564.566250,"decode_tps":35.628458,"total_ms":5159.669219,"rss_after_kib":178824,"process_hwm_kib":178824}
+DESTROY status=0
+
+--- stderr ---
+[INFO]  nnrt: [perf] GetInstance(dlopen): 12.9158ms
+[INFO]  nnrt: Loaded .omc entry npu_offline/model.omc (3560943 bytes) via offline-model buffer API
+[INFO]  nnrt: Set NPU PerformanceMode to EXTREME succeeded
+[INFO]  nnrt: Loaded external weights from /data/storage/el2/base/haps/entry/files/bin/.msl_weights_nBjMBE/weights
+[INFO]  nnrt: Model output 0 name: output_0_enum_shape_graph/case0_0
+[INFO]  nnrt: Model output 1 name: output_1_enum_shape_graph/case1_1
+[INFO]  nnrt: Model output 2 name: output_2_enum_shape_graph/case2_2
+[INFO]  nnrt: Model output 3 name: output_3_enum_shape_graph/case3_3
+[INFO]  nnrt: Model output 4 name: output_4_enum_shape_graph/case4_4
+[INFO]  nnrt: Model output 5 name: output_5_enum_shape_graph/case5_5
+[INFO]  nnrt: Model output 6 name: output_6_enum_shape_graph/case6_6
+[INFO]  nnrt: Model output 7 name: output_7_enum_shape_graph/case7_7
+[INFO]  nnrt: Model output 8 name: output_8_enum_shape_graph/case8_8
+[INFO]  nnrt: Model output 9 name: output_9_enum_shape_graph/case9_9
+[INFO]  nnrt: Model output 10 name: output_10_enum_shape_graph/case10_10
+[INFO]  nnrt: Model output 11 name: output_11_enum_shape_graph/case11_11
+[INFO]  nnrt: Model output 12 name: output_12_enum_shape_graph/case12_12
+[INFO]  nnrt: Model output 13 name: output_13_enum_shape_graph/case13_13
+[INFO]  nnrt: Model output 14 name: output_14_enum_shape_graph/case14_14
+[INFO]  nnrt: Model output 15 name: output_15_enum_shape_graph/case15_15
+[INFO]  nnrt: Model output 16 name: output_16_enum_shape_graph/case16_16
+[INFO]  nnrt: Model output 17 name: output_17_enum_shape_graph/case17_17
+[INFO]  nnrt: Model output 18 name: output_18_enum_shape_graph/case18_18
+[INFO]  nnrt: Model output 19 name: output_19_enum_shape_graph/case19_19
+[INFO]  nnrt: Model output 20 name: output_20_enum_shape_graph/case20_20
+[INFO]  nnrt: Model output 21 name: output_21_enum_shape_graph/case21_21
+[INFO]  nnrt: Model output 22 name: output_22_enum_shape_graph/case22_22
+[INFO]  nnrt: Model output 23 name: output_23_enum_shape_graph/case23_23
+[INFO]  nnrt: Model output 24 name: output_24_enum_shape_graph/case24_24
+[INFO]  nnrt: Model output 25 name: output_25_enum_shape_graph/case25_25
+[INFO]  nnrt: Model output 26 name: output_26_enum_shape_graph/case26_26
+[INFO]  nnrt: Model output 27 name: output_27_enum_shape_graph/case27_27
+[INFO]  nnrt: Model output 28 name: output_28_enum_shape_graph/case28_28
+[INFO]  nnrt: Model output 29 name: output_29_enum_shape_graph/case29_29
+[INFO]  nnrt: Model output 30 name: output_30_enum_shape_graph/case30_30
+[INFO]  nnrt: Model output 31 name: output_31_enum_shape_graph/case31_31
+[INFO]  nnrt: Model output 32 name: output_32_enum_shape_graph/case32_32
+[INFO]  nnrt: Model output 33 name: output_33_enum_shape_graph/case33_33
+[INFO]  nnrt: Model output 34 name: output_34_enum_shape_graph/case34_34
+[INFO]  nnrt: Model output 35 name: output_35_enum_shape_graph/case35_35
+[INFO]  nnrt: Model output 36 name: output_36_enum_shape_graph/case36_36
+[INFO]  nnrt: Model output 37 name: output_37_enum_shape_graph/case37_37
+[INFO]  nnrt: Model output 38 name: output_38_enum_shape_graph/case38_38
+[INFO]  nnrt: Model output 39 name: output_39_enum_shape_graph/case39_39
+[INFO]  nnrt: Model output 40 name: output_40_enum_shape_graph/case40_40
+[INFO]  nnrt: Model output 41 name: output_41_enum_shape_graph/case41_41
+[INFO]  nnrt: Model output 42 name: output_42_enum_shape_graph/case42_42
+[INFO]  nnrt: Model output 43 name: output_43_enum_shape_graph/case43_43
+[INFO]  nnrt: Model output 44 name: output_44_enum_shape_graph/case44_44
+[INFO]  nnrt: Model output 45 name: output_45_enum_shape_graph/case45_45
+[INFO]  nnrt: Model output 46 name: output_46_enum_shape_graph/case46_46
+[INFO]  nnrt: Model output 47 name: output_47_enum_shape_graph/case47_47
+[INFO]  nnrt: Model output 48 name: output_48_enum_shape_graph/case48_48
+[INFO]  nnrt: Model contract check passed (55 inputs / 49 outputs, interleaved KV)
+[INFO]  nnrt: Model logits width 151936, embedding vocab 151936, sampling vocab 151936
+[INFO]  nnrt: [perf] BuildModel: 562.89ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/embedding: 0.000937ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/rope_sin: 0.19875ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/rope_cos: 0.252813ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/attention_mask: 10.6842ms
+[INFO]  nnrt: [perf] LoadCpuBuffers: 11.185ms
+[INFO]  nnrt: [perf] KVCacheAlloc: 19.3402ms
+[INFO]  nnrt: [perf] CreateTensors: 24.3064ms
+[INFO]  nnrt: [perf] KVReset: 0.47375ms
+[INFO]  nnrt: NnrtExecutor::Build succeeded
+
+

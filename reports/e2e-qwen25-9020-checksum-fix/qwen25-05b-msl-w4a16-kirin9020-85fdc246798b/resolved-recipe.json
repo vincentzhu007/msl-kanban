@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "recipe": {
+    "schema_version": 1,
+    "id": "qwen25-05b-msl-w4a16-kirin9020",
+    "description": "Migration of archived 2026-10-26 measurement. Probe v1 needs device qualification before baseline approval.",
+    "model": {
+      "name": "Qwen2.5-0.5B-Instruct",
+      "variant": "instruct",
+      "sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+      "bytes": 295238144,
+      "context_tokens": 2048,
+      "quantization": {
+        "format": "q4_0",
+        "group_size": 32,
+        "mixed_tensor_types": false
+      },
+      "provenance": {
+        "source": "/home/zhugd/llm_validation/pr1228-master-60c113a5/q4-9020-2048-fixed-20260920/qwen2.5-0.5b-q4_0-9020-2048-fixed.msl",
+        "source_sha256": "e1e43722b683accb94a85aec36e9989a7334cfef3fbfeef8d5c042fdf74a3b56",
+        "model_sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+        "bytes": 295238144,
+        "change": {
+          "npu.embedding_format": "W4A16"
+        },
+        "all_resource_bytes_identical": true,
+        "identity_verified": "Release manifest identifies Instruct; original MSL SHA256 matches release; tested MSL resource bytes unchanged."
+      }
+    },
+    "backend": {
+      "name": "msl",
+      "target": "npu",
+      "options": {}
+    },
+    "build": {
+      "commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+      "sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046",
+      "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261026/master_20261026010016_5501731a356ffb4ec017a4dc37c3f5631be79489_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz"
+    },
+    "device_pool": "Kirin9020",
+    "preparation": "frozen_model",
+    "workload": {
+      "context_tokens": 2048,
+      "input_tokens": 1024,
+      "output_tokens": 128,
+      "repetitions": 5,
+      "warmup_runs": 0,
+      "generation": "greedy",
+      "prompt": "hello-repeat-v1",
+      "input_verification": {
+        "model_sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+        "tokens": 1024,
+        "evidence": "2026-10-26 fixed model/tokenizer verification; see dashboard/data/20261026-kirin9020.json and corresponding archived measurement report"
+      }
+    },
+    "measurement": {
+      "version": 1,
+      "collector": "hidumper",
+      "stable_runs": [
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  },
+  "environment": {
+    "schema_version": 1,
+    "host": "dog",
+    "device": {
+      "serial": "127.0.0.1:2000",
+      "port": "18888",
+      "pool": "Kirin9020",
+      "soc": "Kirin9020",
+      "os_version": "OpenHarmony-6.1.1.120"
+    },
+    "binrunner": "/home/zhugd/code/ohos/BinRunner",
+    "output_root": "/home/zhugd/llm_validation/msllm-dev-ci-9020-e2e-v2/runs",
+    "artifacts": {
+      "model": {
+        "host_path": "/home/zhugd/llm_archive/20261026-qwen25-05b-w4a16-kirin9020-ctx2048-in1024-out128/model/qwen25-05b-w4a16-9020-2048-compatible.msl",
+        "device_path": "@/bin/qwen25-05b-w4a16-9020-2048-compatible.msl",
+        "sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830"
+      },
+      "probe": {
+        "host_path": "/home/zhugd/llm_validation/msllm-dev-ci-9020-e2e-v2/recipe-msl",
+        "device_path": "@/bin/recipe-msl",
+        "sha256": "225bda426fac66adca6e2e050d4e7606404b4a968db28b17b217886edbc8476b"
+      },
+      "runtime": {
+        "host_path": "/home/zhugd/llm_archive/20261026-qwen25-05b-w4a16-kirin9020-ctx2048-in1024-out128/runtime/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+        "sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046"
+      }
+    }
+  },
+  "recipe_sha256": "eeb4ae7c10a1452853c37abf1c45b32a2b5e1559392120349da1098589049602",
+  "comparison_key": "79c2f4288ee9031901ede743aa4f001a225b1173d5648f6373123137275bc86d",
+  "device_comparison_key": "1f7d2fb4f80ccdf925ea790b396a077a2d6e3dba6e6660788a95a25d99edf7b2",
+  "host_artifacts_verified": true,
+  "device_artifacts_verified": true,
+  "command_template": [
+    "@/bin/recipe-msl",
+    "@/bin/qwen25-05b-w4a16-9020-2048-compatible.msl",
+    "5",
+    "{device_log}",
+    "2048",
+    "1024",
+    "128"
+  ],
+  "probe_protocol": 1,
+  "lock_sha256": "7e858706c2f0d8593eaf29bfd2eb993c487cdca057d8b010425d2af9dd0a9cc1"
+}

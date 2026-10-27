@@ -1,0 +1,12 @@
+{
+  "device": "5JV0226127000651",
+  "port": "18940",
+  "binrunner": "/home/zhugd/code/ohos/BinRunner",
+  "output": "/home/zhugd/llm_validation/20261027-qwen3-06b-s16s4-9030/runs/qwen3-06b-msl-s16s4-kirin9030-65469547daa5",
+  "binary": "@/bin/recipe-msl",
+  "model": "@/bin/qwen3-06b-s16s4-9030-2048.msl",
+  "log": "qwen3-06b-msl-s16s4-kirin9030-65469547daa5.log",
+  "initial_wait": 70,
+  "timeout": 2400,
+  "poll_interval": 10
+}

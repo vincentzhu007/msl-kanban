@@ -1,0 +1,8 @@
+{
+  "source": "/home/zhugd/code/llm/model/Qwen3-4B",
+  "model_sha256": "60056f613c4d5ff5721d92f46486f01fd0b4bf573aefd41e40954f642111ea17",
+  "bytes": 2285402624,
+  "export_adapter_pr": "mindspore-lite!1362@a6cd83f6a6d4fc8afe426f153d63491fe4a7bb50",
+  "operator_pr": "mslite_internal!62@abaea09acf6a4cb1e0cf8b6af4ef84f415925941",
+  "decode_layout": 0
+}

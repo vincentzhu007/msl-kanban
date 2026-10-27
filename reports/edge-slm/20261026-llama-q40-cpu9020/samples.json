@@ -1,0 +1,57 @@
+[
+  {
+    "run": 1,
+    "input_tokens": 1024,
+    "output_callbacks": 128,
+    "status": 0,
+    "eog_tokens": 0,
+    "ttft_ms": 5153.785469,
+    "decode_ms": 3058.725781,
+    "decode_tps": 41.520558,
+    "total_ms": 8212.51125
+  },
+  {
+    "run": 2,
+    "input_tokens": 1024,
+    "output_callbacks": 128,
+    "status": 0,
+    "eog_tokens": 0,
+    "ttft_ms": 5248.619844,
+    "decode_ms": 3029.484063,
+    "decode_tps": 41.92133,
+    "total_ms": 8278.103907
+  },
+  {
+    "run": 3,
+    "input_tokens": 1024,
+    "output_callbacks": 128,
+    "status": 0,
+    "eog_tokens": 0,
+    "ttft_ms": 5292.449375,
+    "decode_ms": 2982.606562,
+    "decode_tps": 42.580205,
+    "total_ms": 8275.055937
+  },
+  {
+    "run": 4,
+    "input_tokens": 1024,
+    "output_callbacks": 128,
+    "status": 0,
+    "eog_tokens": 0,
+    "ttft_ms": 5250.487969,
+    "decode_ms": 3598.49875,
+    "decode_tps": 35.292495,
+    "total_ms": 8848.986719
+  },
+  {
+    "run": 5,
+    "input_tokens": 1024,
+    "output_callbacks": 128,
+    "status": 0,
+    "eog_tokens": 0,
+    "ttft_ms": 7916.579219,
+    "decode_ms": 4177.805938,
+    "decode_tps": 30.398731,
+    "total_ms": 12094.385157
+  }
+]

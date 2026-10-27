@@ -1,0 +1,12 @@
+部署：dog:/home/zhugd/llm-infra/dashboard
+容器：edge-slm-dashboard；Docker restart policy: unless-stopped
+启动或更新：cd /home/zhugd/llm-infra/dashboard && docker compose up -d --build
+服务器内网地址：http://192.168.233.232:18765/
+当前电脑地址：http://127.0.0.1:18765/ （通过 SSH 转发至 dog）
+若本机重启或 SSH 断开，恢复转发：
+ssh -fN -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 127.0.0.1:18765:127.0.0.1:18765 dog
+服务数据：data/*.json；格式参考 data/20261026-kirin9020.json。每60秒刷新，无需重建容器。
+手动导入数据保存在访问者的浏览器 localStorage；不上传到服务器。
+当前提供可视化与结果对比；daily/weekly 自动评测调度尚未接入。
+无外部前端依赖。容器使用服务器已有 mini-lite-llm 基础镜像，以非root身份运行，数据目录只读。
+验证：服务health正常；API返回1组真实数据；浏览器核对P90、内存、5条推理记录和模型规格。

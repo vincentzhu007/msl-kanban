@@ -1,0 +1,3 @@
+build_commit,model,quant,device,input_tokens_hf_verified,output_tokens,measured_runs,ttft_ms_median,decode_tps_median,total_ms_median,process_hwm_kib_median,model_bytes,source_type
+5501731a356ffb4ec017a4dc37c3f5631be79489,Qwen2.5-0.5B,W4A16 Q4_0 group32,HUAWEI Mate 70 Pro / PLR-AL00,64,128,5,101.362657,39.018463,3355.752969,146820,288692736,in_house_device_measurement
+5501731a356ffb4ec017a4dc37c3f5631be79489,Qwen2.5-0.5B,W4A16 Q4_0 group32,HUAWEI Mate 70 Pro / PLR-AL00,512,128,5,685.85625,39.049078,3939.897031,146876,288692736,in_house_device_measurement

@@ -1,0 +1,5 @@
+exit=-1 timedOut=false
+--- stdout ---
+
+--- stderr ---
+not readable: /data/storage/el2/base/haps/entry/files/bin/sha256sum, /data/storage/el1/bundle/libs/arm64/libsha256sum.so

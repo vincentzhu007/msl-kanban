@@ -1,0 +1,57 @@
+META model.name=qwen3-06b-s16s4-9030-2048
+META model.version=1.0.0
+META model.dtype=fp16
+META arch.name=qwen3
+META arch.num_layers=28
+META arch.hidden_size=1024
+META arch.intermediate_size=3072
+META arch.num_heads=16
+META arch.num_kv_heads=8
+META arch.head_dim=128
+META arch.vocab_size=151936
+META arch.max_position_embeddings=40960
+META arch.tie_word_embeddings=1
+META npu.max_length=2048
+META npu.chunk_size=64
+META npu.scale_gp_size=128
+META npu.embedding_quant=1
+META npu.embedding_format=S16S4
+META npu.om_weight_dir=weights
+SPEC {"protocol_version":1,"context_tokens":2048,"input_tokens":1024,"output_tokens":128,"repetitions":5,"threads":4,"batch":64,"input_tokens_source":"recipe-verification-evidence"}
+MODEL_BYTES 355225088
+PID 19367 MONOTONIC_MS 2016989850.961730
+WALL_MS 1793106820398.353027 MONOTONIC_MS 2016989850.973136
+[INFO]  nnrt: [perf] GetInstance(dlopen): 14.6022ms
+[INFO]  nnrt: Loaded .omc entry npu_offline/model.omc (4564429 bytes) via offline-model buffer API
+[INFO]  nnrt: Set NPU PerformanceMode to EXTREME succeeded
+[INFO]  nnrt: Loaded external weights from /data/storage/el2/base/haps/entry/files/bin/.msl_weights_NOmeAM/weights
+[INFO]  nnrt: Model output 0 name: output_0_enum_shape_graph/case0_0
+[INFO]  nnrt: Model contract check passed (64 inputs / 1 outputs, interleaved KV)
+[INFO]  nnrt: Model logits width 151936, embedding vocab 151936, sampling vocab 151936
+[INFO]  nnrt: [perf] BuildModel: 600.132ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/embedding: 0.000938ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/rope_sin: 0.608281ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/rope_cos: 0.565313ms
+[INFO]  nnrt: [perf] LoadCpuBuffers/attention_mask: 9.51094ms
+[INFO]  nnrt: [perf] LoadCpuBuffers: 10.7298ms
+[INFO]  nnrt: [perf] KVCacheAlloc: 36.9839ms
+[INFO]  nnrt: [perf] CreateTensors: 21.737ms
+[INFO]  nnrt: [perf] KVReset: 4.37656ms
+[INFO]  nnrt: NnrtExecutor::Build succeeded
+BUILD status=0 ms=769.101406 rss_before_kib=124800 rss_loaded_kib=230140
+PHASE inference run=1 monotonic_ms=2016990620.363605
+PHASE end run=1 monotonic_ms=2016993031.453292
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":1,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":593.763750,"decode_ms":1817.298594,"decode_tps":69.883948,"total_ms":2411.089687,"rss_after_kib":230204,"process_hwm_kib":230204}
+PHASE inference run=2 monotonic_ms=2016993031.718136
+PHASE end run=2 monotonic_ms=2016995524.776105
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":2,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":670.556719,"decode_ms":1822.477187,"decode_tps":69.685372,"total_ms":2493.057969,"rss_after_kib":230212,"process_hwm_kib":230212}
+PHASE inference run=3 monotonic_ms=2016995525.018292
+PHASE end run=3 monotonic_ms=2016997930.677355
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":3,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":594.000000,"decode_ms":1811.621407,"decode_tps":70.102947,"total_ms":2405.659063,"rss_after_kib":230216,"process_hwm_kib":230216}
+PHASE inference run=4 monotonic_ms=2016997931.002042
+PHASE end run=4 monotonic_ms=2017000462.043292
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":4,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":703.603282,"decode_ms":1827.407812,"decode_tps":69.497350,"total_ms":2531.041250,"rss_after_kib":230216,"process_hwm_kib":230216}
+PHASE inference run=5 monotonic_ms=2017000462.336261
+PHASE end run=5 monotonic_ms=2017003078.779386
+RESULT {"hello_repetitions":1024,"prompt_bytes":6144,"run":5,"warmup":false,"status":0,"finish_reason":3,"output_callbacks":128,"ttft_ms":609.360625,"decode_ms":2007.056875,"decode_tps":63.276732,"total_ms":2616.443125,"rss_after_kib":228000,"process_hwm_kib":228000}
+DESTROY status=0

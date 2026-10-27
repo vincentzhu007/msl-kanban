@@ -1,0 +1,14 @@
+{
+  "verified_date": "2026-10-26",
+  "canonical_model": "Qwen2.5-0.5B-Instruct",
+  "same_base_vs_instruct_variant": true,
+  "msl_release_model": "Qwen2.5-0.5B-Instruct (GGUF q4_0)",
+  "msl_original_sha256": "e1e43722b683accb94a85aec36e9989a7334cfef3fbfeef8d5c042fdf74a3b56",
+  "msl_tested_sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+  "msl_resources_unchanged": true,
+  "gguf_general_name": "qwen2.5-0.5b-instruct",
+  "gguf_general_finetune": "qwen2.5-0.5b-instruct",
+  "gguf_model_card_base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "gguf_tested_sha256": "7671c0c304e6ce5a7fc577bcb12aba01e2c155cc2efd29b2213c95b18edaf6ed",
+  "limit": "Same Instruct model identity verified from release hash chain and GGUF metadata. Exact upstream snapshot revision and tensor-by-tensor equality across MSL/GGUF are not proven; quantized representations differ."
+}

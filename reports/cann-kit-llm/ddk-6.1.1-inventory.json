@@ -1,0 +1,322 @@
+[
+  {
+    "package": "/home/zhugd/tool/hisi_ddk/install_pkg/hisi_ddk_pkg-6.1.1.0/DDK-tools-next-6.1.1.0.zip",
+    "sha256": "87d7e3f186ad5c527a9385cea555559ea53c63b87dc483820523bcf7bf6f87e5",
+    "entries": 2937,
+    "llm_named_entries": [],
+    "llm_api_headers": [],
+    "elf_libraries": [
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_ascendc/package/lib64/libmsopprof_injection.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libomg.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libmmpa.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_tensorflow_parser.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libregister.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_mindspore_parser.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_parser_mgr.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_caffe_parser.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_base.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libc_secshared.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libstdc++.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_graph_proto_host.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libgraph_proto_host.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_onnx_parser.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_infra_log.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libcpucl_host.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_fmk_air_parser.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libai_register.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libgraph_host.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libplatform.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "DDK-tools-next-6.1.1.0/tools/tools_omg/master/lib64/libfmk_common.so",
+        "elf_machine": 62
+      }
+    ]
+  },
+  {
+    "package": "/home/zhugd/tool/hisi_ddk/install_pkg/hisi_ddk_pkg-6.1.1.0/kirin9020-plugin-next-6.1.1.0.zip",
+    "sha256": "da4ebea4ce88889d94f96baf7bde43ff178153d68425e24d4e0db5b25089aa3f",
+    "entries": 49,
+    "llm_named_entries": [],
+    "llm_api_headers": [],
+    "elf_libraries": [
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libtikicpulib_cceprint.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_ascendc.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_fusionengine_internal.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_facility_pack_internal.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libtikcpp_debug.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_itf.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libnpu_slog.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_tefusion.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_runtime.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libtinyxml2.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_aiv_algo_kernel.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libtikicpulib_npuchk.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_facility_basic.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libtikicpulib_stubreg.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_elementary.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libai_npucore_elementary_kernel.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9020/lib64/libtiling.so",
+        "elf_machine": 62
+      }
+    ]
+  },
+  {
+    "package": "/home/zhugd/tool/hisi_ddk/install_pkg/hisi_ddk_pkg-6.1.1.0/kirin9030-plugin-next-6.1.1.0.zip",
+    "sha256": "5df8110e9b494ba87216b0c195c83d7f6c1407af89613de850ed7c569e57e593",
+    "entries": 48,
+    "llm_named_entries": [],
+    "llm_api_headers": [],
+    "elf_libraries": [
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libtikcpp_debug.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libtiling.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_tefusion.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libtikicpulib_cceprint.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libtikicpulib_npuchk.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_elementary_kernel.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libtikicpulib_stubreg.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_facility_pack_internal.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libnpu_slog.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_aiv_algo_kernel.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_runtime.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_fusionengine_internal.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libtinyxml2.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_ascendc.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_facility_basic.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_itf.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirin9030/lib64/libai_npucore_elementary.so",
+        "elf_machine": 62
+      }
+    ]
+  },
+  {
+    "package": "/home/zhugd/tool/hisi_ddk/install_pkg/hisi_ddk_pkg-6.1.1.0/kirinx90-plugin-next-6.1.1.0.zip",
+    "sha256": "0657efdddd2267949e83af2a382603b523d30b258d72e077a6975eb87d4f10b1",
+    "entries": 48,
+    "llm_named_entries": [],
+    "llm_api_headers": [],
+    "elf_libraries": [
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libtikicpulib_cceprint.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libtikcpp_debug.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libnpu_slog.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_fusionengine_internal.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_tefusion.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libtinyxml2.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_runtime.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libtikicpulib_stubreg.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_ascendc.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_elementary_kernel.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_elementary.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libtiling.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_facility_basic.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libtikicpulib_npuchk.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_facility_pack_internal.so",
+        "elf_machine": 62
+      },
+      {
+        "path": "image/ddk_platform_plugin/kirinx90/lib64/libai_npucore_itf.so",
+        "elf_machine": 62
+      }
+    ]
+  }
+]

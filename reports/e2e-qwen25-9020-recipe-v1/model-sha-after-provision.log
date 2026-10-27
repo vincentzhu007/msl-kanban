@@ -1,0 +1,6 @@
+exit=127 timedOut=false
+--- stdout ---
+
+--- stderr ---
+toybox: Unknown command @13 (see "toybox --help")
+

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "device": "dog:127.0.0.1:2000",
+  "phone": "HUAWEI Mate 70 Pro / PLR-AL00",
+  "soc": "Kirin 9020",
+  "os": "6.1.0.135(SP8C00E120R4P5)",
+  "build_commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+  "archive_sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046",
+  "model": {
+    "device_path": "@/bin/st3_qwen25.msl",
+    "architecture": "qwen2.5-0.5b",
+    "bytes": 288692736,
+    "sha256": "f86dd4a7f4b2b6a0794f965cae91b11a4b444dbd304d931ffa900c1228e3f9a2",
+    "quant": "W4A16 / Q4_0",
+    "group_size": 32,
+    "context_length": 1024,
+    "prefill_chunk": 64,
+    "provenance": "Existing deployed compiled model; not re-exported with the daily compiler/operator package"
+  },
+  "protocol": {
+    "prompt": "Raw string: space + hello, repeated 64 or 512 times; no chat template",
+    "input_count": "Verified using existing Hugging Face tokenizer.json; runtime public API has no input-count export",
+    "generation": "greedy, max_new_tokens=128, repetition_penalty=1",
+    "cycles": 5,
+    "warmup": "One generation before the measured generation per input length in each process",
+    "pause_seconds": 3,
+    "between_processes_seconds": 15,
+    "timing": "Device steady_clock at public API callback; TTFT includes tokenization/prefill/first sample and excludes model build",
+    "memory": "Process VmRSS and getrusage ru_maxrss, includes inherited BinRunner process footprint; not full device/NPU memory",
+    "thermal": "Ambient temperature, battery state and clocks not controlled; NPU runtime selects EXTREME"
+  },
+  "summary": [
+    {
+      "input_tokens_hf_verified": 64,
+      "output_tokens": 128,
+      "measured_runs": 5,
+      "ttft_ms": {
+        "median": 101.362657,
+        "min": 100.3425,
+        "max": 102.716875
+      },
+      "decode_tps": {
+        "median": 39.018463,
+        "min": 38.921918,
+        "max": 39.106727
+      },
+      "total_ms": {
+        "median": 3355.752969,
+        "min": 3350.243437,
+        "max": 3365.453906
+      },
+      "rss_after_kib": {
+        "median": 146820,
+        "min": 144312,
+        "max": 164988
+      },
+      "process_hwm_kib": {
+        "median": 146820,
+        "min": 144312,
+        "max": 164988
+      },
+      "input_tokens_per_second_including_ttft": 631.396235005955
+    },
+    {
+      "input_tokens_hf_verified": 512,
+      "output_tokens": 128,
+      "measured_runs": 5,
+      "ttft_ms": {
+        "median": 685.85625,
+        "min": 680.130469,
+        "max": 695.234063
+      },
+      "decode_tps": {
+        "median": 39.049078,
+        "min": 38.960893,
+        "max": 39.107805
+      },
+      "total_ms": {
+        "median": 3939.897031,
+        "min": 3932.339844,
+        "max": 3947.462813
+      },
+      "rss_after_kib": {
+        "median": 146876,
+        "min": 144364,
+        "max": 165036
+      },
+      "process_hwm_kib": {
+        "median": 146876,
+        "min": 144364,
+        "max": 165036
+      },
+      "input_tokens_per_second_including_ttft": 746.5121153302896
+    }
+  ],
+  "cycles": [
+    {
+      "cycle": 1,
+      "returncode": 0,
+      "valid": true
+    },
+    {
+      "cycle": 2,
+      "returncode": 0,
+      "valid": true
+    },
+    {
+      "cycle": 3,
+      "returncode": 0,
+      "valid": true
+    },
+    {
+      "cycle": 4,
+      "returncode": 0,
+      "valid": true
+    },
+    {
+      "cycle": 5,
+      "returncode": 0,
+      "valid": true
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "spec": {
+    "model": "Qwen2.5-0.5B",
+    "quantization": "W4A16/Q4_0 group32",
+    "soc": "Kirin9020",
+    "context": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "consecutive_runs": 5,
+    "between_runs_wait_seconds": 0,
+    "warmup_in_this_process": 0
+  },
+  "build_commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+  "latency_p90_method": "nearest-rank: sorted[ceil(0.9*5)-1]; maximum for n=5",
+  "timing": {
+    "ttft_ms": {
+      "p90": 1618.00875,
+      "median": 1595.047188,
+      "min": 1558.9025,
+      "max": 1618.00875
+    },
+    "decode_ms": {
+      "p90": 3564.56625,
+      "median": 3557.227031,
+      "min": 3553.024843,
+      "max": 3564.56625
+    },
+    "total_ms": {
+      "p90": 5172.10375,
+      "median": 5159.669219,
+      "min": 5112.020781,
+      "max": 5172.10375
+    },
+    "decode_tps": {
+      "p90": 35.744191,
+      "median": 35.701966,
+      "min": 35.628458,
+      "max": 35.744191
+    }
+  },
+  "memory": {
+    "graph_kib": {
+      "sampled_peak": 319664,
+      "inference_sampled_peak": 319664,
+      "stable_median": 319664,
+      "stable_min": 319664,
+      "stable_max": 319664
+    },
+    "total_pss_kib": {
+      "sampled_peak": 479226,
+      "inference_sampled_peak": 414844,
+      "stable_median": 414422,
+      "stable_min": 414126,
+      "stable_max": 414484
+    },
+    "samples": 25,
+    "stable_samples": 11,
+    "stable_definition": "Samples entirely within decode of runs 2 through 5, aligned using device wall time and monotonic time",
+    "sample_interval_median_ms": 1048.064697265625,
+    "peak_scope": "Observed from first sample during build until destruction; discrete samples may miss short peaks",
+    "total_includes_graph": true,
+    "dma_duplicates_graph": true
+  },
+  "model": {
+    "source": "/home/zhugd/llm_validation/pr1228-master-60c113a5/q4-9020-2048-fixed-20260920/qwen2.5-0.5b-q4_0-9020-2048-fixed.msl",
+    "source_sha256": "e1e43722b683accb94a85aec36e9989a7334cfef3fbfeef8d5c042fdf74a3b56",
+    "model_sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+    "bytes": 295238144,
+    "change": {
+      "npu.embedding_format": "W4A16"
+    },
+    "all_resource_bytes_identical": true
+  }
+}

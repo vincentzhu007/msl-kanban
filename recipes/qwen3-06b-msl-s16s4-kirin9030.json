@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "qwen3-06b-msl-s16s4-kirin9030",
+  "description": "Qwen3-0.6B using the verified Qwen3-4B daily runtime and PR1362/PR62 export stack; 2026-10-27.",
+  "model": {
+    "name": "Qwen3-0.6B",
+    "variant": "base",
+    "sha256": "b817f3bd7e28db5774615822e4fcb41b8f36bf3e5074adf1e76cb56b6e4a7141",
+    "bytes": 355225088,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "s16s4",
+      "group_size": 128,
+      "decode_layout": 0
+    },
+    "provenance": {
+      "source": "/home/zhugd/code/llm/model/Qwen3-0.6B",
+      "model_sha256": "b817f3bd7e28db5774615822e4fcb41b8f36bf3e5074adf1e76cb56b6e4a7141",
+      "bytes": 355225088,
+      "export_adapter_pr": "mindspore-lite!1362@a6cd83f6a6d4fc8afe426f153d63491fe4a7bb50",
+      "operator_pr": "mslite_internal!62@abaea09acf6a4cb1e0cf8b6af4ef84f415925941",
+      "decode_layout": 0
+    }
+  },
+  "backend": {
+    "name": "msl",
+    "target": "npu",
+    "options": {}
+  },
+  "build": {
+    "commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+    "sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046",
+    "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261026/master_20261026010016_5501731a356ffb4ec017a4dc37c3f5631be79489_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+    "components": {
+      "export_adapter": "a6cd83f6a6d4fc8afe426f153d63491fe4a7bb50",
+      "operators": "abaea09acf6a4cb1e0cf8b6af4ef84f415925941"
+    }
+  },
+  "device_pool": "Kirin9030",
+  "preparation": "frozen_model",
+  "workload": {
+    "context_tokens": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "repetitions": 5,
+    "warmup_runs": 0,
+    "generation": "greedy",
+    "prompt": "hello-repeat-v1",
+    "input_verification": {
+      "model_sha256": "b817f3bd7e28db5774615822e4fcb41b8f36bf3e5074adf1e76cb56b6e4a7141",
+      "tokens": 1024,
+      "evidence": "2026-10-27 AutoTokenizer local source: hello-repeat-v1 = 1024 tokens, token ID 23811; tokenizer.json SHA256 aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4; exported tokenizer from same source."
+    }
+  },
+  "measurement": {
+    "version": 1,
+    "collector": "hidumper",
+    "stable_runs": [
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+}

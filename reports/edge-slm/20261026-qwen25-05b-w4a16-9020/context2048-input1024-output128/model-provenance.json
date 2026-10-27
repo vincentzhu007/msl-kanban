@@ -1,0 +1,10 @@
+{
+  "source": "/home/zhugd/llm_validation/pr1228-master-60c113a5/q4-9020-2048-fixed-20260920/qwen2.5-0.5b-q4_0-9020-2048-fixed.msl",
+  "source_sha256": "e1e43722b683accb94a85aec36e9989a7334cfef3fbfeef8d5c042fdf74a3b56",
+  "model_sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+  "bytes": 295238144,
+  "change": {
+    "npu.embedding_format": "W4A16"
+  },
+  "all_resource_bytes_identical": true
+}

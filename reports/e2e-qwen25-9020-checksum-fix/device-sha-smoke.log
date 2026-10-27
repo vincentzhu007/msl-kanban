@@ -1,0 +1,7 @@
+>>> exec sha256sum args=["/data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl"]
+exit=0 timedOut=false
+--- stdout ---
+c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830  /data/storage/el2/base/haps/entry/files/bin/qwen25-05b-w4a16-9020-2048-compatible.msl
+
+--- stderr ---
+

@@ -1,0 +1,384 @@
+{
+  "spec": {
+    "model": "Qwen2.5-0.5B-Instruct",
+    "quantization": "W4A16/Q4_0 group32",
+    "soc": "Kirin9020",
+    "context": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "consecutive_runs": 5,
+    "between_runs_wait_seconds": 0,
+    "warmup_in_this_process": 0
+  },
+  "build_commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+  "latency_p90_method": "nearest-rank: sorted[ceil(0.9*5)-1]; maximum for n=5",
+  "timing": {
+    "ttft_ms": {
+      "p90": 1618.00875,
+      "median": 1595.047188,
+      "min": 1558.9025,
+      "max": 1618.00875
+    },
+    "decode_ms": {
+      "p90": 3564.56625,
+      "median": 3557.227031,
+      "min": 3553.024843,
+      "max": 3564.56625
+    },
+    "total_ms": {
+      "p90": 5172.10375,
+      "median": 5159.669219,
+      "min": 5112.020781,
+      "max": 5172.10375
+    },
+    "decode_tps": {
+      "p90": 35.744191,
+      "median": 35.701966,
+      "min": 35.628458,
+      "max": 35.744191
+    }
+  },
+  "memory": {
+    "graph_kib": {
+      "sampled_peak": 319664,
+      "inference_sampled_peak": 319664,
+      "stable_median": 319664,
+      "stable_min": 319664,
+      "stable_max": 319664
+    },
+    "total_pss_kib": {
+      "sampled_peak": 479226,
+      "inference_sampled_peak": 414844,
+      "stable_median": 414422,
+      "stable_min": 414126,
+      "stable_max": 414484
+    },
+    "samples": 25,
+    "stable_samples": 11,
+    "stable_definition": "Samples entirely within decode of runs 2 through 5, aligned using device wall time and monotonic time",
+    "sample_interval_median_ms": 1048.064697265625,
+    "peak_scope": "Observed from first sample during build until destruction; discrete samples may miss short peaks",
+    "total_includes_graph": true,
+    "dma_duplicates_graph": true
+  },
+  "model": {
+    "source": "/home/zhugd/llm_validation/pr1228-master-60c113a5/q4-9020-2048-fixed-20260920/qwen2.5-0.5b-q4_0-9020-2048-fixed.msl",
+    "source_sha256": "e1e43722b683accb94a85aec36e9989a7334cfef3fbfeef8d5c042fdf74a3b56",
+    "model_sha256": "c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830",
+    "bytes": 295238144,
+    "change": {
+      "npu.embedding_format": "W4A16"
+    },
+    "all_resource_bytes_identical": true,
+    "identity_verified": "Release manifest identifies Instruct; original MSL SHA256 matches release; tested MSL resource bytes unchanged."
+  },
+  "id": "20261026-kirin9020-qwen25-05b",
+  "date": "2026-10-26",
+  "framework": "MindSpore Lite LLM",
+  "device": "HUAWEI Mate 70 Pro",
+  "source": "实测 · dog",
+  "samples": [
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 1,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 1558.9025,
+      "decode_ms": 3553.024843,
+      "decode_tps": 35.744191,
+      "total_ms": 5112.020781,
+      "rss_after_kib": 178776,
+      "process_hwm_kib": 178776
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 2,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 1584.607813,
+      "decode_ms": 3559.417812,
+      "decode_tps": 35.679992,
+      "total_ms": 5144.106875,
+      "rss_after_kib": 178788,
+      "process_hwm_kib": 178788
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 3,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 1618.00875,
+      "decode_ms": 3554.02875,
+      "decode_tps": 35.734095,
+      "total_ms": 5172.10375,
+      "rss_after_kib": 178804,
+      "process_hwm_kib": 178804
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 4,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 1608.767344,
+      "decode_ms": 3557.227031,
+      "decode_tps": 35.701966,
+      "total_ms": 5166.043594,
+      "rss_after_kib": 178808,
+      "process_hwm_kib": 178808
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 5,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 1595.047188,
+      "decode_ms": 3564.56625,
+      "decode_tps": 35.628458,
+      "total_ms": 5159.669219,
+      "rss_after_kib": 178824,
+      "process_hwm_kib": 178824
+    }
+  ],
+  "memory_samples": [
+    {
+      "file": "five-aligned-memory-000.txt",
+      "start_epoch_ms": 1793014557656.0688,
+      "end_epoch_ms": 1793014558104.5913,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 479226.0,
+      "stable_decode": false,
+      "fully_in_inference": false
+    },
+    {
+      "file": "five-aligned-memory-001.txt",
+      "start_epoch_ms": 1793014558765.0415,
+      "end_epoch_ms": 1793014559236.3665,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414160.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-002.txt",
+      "start_epoch_ms": 1793014559975.06,
+      "end_epoch_ms": 1793014560429.6055,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 413796.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-003.txt",
+      "start_epoch_ms": 1793014561200.543,
+      "end_epoch_ms": 1793014561637.8997,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 413820.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-004.txt",
+      "start_epoch_ms": 1793014562194.4976,
+      "end_epoch_ms": 1793014562649.0586,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 413820.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-005.txt",
+      "start_epoch_ms": 1793014563221.9375,
+      "end_epoch_ms": 1793014563672.8706,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414220.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-006.txt",
+      "start_epoch_ms": 1793014564227.7703,
+      "end_epoch_ms": 1793014564684.8857,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414444.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-007.txt",
+      "start_epoch_ms": 1793014565277.7185,
+      "end_epoch_ms": 1793014565728.0693,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414126.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-008.txt",
+      "start_epoch_ms": 1793014566302.3994,
+      "end_epoch_ms": 1793014566765.1465,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414212.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-009.txt",
+      "start_epoch_ms": 1793014567681.899,
+      "end_epoch_ms": 1793014568129.8015,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414240.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-010.txt",
+      "start_epoch_ms": 1793014568710.0908,
+      "end_epoch_ms": 1793014569161.6375,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414728.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-011.txt",
+      "start_epoch_ms": 1793014569779.696,
+      "end_epoch_ms": 1793014570240.9453,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414348.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-012.txt",
+      "start_epoch_ms": 1793014570825.8772,
+      "end_epoch_ms": 1793014571277.1052,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414416.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-013.txt",
+      "start_epoch_ms": 1793014571885.5723,
+      "end_epoch_ms": 1793014572350.2383,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414416.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-014.txt",
+      "start_epoch_ms": 1793014573021.5413,
+      "end_epoch_ms": 1793014573466.1392,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414418.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-015.txt",
+      "start_epoch_ms": 1793014574062.3552,
+      "end_epoch_ms": 1793014574512.8398,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414814.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-016.txt",
+      "start_epoch_ms": 1793014575063.4001,
+      "end_epoch_ms": 1793014575513.5117,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414422.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-017.txt",
+      "start_epoch_ms": 1793014576238.0225,
+      "end_epoch_ms": 1793014576681.3633,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414422.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-018.txt",
+      "start_epoch_ms": 1793014577206.15,
+      "end_epoch_ms": 1793014577648.6057,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414422.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-019.txt",
+      "start_epoch_ms": 1793014578298.3242,
+      "end_epoch_ms": 1793014578741.6511,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414430.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-020.txt",
+      "start_epoch_ms": 1793014579438.3352,
+      "end_epoch_ms": 1793014579889.8223,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414844.0,
+      "stable_decode": false,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-021.txt",
+      "start_epoch_ms": 1793014580428.5288,
+      "end_epoch_ms": 1793014580881.263,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414448.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-022.txt",
+      "start_epoch_ms": 1793014581412.575,
+      "end_epoch_ms": 1793014581855.9268,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414484.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-023.txt",
+      "start_epoch_ms": 1793014582432.959,
+      "end_epoch_ms": 1793014582868.8801,
+      "graph_kib": 319664.0,
+      "total_pss_kib": 414483.0,
+      "stable_decode": true,
+      "fully_in_inference": true
+    },
+    {
+      "file": "five-aligned-memory-024.txt",
+      "start_epoch_ms": 1793014583621.55,
+      "end_epoch_ms": 1793014584046.093,
+      "graph_kib": 0.0,
+      "total_pss_kib": 94803.0,
+      "stable_decode": false,
+      "fully_in_inference": false
+    }
+  ]
+}

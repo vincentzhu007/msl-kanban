@@ -1,0 +1,3 @@
+225bda426fac66adca6e2e050d4e7606404b4a968db28b17b217886edbc8476b  recipe-msl
+29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046  /home/zhugd/llm_archive/20261026-qwen25-05b-w4a16-kirin9020-ctx2048-in1024-out128/runtime/mindspore-lite-llm-linux-x64-0.2.0.tar.gz
+c73c07490c9de80d7c5dea51acd50d792defad9446b66c6ffd670a1ea1ee2830  /home/zhugd/llm_archive/20261026-qwen25-05b-w4a16-kirin9020-ctx2048-in1024-out128/model/qwen25-05b-w4a16-9020-2048-compatible.msl

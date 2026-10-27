@@ -1,0 +1,22 @@
+Qwen2.5-0.5B W4A16 @ Kirin9020 — 2026-10-26
+测试：context 2048 / input 1024 / output 128，同一进程连续5次，无间隔。
+设备：dog / 127.0.0.1:2000 / HUAWEI Mate70 Pro PLR-AL00。
+每日构建：5501731a356ffb4ec017a4dc37c3f5631be79489；测试程序静态链接该包库。
+输入：空格+hello重复1024次，HF tokenizer验证1024 token，无chat template。
+生成：greedy，128 tokens；5次全部成功，以MAX_OUTPUT_LENGTH结束。
+P90：nearest-rank，5个样本时为最大值。时延不含模型加载。
+总时延P90：5172.103750 ms；TTFT P90：1618.008750 ms。
+decode时延P90：3564.566250 ms；decode速度中位数：35.701966 token/s。
+模型加载：727.698594 ms。
+内存：hidumper --mem 18196，PSS Total列；Graph按NPU内存计。
+graph_kib: 采样峰值 312.172 MiB；纯推理窗口采样峰值 312.172 MiB；稳定值中位数 312.172 MiB，范围 312.172–312.172 MiB。
+total_pss_kib: 采样峰值 467.994 MiB；纯推理窗口采样峰值 405.121 MiB；稳定值中位数 404.709 MiB，范围 404.420–404.770 MiB。
+稳定阶段：第2–5次decode阶段，采样开始和结束均落在decode窗口内，共11个样本。
+共25个内存样本，实际采样起点间隔中位数1.048秒，每次dump约0.45秒。峰值为离散采样观察值，短暂峰值可能漏采。
+首个最高PSS样本横跨加载末期与首次推理开始；故分别报告全程采样峰值与纯推理窗口峰值。
+Total已包含Graph；DMA字段与Graph相同，不重复相加。进程PSS包含继承的BinRunner开销。
+本轮同步hidumper采样，其开销未从时延扣除。环境温度、电量、频率未锁定；NPU设为EXTREME。
+模型ROM：295238144 bytes = 281.561 MiB（单MSL文件，不含运行时及部署后解包权重副本）。
+使用已有2048模型，补充npu.embedding_format=W4A16兼容字段；所有模型资源字节完全一致，未使用每日编译器重新导出图。
+模型来源与校验见model-provenance.json；原始结果见five-aligned.log；逐次数据samples.csv；内存时间线memory.csv。
+此前1K上下文测试不作为本规格结果；本报告使用最终带时间对齐的独立连续5次测试。

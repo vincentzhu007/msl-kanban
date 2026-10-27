@@ -1,0 +1,72 @@
+{
+  "spec": {
+    "model": "Qwen3-4B",
+    "quantization": "S16S4 Group128 / S16S4_NZ_V1 / decode_layout=0",
+    "soc": "Kirin9030",
+    "context": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "consecutive_runs": 5,
+    "between_runs_wait_seconds": 0,
+    "warmup_in_this_process": 0
+  },
+  "build_commit": "5501731a356ffb4ec017a4dc37c3f5631be79489",
+  "latency_p90_method": "nearest-rank: sorted[ceil(0.9*5)-1]; maximum for n=5",
+  "timing": {
+    "ttft_ms": {
+      "p90": 3445.266094,
+      "median": 3415.01375,
+      "min": 3326.627812,
+      "max": 3445.266094
+    },
+    "decode_ms": {
+      "p90": 7121.0875,
+      "median": 6850.997031,
+      "min": 6805.661875,
+      "max": 7121.0875
+    },
+    "total_ms": {
+      "p90": 10536.020312,
+      "median": 10250.9525,
+      "min": 10179.012343,
+      "max": 10536.020312
+    },
+    "decode_tps": {
+      "p90": 18.660933,
+      "median": 18.537448,
+      "min": 17.834355,
+      "max": 18.660933
+    }
+  },
+  "memory": {
+    "graph_kib": {
+      "sampled_peak": 2530640,
+      "inference_sampled_peak": 2530640,
+      "stable_median": 2530640.0,
+      "stable_min": 2530640,
+      "stable_max": 2530640
+    },
+    "total_pss_kib": {
+      "sampled_peak": 2668348,
+      "inference_sampled_peak": 2668348,
+      "stable_median": 2667204.0,
+      "stable_min": 2667183,
+      "stable_max": 2667805
+    },
+    "samples": 50,
+    "stable_samples": 20,
+    "stable_definition": "Samples entirely within decode of runs 2 through 5, aligned using device wall time and monotonic time",
+    "sample_interval_median_ms": 1137.968994140625,
+    "peak_scope": "Observed from first sample during build until destruction; discrete samples may miss short peaks",
+    "total_includes_graph": true,
+    "dma_duplicates_graph": true
+  },
+  "model": {
+    "source": "/home/zhugd/code/llm/model/Qwen3-4B",
+    "model_sha256": "60056f613c4d5ff5721d92f46486f01fd0b4bf573aefd41e40954f642111ea17",
+    "bytes": 2285402624,
+    "export_adapter_pr": "mindspore-lite!1362@a6cd83f6a6d4fc8afe426f153d63491fe4a7bb50",
+    "operator_pr": "mslite_internal!62@abaea09acf6a4cb1e0cf8b6af4ef84f415925941",
+    "decode_layout": 0
+  }
+}

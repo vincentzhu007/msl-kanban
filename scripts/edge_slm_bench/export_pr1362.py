@@ -1,0 +1,5 @@
+import mslite_llm_export
+from models.qwen3 import qwen3_wrapper
+from pr1362_functional_adapter import MsTransRopeScatterNDUpdateFunctional
+qwen3_wrapper.MsTransRopeScatterNDUpdate=MsTransRopeScatterNDUpdateFunctional
+mslite_llm_export.main()

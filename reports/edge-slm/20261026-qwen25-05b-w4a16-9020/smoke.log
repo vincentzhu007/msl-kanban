@@ -1,0 +1,16 @@
+exit=1 timedOut=false
+--- stdout ---
+[m] start
+[info] model file: /data/storage/el2/base/haps/entry/files/bin/qwen2.5-0.5b-q4_0-9020-2048-fixed.msl (281.6 MiB)
+[info] msl entries (7):
+[info]   npu_offline/model.omc  3.4 MiB  mmap
+[info]   vocab/vocab.bin  4.5 MiB  read
+[info]   assets/embedding_quant.bin  73.0 MiB  mmap
+[info]   assets/rope_cos.bin  256.0 KiB  read
+[info]   assets/rope_sin.bin  256.0 KiB  read
+[info]   assets/attention_mask.bin  8.0 MiB  read
+[info]   SubGraph_0.weight  192.1 MiB  mmap
+
+--- stderr ---
+[info] parse manifest failed: FP16 embedding requires embedding_quant=false
+

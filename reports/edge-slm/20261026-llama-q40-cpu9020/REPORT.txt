@@ -1,0 +1,9 @@
+Qwen2.5-0.5B-Instruct GGUF Q4_0 / llama.cpp CPU / Kirin9020
+context=2048 input=1024 output=128；同进程连续5次；4线程、batch/ubatch=64。
+纯 CPU、4 线程、无绑核，GPU layers=0；2K 上下文，batch/ubatch=64，FP16 KV，关闭 Flash Attention。原始 hello 合成输入1024 token，无模板、无BOS；greedy连续5次输出128 token，无EOS。hidumper同步采样，温度和频率未锁定。GGUF与MSL的逐tensor量化/权重一致性未验证，属于部署方案对比。 GGUF包含169个Q4_0、1个Q8_0和121个F32张量；第5次明显变慢，未剔除。
+总时延P90=12094.385157ms；TTFT P90=7916.579219ms；decode速度中位数=41.520558tok/s。
+P90最近秩法，5次时等于最大值。第5次时延变慢，未采集温度或频率，无法确定原因。
+总PSS采样峰值=721276KiB (704.37MiB)，稳定中位数=719601KiB (702.74MiB)；Graph始终为0。
+49个hidumper样本；稳定值取第2–5次decode完整窗口内的12个样本。峰值为离散采样值；总PSS含继承的BinRunner开销。
+GGUF ROM=428730208 bytes (408.87MiB)。实际手机使用GGUF模型参数报告630.17M（包含独立张量存储），架构24层hidden896；MSL与GGUF不保证权重布局/逐张量精度相同。
+源码commit=07822bddf80d73f1168e592c52e69caaff820f9c；armv8.2-a+dotprod，CPU repack开启；OHOS亲和性接口兼容头位于归档benchmark/src。

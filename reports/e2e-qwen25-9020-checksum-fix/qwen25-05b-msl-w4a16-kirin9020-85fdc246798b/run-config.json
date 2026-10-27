@@ -1,0 +1,12 @@
+{
+  "device": "127.0.0.1:2000",
+  "port": "18888",
+  "binrunner": "/home/zhugd/code/ohos/BinRunner",
+  "output": "/home/zhugd/llm_validation/msllm-dev-ci-9020-e2e-v2/runs/qwen25-05b-msl-w4a16-kirin9020-85fdc246798b",
+  "binary": "@/bin/recipe-msl",
+  "model": "@/bin/qwen25-05b-w4a16-9020-2048-compatible.msl",
+  "log": "qwen25-05b-msl-w4a16-kirin9020-85fdc246798b.log",
+  "initial_wait": 70,
+  "timeout": 2400,
+  "poll_interval": 10
+}

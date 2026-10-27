@@ -1,0 +1,5 @@
+b20a6819cb33ac40ecfcf0fd966356f62a1873a40db5a12645176004622b769c  mindspore-lite-llm-linux-x64-0.2.0/bin/mslite-chat
+0605c6c01e3d1eb414eda3b571d4162edb208053bcf9ad9a4298c8809ce171aa  mindspore-lite-llm-linux-x64-0.2.0/lib/libmindspore-lite-llm.a
+9fd13ef9d307558e5f3539f2d6b12a5ccae4dd3ee414ac632f8e2e146ece6cca  mindspore-lite-llm-linux-x64-0.2.0/lib/libmindspore-lite-llm.so
+facfeb3fd66618832a453ad7bb9ce4a095434aa7d94de6c90db365043ba6fb06  daily-bench
+858250c230467bd588c9a337fcc2625515b6f581fe90417b70a3a48e64dea281  daily_bench.cc
