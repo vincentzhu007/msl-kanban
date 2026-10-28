@@ -43,6 +43,15 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
         timestamps = re.findall(r"^\d{18,20}$", text, re.M)
         values = {key: re.search(r"^\s*" + key + r"\s+(\d+)", text, re.M)
                   for key in ("Graph", "Total")}
+        # ps and hidumper are separate calls: the completed worker can exit between them.
+        # Only exclude explicit process-exit evidence wholly after the final inference.
+        pid = re.search(r"^PID (\d+)$", text, re.M)
+        exited = pid and re.search(r"^hidumper: No such process: " + pid[1] + r"$", text, re.M)
+        if (exited and len(timestamps) == 2 and not any(values.values())
+                and int(timestamps[1]) >= int(timestamps[0])
+                and int(timestamps[0]) / 1e6 >= ends[len(rows)]):
+            warnings.warn(f"Worker exited after final inference; excluded terminal sample: {file}")
+            continue
         if len(timestamps) != 2 or not all(values.values()):
             if skip_invalid:
                 warnings.warn(f"Skipping incomplete memory sample: {file}")

@@ -38,6 +38,24 @@ class MeasurementTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 validate_rows(invalid)
 
+    def test_only_excludes_process_exit_after_final_inference(self):
+        wall = 1700000000000
+        log = f"WALL_MS {wall} MONOTONIC_MS 0\nPHASE inference run=1 monotonic_ms=0\nPHASE end run=1 monotonic_ms=1000"
+        rows = [{'run': 1, 'ttft_ms': 100}]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'memory-0001.txt'
+            def write_sample(start):
+                path.write_text(f"PID 123\n{start * 1000000}\nhidumper: No such process: 123\n{(start + 10) * 1000000}\n")
+            write_sample(wall + 1001)
+            with self.assertWarnsRegex(UserWarning, 'exited after final'):
+                self.assertEqual(read_memory(Path(tmp), log, rows), [])
+            write_sample(wall + 999)
+            with self.assertRaisesRegex(ValueError, 'Incomplete memory'):
+                read_memory(Path(tmp), log, rows)
+            path.write_text(f"PID 123\n{(wall + 1001) * 1000000}\nother error\n{(wall + 1011) * 1000000}\n")
+            with self.assertRaisesRegex(ValueError, 'Incomplete memory'):
+                read_memory(Path(tmp), log, rows)
+
     def test_requires_device_clock_alignment(self):
         with self.assertRaisesRegex(ValueError, "clock alignment"):
             read_memory(Path("."), "", [])
