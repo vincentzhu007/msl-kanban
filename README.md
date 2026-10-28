@@ -1,6 +1,8 @@
 # msl-kanban
 
-端侧 LLM 真机评测与性能看板。整理自 2026-10-26 dog / Kirin 9020、9030 实测代码；包含 MSL-LLM NPU、llama.cpp CPU，以及 Qwen3-4B PR 组合验证。
+当前版本：v0.1。
+
+MindSpore Lite 端侧 LLM 开发者看板。看板内容包括：LLM模型评测、业界框架性能对比（llama.cpp、hisi lm_engine）、性能Profiling。
 
 ## 目录
 
@@ -23,7 +25,7 @@ docker compose -f kanban/compose.yaml up -d --build
 
 也可以直接运行 `python3 kanban/server.py --host 127.0.0.1`。默认 Docker 镜像为 `python:3.11-slim`；dog 已有镜像可用 `KANBAN_BASE_IMAGE=mini-lite-llm:latest`。数据只读挂载，新增结果 JSON 放入 `kanban/data/`，页面每 60 秒刷新。网页手动导入仅存于当前浏览器；持久发布需要将 JSON 写入该目录。
 
-公开静态看板：[msl-kanban.vercel.app](https://msl-kanban.vercel.app/)，由 GitHub 仓库 `vincentzhu007/msl-kanban` 的 `main` 分支更新，详见 [Vercel 部署说明](docs/VERCEL.md)。已有 dog 服务目录：`/home/zhugd/llm-infra/dashboard`。
+公开静态看板：[msl-kanban.vercel.app](https://msl-kanban.vercel.app/)，由 GitHub 仓库 `vincentzhu007/msl-kanban` 的 `main` 分支更新，详见 [Vercel 部署说明](docs/VERCEL.md)。
 
 ## 评测与复现
 
