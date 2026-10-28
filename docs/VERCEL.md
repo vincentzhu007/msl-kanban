@@ -19,3 +19,13 @@
 前提：GitCode 仓库已开通代码化流水线及可用的 runner；在仓库设置的 Action 密钥与变量中设置 `VERCEL_TOKEN`（必须有此项目部署权限）。令牌不写入代码或日志。首次提交后在 GitCode 流水线检查实际运行结果，并在 Vercel 检查新部署与未登录访问保护。密钥缺失时任务会明确失败，不会生成新的生产部署。
 
 修改模型数据并提交并推送到 main 才会触发网站更新；dog 上的评测不会自动提交数据。手动导入依然只保存在当前浏览器。
+
+## GitHub 原生部署
+
+Vercel 项目关联 GitHub 私有仓库 `vincentzhu007/msllm-dev-ci`。向 GitHub 的 `main` 推送后，Vercel 使用根目录 `vercel.json` 构建静态看板并部署。GitHub 原生集成不依赖 GitCode workflow 或 `VERCEL_TOKEN`。本地默认 `origin` 仍指向 GitCode；将提交推送到 `github` 远端才会触发该集成：
+
+```sh
+git push github main
+```
+
+部署完成后在 Vercel Deployments 核对提交 SHA、构建状态、网页数据与登录保护。此流程只发布已提交的静态数据，不负责触发 dog 评测或将新结果自动写入仓库。
