@@ -22,7 +22,7 @@
 
 ## GitHub 原生部署
 
-Vercel 项目关联 GitHub 私有仓库 `vincentzhu007/msllm-dev-ci`。向 GitHub 的 `main` 推送后，Vercel 使用根目录 `vercel.json` 构建静态看板并部署。GitHub 原生集成不依赖 GitCode workflow 或 `VERCEL_TOKEN`。本地默认 `origin` 仍指向 GitCode；将提交推送到 `github` 远端才会触发该集成：
+Vercel 项目关联 GitHub 私有仓库 `vincentzhu007/msl-dashboard`。向 GitHub 的 `main` 推送后，Vercel 使用根目录 `vercel.json` 构建静态看板并部署。GitHub 原生集成不依赖 GitCode workflow 或 `VERCEL_TOKEN`。本地默认 `origin` 仍指向 GitCode；将提交推送到 `github` 远端才会触发该集成：
 
 ```sh
 git push github main
