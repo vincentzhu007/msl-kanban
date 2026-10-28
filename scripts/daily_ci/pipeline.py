@@ -1,6 +1,6 @@
 """Consume a verified MSL daily package and run the existing frozen-model recipe."""
 import copy
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 import json
 import os
@@ -13,7 +13,6 @@ from urllib.error import HTTPError
 from urllib.parse import urljoin
 from urllib.request import urlopen
 import uuid
-from zoneinfo import ZoneInfo
 
 from recipe_ci.execution import device_lease, execute
 from recipe_ci.planner import resolve, write_new
@@ -133,7 +132,7 @@ def run(repo, recipe_path, config, day, force=False):
     task_url = f'https://github.com/vincentzhu007/msl-kanban/actions/runs/{task_id}' if task_id.isdigit() else None
     status = {'id': run_id, 'date': day, 'recipe_id': recipe['id'], 'code_commit': code,
               'task_url': task_url, 'status': 'RUNNING', 'stage': 'DISCOVER',
-              'started_at': datetime.now(ZoneInfo('Asia/Shanghai')).isoformat()}
+              'started_at': datetime.now(timezone(timedelta(hours=8))).isoformat()}
 
     def update(**values):
         status.update(values)
@@ -216,6 +215,6 @@ def run(repo, recipe_path, config, day, force=False):
         print(f'Daily failed at {status["stage"]}: {error}', flush=True)
         return 1
     finally:
-        status['finished_at'] = datetime.now(ZoneInfo('Asia/Shanghai')).isoformat()
+        status['finished_at'] = datetime.now(timezone(timedelta(hours=8))).isoformat()
         write_json(task / 'status.json', status)
         write_json(repo / 'kanban/jobs' / (run_id + '.json'), status)
