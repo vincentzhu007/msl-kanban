@@ -1,6 +1,6 @@
 # msl-kanban
 
-当前版本：v0.1。
+当前开发版本：v0.2；已发布版本：v0.1。
 
 MindSpore Lite 端侧 LLM 开发者看板。看板内容包括：LLM模型评测、业界框架性能对比（llama.cpp、hisi lm_engine）、性能Profiling。
 
@@ -36,10 +36,10 @@ docker compose -f kanban/compose.yaml up -d --build
 - 看板第四个指标及框架对比使用总 PSS 稳定中位数；Graph 代表 NPU 内存。
 - PR 验证为 daily 运行库 + !1362 导出适配 + !62 分支重编译算子，默认 `decode_layout=0`。
 - 手机执行脚本保留已验证的 dog 路径、设备及模型名。运行前核对这些配置；它们不是开箱即用的跨环境 CI。
-- Daily/weekly 自动调度尚未接入；本仓提供评测、统计和展示代码。不能将页面自动刷新理解为定时评测。
+- Daily 已提供 GitHub Actions 手动/定时入口，首条链路为 Qwen2.5-0.5B / Kirin9020；部署与运行方式见 [Daily 说明](docs/DAILY.md)。weekly 竞品和回退告警尚未接入。
 
 模型、GGUF、SDK、DDK、daily 包和编译产物不入 Git，完整复现资产在 dog 归档。量化精度、温度锁定和 PR 新性能路径 A/B 不在已有验证范围内。
 
 ## Recipe v1 扩展入口
 
-新增模型优先添加 `recipes/*.json`，设备与文件路径放在独立 environment 中。统一命令为 `python3 scripts/bench.py validate|resolve|run|summarize`。详见 [Recipe 使用说明](docs/RECIPE_V1.md)。当前支持预部署 frozen model，自动调度、基线批准和回退告警尚未实现；新参数化探针需经过真机验证后再正式使用。
+新增模型优先添加 `recipes/*.json`，设备与文件路径放在独立 environment 中。统一命令为 `python3 scripts/bench.py validate|resolve|run|summarize`。详见 [Recipe 使用说明](docs/RECIPE_V1.md)。当前支持 frozen model，daily 编排负责更新运行库和探针；基线批准和回退告警尚未实现。

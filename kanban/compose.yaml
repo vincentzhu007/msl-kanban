@@ -10,7 +10,10 @@ services:
     ports:
       - "127.0.0.1:18765:8080"
     volumes:
-      - ./data:/data:ro
+      - ./data:/kanban/data:ro
+      - ./jobs:/kanban/jobs:ro
+    environment:
+      DATA_DIR: /kanban/data
     read_only: true
     tmpfs:
       - /tmp

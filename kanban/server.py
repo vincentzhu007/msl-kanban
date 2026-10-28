@@ -66,6 +66,9 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path == '/api/runs':
             self.send_payload(json.dumps(load_runs(self.data_dir), ensure_ascii=False).encode(), 'application/json; charset=utf-8')
+        elif path == '/api/jobs':
+            jobs = [json.loads(p.read_text()) for p in sorted((self.data_dir.parent / 'jobs').glob('*.json'))]
+            self.send_payload(json.dumps(jobs, ensure_ascii=False).encode(), 'application/json; charset=utf-8')
         elif path in ('/', '/index.html', '/app.js', '/style.css'):
             if self.command == 'HEAD':
                 super().do_HEAD()

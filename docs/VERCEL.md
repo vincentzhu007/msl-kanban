@@ -10,7 +10,7 @@
 
 根目录 `vercel.json` 指定无依赖 Node 构建及唯一静态目录。关联项目后在根目录执行 `vercel deploy` 发布预览，检查页面、runs.json 与访问设置，再执行 `vercel deploy --prod`。首次发布和后续流水线需要 Vercel 账号、项目关联及部署凭证；勿把令牌或 `.vercel/` 提交到 Git。当前生产地址为 https://msl-kanban.vercel.app/。
 
-当前使用 GitHub 与 Vercel 的原生集成自动发布。评测作业成功不代表数据已提交或部署，需独立跟踪这些步骤。当前未配置评测自动提交或调度。
+当前使用 GitHub 与 Vercel 的原生集成自动发布。评测作业成功不代表数据已提交或部署，需独立跟踪这些步骤。Daily workflow 已提供评测结果自动提交，启用方式见 [Daily 说明](DAILY.md)。
 
 ## GitHub 原生部署
 

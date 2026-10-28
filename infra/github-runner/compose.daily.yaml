@@ -1,0 +1,10 @@
+services:
+  runner:
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ${DAILY_ARCHIVE_DIR:?Set daily archive directory}:/data
+      - ${DAILY_CONFIG_FILE:?Set daily config file}:/config/daily.json:ro
+      - ${BINRUNNER_DIR:?Set BinRunner source directory}:/assets/binrunner:ro
+      - ${OHOS_NATIVE_DIR:?Set OHOS native toolchain directory}:/assets/native:ro
+      - ${MODEL_ARCHIVE_DIR:?Set archived model directory}:/assets/model:ro

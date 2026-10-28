@@ -23,13 +23,24 @@ for (const file of files) {
   ids.add(result.id);
   results.push(result);
 }
+const jobsDir=join(root,'kanban','jobs');
+let jobFiles=[];
+try {jobFiles=await readdir(jobsDir)} catch(error) {if(error.code!=='ENOENT')throw error}
+const jobs=[];
+for(const file of jobFiles.filter(f=>f.endsWith('.json')).sort()){
+  const job=JSON.parse(await readFile(join(jobsDir,file),'utf8'));
+  if(!job.id||!job.status||!job.stage||!job.started_at)throw new Error(`Invalid daily job: ${file}`);
+  jobs.push(job);
+}
 await mkdir(output, { recursive: true });
 let html = await readFile(join(source, 'index.html'), 'utf8');
 html = replaceRequired(html, 'DOG · Docker 部署', '性能数据看板');
-html = replaceRequired(html, '服务端结果每 60 秒刷新；新增 daily / weekly 结果可写入服务器数据目录。自动评测调度尚未接入。', '结果随网站发布更新；导入数据保存在当前浏览器。自动评测调度尚未接入。');
+html = replaceRequired(html, '服务端结果每 60 秒刷新；新增 daily / weekly 结果可写入服务器数据目录。Daily 任务状态见下方记录。', '结果随网站发布更新；导入数据保存在当前浏览器。Daily 任务状态见下方记录。');
 let js = await readFile(join(source, 'app.js'), 'utf8');
 js = replaceRequired(js, "fetch('/api/runs')", "fetch('/runs.json', {cache:'no-store'})");
+js = replaceRequired(js, "fetch('/api/jobs')", "fetch('/jobs.json', {cache:'no-store'})");
 await Promise.all([
+  writeFile(join(output, 'jobs.json'), JSON.stringify(jobs, null, 2) + '\n'),
   writeFile(join(output, 'index.html'), html),
   writeFile(join(output, 'app.js'), js),
   writeFile(join(output, 'runs.json'), JSON.stringify(results, null, 2) + '\n'),
