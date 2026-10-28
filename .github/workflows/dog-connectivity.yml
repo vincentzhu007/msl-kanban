@@ -1,0 +1,30 @@
+name: Dog connectivity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dog-connectivity
+  cancel-in-progress: false
+
+jobs:
+  connectivity:
+    runs-on: [self-hosted, dog, msl-kanban]
+    timeout-minutes: 5
+    steps:
+      - name: Check runner and connected devices
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Runner host: $(hostname)"
+          command -v hdc >/dev/null
+          targets=$(hdc list targets)
+          count=$(printf '%s\n' "$targets" | awk 'NF && $0 !~ /\[Empty\]/ {n++} END {print n+0}')
+          echo "Connected device targets: $count"
+          if [ "$count" -eq 0 ]; then
+            echo 'No device targets detected.' >&2
+            exit 1
+          fi
