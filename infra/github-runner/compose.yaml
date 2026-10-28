@@ -15,6 +15,7 @@ services:
     stop_grace_period: 2m
     environment:
       HOME: /runner
+      RUNNER_MANUALLY_TRAP_SIG: "1"
       HDC_SERVER_ADDR: ${HDC_SERVER_ADDR:-127.0.0.1:8710}
     volumes:
       - ${RUNNER_STATE_DIR:?Set runner state directory}:/runner
