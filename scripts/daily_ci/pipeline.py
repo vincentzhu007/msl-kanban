@@ -112,7 +112,7 @@ def ensure_forward(env, remote_port):
             require(fields[0] == serial, 'BinRunner host port is owned by another device')
             if fields[:3] == expected:
                 return
-            subprocess.run(prefix + ['rm', fields[1] + ' ' + fields[2]], check=True,
+            subprocess.run(prefix + ['rm', fields[1], fields[2]], check=True,
                            capture_output=True, text=True, timeout=15)
     subprocess.Popen(prefix + expected[1:], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True)

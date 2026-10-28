@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from daily_ci.pipeline import select_build, safe_extract, download, public_result, run
+from daily_ci.pipeline import select_build, safe_extract, download, public_result, run, ensure_forward
 
 
 class DailyTests(unittest.TestCase):
@@ -53,6 +53,24 @@ class DailyTests(unittest.TestCase):
                 self.assertEqual(code, 0 if found is None else 1)
                 self.assertNotIn('private path details', json.dumps(status))
                 self.assertFalse((repo/'kanban/data').exists())
+
+    def test_forward_replaces_wrong_device_port_with_separate_arguments(self):
+        env = {'device': {'serial': 'phone', 'port': '18888'}}
+        with patch('daily_ci.pipeline.subprocess.check_output', side_effect=[
+                'phone tcp:18888 tcp:18888 [Forward]',
+                'phone tcp:18888 tcp:8888 [Forward]']), \
+             patch('daily_ci.pipeline.subprocess.run') as remove, \
+             patch('daily_ci.pipeline.subprocess.Popen') as create:
+            ensure_forward(env, 8888)
+        self.assertEqual(remove.call_args.args[0][-3:], ['rm', 'tcp:18888', 'tcp:18888'])
+        self.assertEqual(create.call_args.args[0][-2:], ['tcp:18888', 'tcp:8888'])
+
+    def test_forward_preserves_other_device_mapping(self):
+        with patch('daily_ci.pipeline.subprocess.check_output', return_value='other tcp:18888 tcp:8888'), \
+             patch('daily_ci.pipeline.subprocess.run') as remove:
+            with self.assertRaisesRegex(ValueError, 'another device'):
+                ensure_forward({'device': {'serial': 'phone', 'port': '18888'}}, 8888)
+        remove.assert_not_called()
 
     def test_public_result_omits_private_model_paths(self):
         result={'model':{'name':'Qwen','provenance':{'source':'/private/path'}}, 'device':'serial'}
