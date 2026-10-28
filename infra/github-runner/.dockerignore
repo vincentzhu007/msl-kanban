@@ -1,0 +1,12 @@
+*
+!Dockerfile
+!entrypoint.sh
+!hdc.sh
+!runner-dist/
+!runner-dist/**
+runner-dist/.runner
+runner-dist/.credentials*
+runner-dist/.env
+runner-dist/.path
+runner-dist/_work
+runner-dist/_diag

@@ -12,14 +12,16 @@ concurrency:
 
 jobs:
   connectivity:
-    runs-on: [self-hosted, dog, msl-kanban]
+    runs-on: [self-hosted, dog, msl-kanban, container]
     timeout-minutes: 5
     steps:
       - name: Check runner and connected devices
         shell: bash
         run: |
           set -euo pipefail
+          test -f /.dockerenv
           echo "Runner host: $(hostname)"
+          echo "Execution environment: Docker container"
           command -v hdc >/dev/null
           targets=$(hdc list targets)
           count=$(printf '%s\n' "$targets" | awk 'NF && $0 !~ /\[Empty\]/ {n++} END {print n+0}')
@@ -28,3 +30,12 @@ jobs:
             echo 'No device targets detected.' >&2
             exit 1
           fi
+          while IFS= read -r target; do
+            [ -n "$target" ] || continue
+            response=$(timeout 20 hdc -t "$target" shell echo msl-kanban-device-ok)
+            if ! printf '%s\n' "$response" | grep -q '^msl-kanban-device-ok'; then
+              echo 'Device shell check failed.' >&2
+              exit 1
+            fi
+          done <<< "$targets"
+          echo "Device shell checks passed: $count"

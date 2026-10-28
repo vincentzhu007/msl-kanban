@@ -20,3 +20,6 @@ build/
 
 # Vercel local project association and generated output
 .vercel/
+
+# Downloaded official Actions Runner distribution
+/infra/github-runner/runner-dist/

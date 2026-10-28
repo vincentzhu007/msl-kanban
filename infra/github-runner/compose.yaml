@@ -1,0 +1,25 @@
+services:
+  runner:
+    build:
+      context: .
+      network: host
+      args:
+        BASE_IMAGE: ${RUNNER_BASE_IMAGE:-ubuntu:22.04}
+    image: msl-kanban-runner:2.338.2
+    container_name: msl-kanban-runner
+    hostname: dog-msl-kanban-container
+    user: "${RUNNER_UID:-1008}:${RUNNER_GID:-1008}"
+    network_mode: host
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 2m
+    environment:
+      HOME: /runner
+      HDC_SERVER_ADDR: ${HDC_SERVER_ADDR:-127.0.0.1:8710}
+    volumes:
+      - ${RUNNER_STATE_DIR:?Set runner state directory}:/runner
+      - ${HDC_TOOLCHAIN_DIR:?Set HDC toolchain directory}:/opt/hdc:ro
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
