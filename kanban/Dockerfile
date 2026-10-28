@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=python:3.11-slim
 FROM ${BASE_IMAGE}
 WORKDIR /app
-COPY server.py gitcode_auth.py /app/
+COPY server.py /app/
 COPY static /app/static
 ENV PYTHONDONTWRITEBYTECODE=1 DATA_DIR=/data
 USER 65534:65534

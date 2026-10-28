@@ -13,7 +13,7 @@ BASE = pathlib.Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("results", nargs="?", type=pathlib.Path, default=BASE / 'reports/edge-slm/20261026-llama-q40-cpu9020')
-    parser.add_argument("--publish", type=pathlib.Path, help="Optional dashboard JSON destination")
+    parser.add_argument("--publish", type=pathlib.Path, help="Optional kanban JSON destination")
     options = parser.parse_args()
     P = options.results
     rows = json.loads((P / 'samples.json').read_text())
@@ -75,7 +75,7 @@ def main():
     write_csv(P, rows, mem)
     if options.publish:
         if "id" not in summary:
-            parser.error("MSL summary requires dashboard identity fields before publishing")
+            parser.error("MSL summary requires kanban identity fields before publishing")
         options.publish.write_text(payload)
     print(payload)
 

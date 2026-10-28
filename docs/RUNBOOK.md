@@ -73,7 +73,7 @@ Qwen3 daily / PR 和 llama.cpp 三个采集入口支持 `--device`、`--port`、
 python3 scripts/edge_slm_bench/run_qwen3_pr_validation.py \
   --output /home/zhugd/llm_validation/new-run --log new-run.log
 python3 scripts/edge_llama_bench/summarize.py /path/to/results \
-  --publish dashboard/data/new-cpu-result.json
+  --publish kanban/data/new-cpu-result.json
 python3 -m unittest discover -s tests -v
 ```
 

@@ -49,7 +49,7 @@
     "input_verification": {
       "model_sha256": "60056f613c4d5ff5721d92f46486f01fd0b4bf573aefd41e40954f642111ea17",
       "tokens": 1024,
-      "evidence": "2026-10-26 fixed model/tokenizer verification; see dashboard/data/20261026-qwen3-kirin9030-pr.json and corresponding archived measurement report"
+      "evidence": "2026-10-26 fixed model/tokenizer verification; see kanban/data/20261026-qwen3-kirin9030-pr.json and corresponding archived measurement report"
     }
   },
   "measurement": {

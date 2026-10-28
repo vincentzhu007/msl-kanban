@@ -1,4 +1,4 @@
-"""One dashboard result format for all recipe-compatible probes."""
+"""One kanban result format for all recipe-compatible probes."""
 import json
 from datetime import datetime, timezone
 from pathlib import Path

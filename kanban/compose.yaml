@@ -1,0 +1,22 @@
+services:
+  kanban:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${KANBAN_BASE_IMAGE:-python:3.11-slim}
+    image: msl-kanban:local
+    container_name: msl-kanban
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18765:8080"
+    volumes:
+      - ./data:/data:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 1

@@ -16,6 +16,7 @@ build/
 
 # Local OAuth secrets and access policy
 /dashboard/auth-config/
+/kanban/auth-config/
 
 # Vercel local project association and generated output
 .vercel/

@@ -51,7 +51,7 @@ python3 scripts/bench.py resolve recipes/qwen3-4b-msl-s16s4-kirin9030.json \
 python3 scripts/bench.py run --lock /path/to/new-resolved-recipe.json
 ```
 
-`resolve` 默认重新计算 host 文件 SHA256，检查模型大小；`run` 再校验 host 文件以及 app 沙箱中模型/探针 SHA256，然后生成唯一运行目录和设备日志名。结果包含 `resolved-recipe.json`、配置、原始日志、采样、CSV 及 `dashboard-result.json`。文件锁只协调共享同一 `output_root` 的 recipe 进程，不覆盖其他独立工具的设备占用；批量调度前仍需统一设备管理。
+`resolve` 默认重新计算 host 文件 SHA256，检查模型大小；`run` 再校验 host 文件以及 app 沙箱中模型/探针 SHA256，然后生成唯一运行目录和设备日志名。结果包含 `resolved-recipe.json`、配置、原始日志、采样、CSV 及 `kanban-result.json`。文件锁只协调共享同一 `output_root` 的 recipe 进程，不覆盖其他独立工具的设备占用；批量调度前仍需统一设备管理。
 
 host runtime 归档校验不等于证明 probe 的链接来源，构建流水线应进一步补充编译命令、依赖与产物签名。系统版本目前由 environment 声明，尚未自动核验；结果 `environment_qualified=false`。
 
@@ -78,12 +78,12 @@ MSL 编译沿用 RUNBOOK 中的 NDK/daily 命令，将源码换为 `scripts/edge
 ```sh
 cp -R reports/qwen3-9030-daily-20261026/pr-validation/results-aligned /tmp/qwen3-import
 python3 scripts/bench.py summarize recipes/qwen3-4b-msl-s16s4-kirin9030.json \
-  /tmp/qwen3-import --legacy --output /tmp/qwen3-dashboard-result.json
+  /tmp/qwen3-import --legacy --output /tmp/qwen3-kanban-result.json
 ```
 
 旧 MSL 9020 数据另外传 `--log five-aligned.log --samples five-aligned-samples.json --memory-pattern 'five-aligned-memory-*.txt'`。`--legacy` 明确表示没有新 SPEC/资产校验证据，不会自动取得基线资格。导入结果与原 recipe 的身份关系仍需人工核对。
 
-展示字段保持兼容现有看板；发布时将结果放到 dashboard/data。命令不自动修改线上数据。
+展示字段保持兼容现有看板；发布时将结果放到 kanban/data。命令不自动修改线上数据。
 
 ## 比较指纹
 

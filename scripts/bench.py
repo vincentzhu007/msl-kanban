@@ -22,7 +22,7 @@ def main(argv=None):
     plan.add_argument('--preview', action='store_true', help='Do not hash host files; lock cannot execute')
     run = commands.add_parser('run', help='Verify pre-deployed model/probe and collect measurements')
     run.add_argument('--lock', required=True, type=Path)
-    summary = commands.add_parser('summarize', help='Generate one dashboard result for any recipe')
+    summary = commands.add_parser('summarize', help='Generate one kanban result for any recipe')
     summary.add_argument('recipe', type=Path)
     summary.add_argument('results', type=Path)
     summary.add_argument('--output', required=True, type=Path)
@@ -37,7 +37,7 @@ def main(argv=None):
             lock = load_lock(args.lock)
             output = execute(lock)
             result = summarize_recipe(lock['recipe'], output)
-            write_new(output / 'dashboard-result.json', result)
+            write_new(output / 'kanban-result.json', result)
             print(output)
             return
         recipe = load(args.recipe)

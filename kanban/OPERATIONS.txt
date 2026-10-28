@@ -1,3 +1,4 @@
+以下为此前 dog 部署记录，保留实际路径和容器名称；本地仓库的新配置尚未部署到 dog。
 部署：dog:/home/zhugd/llm-infra/dashboard
 容器：edge-slm-dashboard；Docker restart policy: unless-stopped
 启动或更新：cd /home/zhugd/llm-infra/dashboard && docker compose up -d --build

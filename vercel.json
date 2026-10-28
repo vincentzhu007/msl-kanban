@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "node scripts/dashboard/build_vercel.mjs",
-  "outputDirectory": "build/vercel-dashboard",
+  "buildCommand": "node scripts/kanban/build_vercel.mjs",
+  "outputDirectory": "build/vercel-kanban",
   "installCommand": ""
 }

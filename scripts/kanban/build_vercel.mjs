@@ -3,11 +3,11 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const source = join(root, 'dashboard', 'static');
-const data = join(root, 'dashboard', 'data');
-const output = join(root, 'build', 'vercel-dashboard');
+const source = join(root, 'kanban', 'static');
+const data = join(root, 'kanban', 'data');
+const output = join(root, 'build', 'vercel-kanban');
 const replaceRequired = (text, from, to) => {
-  if (!text.includes(from)) throw new Error(`Missing dashboard template marker: ${from}`);
+  if (!text.includes(from)) throw new Error(`Missing kanban template marker: ${from}`);
   return text.replace(from, to);
 };
 const files = (await readdir(data)).filter(name => name.endsWith('.json')).sort();
@@ -26,7 +26,6 @@ for (const file of files) {
 await mkdir(output, { recursive: true });
 let html = await readFile(join(source, 'index.html'), 'utf8');
 html = replaceRequired(html, 'DOG · Docker 部署', '性能数据看板');
-html = replaceRequired(html, '<a href="/auth/account">登录账号</a>', '');
 html = replaceRequired(html, '服务端结果每 60 秒刷新；新增 daily / weekly 结果可写入服务器数据目录。自动评测调度尚未接入。', '结果随网站发布更新；导入数据保存在当前浏览器。自动评测调度尚未接入。');
 let js = await readFile(join(source, 'app.js'), 'utf8');
 js = replaceRequired(js, "fetch('/api/runs')", "fetch('/runs.json', {cache:'no-store'})");

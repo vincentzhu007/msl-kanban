@@ -1,4 +1,4 @@
-# msllm-dev-ci
+# msl-kanban
 
 端侧 LLM 真机评测与性能看板。整理自 2026-10-26 dog / Kirin 9020、9030 实测代码；包含 MSL-LLM NPU、llama.cpp CPU，以及 Qwen3-4B PR 组合验证。
 
@@ -6,7 +6,7 @@
 
 | 目录 | 内容 |
 |---|---|
-| `dashboard/` | Python 标准库服务、网页、Docker Compose、三组实测数据 |
+| `kanban/` | Python 标准库服务、网页、Docker Compose、实测数据 |
 | `scripts/edge_slm_bench/` | MSL C++ 探针、hidumper 采集、统计、PR 导出/编译适配 |
 | `scripts/edge_llama_bench/` | llama.cpp CPU 探针、OHOS 兼容头、采集和统计 |
 | `reports/edge-slm/` | 9020 原始测量、模型身份核对和统计结果 |
@@ -15,15 +15,15 @@
 
 ## 启动看板
 
-默认启用 GitCode 第三方授权和用户 ID 白名单。启动前按 [认证接入说明](docs/GITCODE_AUTH.md) 配置 HTTPS 域名、OAuth 应用、密钥文件及白名单；缺少配置时服务拒绝启动。仅本地开发可显式使用 `python3 dashboard/server.py --host 127.0.0.1 --dev-no-auth`。
+自托管服务默认不要求登录，仅在本机监听 18765 端口：
 
 ```sh
-docker compose --env-file dashboard/.env -f dashboard/compose.yaml up -d --build
+docker compose -f kanban/compose.yaml up -d --build
 ```
 
-生产访问配置的 HTTPS 域名；`127.0.0.1:18765` 仅供反向代理连接。默认使用 `python:3.11-slim`；dog 已有镜像可用 `DASHBOARD_BASE_IMAGE=mini-lite-llm:latest` 启动。数据只读挂载，新增结果 JSON 放入 `dashboard/data/`，页面每 60 秒刷新。网页手动导入仅存于当前浏览器；持久发布需要将 JSON 写入该目录。
+也可以直接运行 `python3 kanban/server.py --host 127.0.0.1`。默认 Docker 镜像为 `python:3.11-slim`；dog 已有镜像可用 `KANBAN_BASE_IMAGE=mini-lite-llm:latest`。数据只读挂载，新增结果 JSON 放入 `kanban/data/`，页面每 60 秒刷新。网页手动导入仅存于当前浏览器；持久发布需要将 JSON 写入该目录。
 
-已有 dog 服务：`/home/zhugd/llm-infra/dashboard`。本次整理未替换线上部署。
+公开静态看板：[msl-kanban.vercel.app](https://msl-kanban.vercel.app/)，由 GitHub 仓库 `vincentzhu007/msl-kanban` 的 `main` 分支更新，详见 [Vercel 部署说明](docs/VERCEL.md)。已有 dog 服务目录：`/home/zhugd/llm-infra/dashboard`。
 
 ## 评测与复现
 

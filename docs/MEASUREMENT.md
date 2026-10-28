@@ -11,4 +11,4 @@
 - 频率/温度未锁定，内存采样开销未扣除；不同芯片不作同硬件性能对比。MSL 与 GGUF 未验证逐 tensor 权重和量化一致性。
 - 页面“规格匹配”仅检查上下文、输入、输出、芯片及次数，还需人工核对模型、量化、线程、协议与构建版本。
 
-JSON 顶层主要字段：`id`、`date`、`framework`、`spec`、`build_commit`、`model`、`timing`、`memory`、`samples`、`memory_samples`。具体示例见 `dashboard/data/`。服务只检查对象包含 `spec` 和 `samples`，尚无严格 schema 校验；导入前需检查字段和单位。
+JSON 顶层主要字段：`id`、`date`、`framework`、`spec`、`build_commit`、`model`、`timing`、`memory`、`samples`、`memory_samples`。具体示例见 `kanban/data/`。服务只检查对象包含 `spec` 和 `samples`，尚无严格 schema 校验；导入前需检查字段和单位。
