@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import time
 import subprocess
 import tarfile
 from urllib.error import HTTPError
@@ -96,6 +97,31 @@ def run_command(command, log, *, cwd=None, timeout=180):
 def device_output(env, command):
     return subprocess.run(['hdc', '-t', env['device']['serial'], 'shell', *command],
                           check=True, capture_output=True, text=True, timeout=20).stdout.strip()
+
+
+def ensure_forward(env, remote_port):
+    """Reconcile only this task's local port; never replace another device's mapping."""
+    serial, port = env['device']['serial'], env['device']['port']
+    require(str(remote_port).isdigit(), 'Invalid BinRunner device port')
+    prefix = ['hdc', '-t', serial, 'fport']
+    expected = [serial, 'tcp:' + port, 'tcp:' + str(remote_port)]
+    listed = subprocess.check_output(prefix + ['ls'], text=True, timeout=15)
+    for line in listed.splitlines():
+        fields = line.split()
+        if len(fields) >= 3 and fields[1] == expected[1]:
+            require(fields[0] == serial, 'BinRunner host port is owned by another device')
+            if fields[:3] == expected:
+                return
+            subprocess.run(prefix + ['rm', fields[1] + ' ' + fields[2]], check=True,
+                           capture_output=True, text=True, timeout=15)
+    subprocess.Popen(prefix + expected[1:], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+    for _ in range(30):
+        listed = subprocess.check_output(prefix + ['ls'], text=True, timeout=10)
+        if any(line.split()[:3] == expected for line in listed.splitlines()):
+            return
+        time.sleep(.2)
+    raise RuntimeError('BinRunner forwarding did not become ready')
 
 
 def public_result(result, run_id, build, code_commit, device_alias, task_url):
@@ -195,6 +221,7 @@ def run(repo, recipe_path, config, day, force=False):
                             for line in processes.splitlines() if line.split()), 'Device worker still running')
             prefix = ['python3', '-m', 'binrunner', '-t', env['device']['serial'], '-p', env['device']['port']]
             update(stage='DEPLOY')
+            ensure_forward(env, config.get('binrunner_device_port', 8888))
             run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
             update(stage='MEASURE')
             output = execute(lock)

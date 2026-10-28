@@ -30,5 +30,6 @@
         "sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046"
       }
     }
-  }
+  },
+  "binrunner_device_port": 8888
 }
