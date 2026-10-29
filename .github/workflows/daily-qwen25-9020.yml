@@ -67,25 +67,10 @@ jobs:
           python3 scripts/daily.py "${args[@]}"
       - name: Publish validated results and task status
         if: always() && steps.evaluate.outcome != 'skipped'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add kanban/data
-          if [ -d kanban/jobs ]; then git add kanban/jobs; fi
-          if git diff --cached --quiet; then exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "data: daily evaluation ${GITHUB_RUN_ID}"
-          for attempt in 1 2 3; do
-            if ! timeout 120 git -c http.lowSpeedLimit=100 -c http.lowSpeedTime=30 fetch origin main; then
-              sleep 10
-              continue
-            fi
-            git rebase origin/main
-            if timeout 120 git -c http.lowSpeedLimit=100 -c http.lowSpeedTime=30 push origin HEAD:main; then exit 0; fi
-            sleep 10
-          done
-          exit 1
+        env:
+          TASK: ${{ matrix.task }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/daily_ci/publish.py
       - name: Write task summary
         if: always() && steps.evaluate.outcome != 'skipped'
         env:

@@ -41,7 +41,7 @@ python3 scripts/daily.py --config /config/tasks/qwen3-4b-msl-s16s4-kirin9030.jso
 
 通过校验的指标写入 `kanban/data`；成功、失败、无新构建、去重、依赖阻塞的任务记录写入 `kanban/jobs`。模型内部来源路径、真实设备序列号和详细错误不写入新公开结果。完整证据只保留在 dog；任务记录链接到私有 GitHub Actions 日志。
 
-工作流将结果与任务状态提交回 GitHub。推送失败会使 Actions 失败，dog 归档仍在；重跑会复用已成功归档的结果。GitHub 数据提交成功与 Vercel 部署成功是两个独立状态，部署失败不能被解释成测量失败。
+工作流将结果与任务状态提交回 GitHub。API 提交失败会使 Actions 失败，dog 归档仍在；重跑会复用已成功归档的结果。GitHub 数据提交成功与 Vercel 部署成功是两个独立状态，部署失败不能被解释成测量失败。
 
 固定规格：上下文2048、输入1024、输出128，同进程5次、无预热；P90 最近秩法，5次对应最大值。采集总PSS与Graph峰值、推理期峰值及第2–5次Decode稳定中位数。看板增加任务记录与按设备比较指纹分组的历史趋势。
 
@@ -49,7 +49,7 @@ python3 scripts/daily.py --config /config/tasks/qwen3-4b-msl-s16s4-kirin9030.jso
 
 ## 发布故障恢复
 
-GitHub 拉取与推送均有超时和最多3次网络重试；冲突不会强行覆盖远端。测量成功、发布失败时，dog 的 `tasks/<run_id>/archive.json` 指向已校验结果，`status.json` 保留测量状态。可以重跑相同代码/日期以复用归档，也可以将原始 `kanban-result.json` 和 `status.json` 原样恢复到仓库对应数据目录，单独提交恢复记录。Actions 总状态仍用于判断整条流水线是否成功。
+结果发布使用 GitHub Git Data API，以最新 main 的 tree 为基础原子提交，只允许快进更新；网络失败或分支前进最多尝试4次，不强行覆盖远端。使用工作流自带的 contents:write token，不新增长期密钥。测量成功、发布失败时，dog 的 `tasks/<run_id>/archive.json` 指向已校验结果，`status.json` 保留测量状态。可以重跑相同代码/日期以复用归档，也可以将原始 `kanban-result.json` 和 `status.json` 原样恢复到仓库对应数据目录，单独提交恢复记录。Actions 总状态仍用于判断整条流水线是否成功。
 
 采样中遇到 `hidumper: No such process`，只有时间戳证明整份采样位于最后一次推理结束后才排除；该原始记录仍在 dog 归档中。推理期间的缺失、其他错误及稳定期有效样本不足仍会使校验失败。
 
