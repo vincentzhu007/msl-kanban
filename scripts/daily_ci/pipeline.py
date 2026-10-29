@@ -309,7 +309,8 @@ def run(repo, recipe_path, config, day, force=False):
     except Exception as error:
         # Full errors stay on dog; the public status contains only stage and exception type.
         (task / 'error.txt').write_text(str(error))
-        update(status='FAILED', error_type=type(error).__name__)
+        reason = '当日 master daily 模型生成失败；未回退旧模型，完整日志保存在 dog。' if status['stage'] == 'EXPORT_MODEL' else '任务未通过校验，未发布新的性能结果。'
+        update(status='FAILED', error_type=type(error).__name__, reason=reason)
         print(f'Daily failed at {status["stage"]}: {error}', flush=True)
         return 1
     finally:
