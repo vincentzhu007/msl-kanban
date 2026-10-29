@@ -1,4 +1,4 @@
-import {overview, toptP90, prefillSpeed} from './summary-model.mjs';
+import {overview, toptP90, prefillSpeed, quantizationLabel} from './summary-model.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, scale=1, digits=2) => typeof v === 'number' && Number.isFinite(v) ? (v/scale).toFixed(digits) : '—';
@@ -9,8 +9,7 @@ function row(item) {
   const {run:r,latest:j,measured} = item;
   const status = `${badge(j)}<small>任务 ${esc(time(j.started_at))}</small>`;
   if (!r) return `<tr><td>—</td><td>${item.id.includes('cann-kit') ? 'Kirin9020' : '—'}</td><td class="config-cell">${esc(item.id.includes('cann-kit') ? 'CANN Kit LLM' : item.id)}</td><td colspan="7">${esc(j.reason || '暂无有效实测记录')}</td><td>${status}</td><td>—</td></tr>`;
-  const q = r.model?.quantization;
-  const quant = q && typeof q === 'object' ? Object.entries(q).map(([k,v])=>`${k}: ${v}`).join(' · ') : r.spec.quantization;
+  const quant = quantizationLabel(r);
   const options = r.backend?.options || {};
   const backendConfig = Object.entries(options).map(([k,v]) => `${k}: ${v}`).join(' · ');
   const stale = j.result_id !== r.id ? '<small class="warning">以下为历史实测，非最新任务产出</small>' : '';

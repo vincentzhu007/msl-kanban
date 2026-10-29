@@ -36,3 +36,14 @@ export function prefillSpeed(run) {
   if (duration === null || duration <= 0 || typeof tokens !== 'number' || !Number.isFinite(tokens) || tokens <= 0) return null;
   return tokens * 1000 / duration;
 }
+
+// Show the quantization format only; packing/group details stay in archived evidence.
+export function quantizationLabel(run) {
+  let value = run.model?.quantization ?? run.spec?.quantization;
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value); } catch {}
+  }
+  if (value && typeof value === 'object') value = value.format;
+  const match = String(value ?? '').match(/S16S4|W4A16|Q4_K_M|Q4_0/i);
+  return match ? match[0].toUpperCase() : '—';
+}
