@@ -110,3 +110,5 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ### 看板 Prefill 口径调整
 
 看板 Prefill 当前包含 Tokenizer、输入计算和首 token 采样，采用请求到首 token 的已有计时边界，含回调前接口开销，不含模型初始化，与 TTFT 数值相同。历史数据也可直接使用已实测 TTFT 展示此口径，不需要估算或重测。新结果同时导出 `timing.prefill_total_ms`，复制 TTFT 统计并注明来源。原 `prefill_ms` 保留为纯输入计算的底层观测，不覆盖历史值；MSL 仍无纯输入计算观测，但可以展示此合并口径。
+
+看板以速度展示合并口径 Prefill：`input_tokens * 1000 / ttft_ms.p90`，单位 token/s，越高越好。这是 P90 时延对应的吞吐量，不是逐次速度的 P90；缺失输入长度或有效时延时显示 —。原始时延字段继续保留。

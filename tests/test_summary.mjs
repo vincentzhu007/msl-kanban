@@ -1,4 +1,4 @@
-import {prefillP90} from '../kanban/static/summary-model.mjs';
+import {prefillP90, prefillSpeed} from '../kanban/static/summary-model.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {overview, toptP90} from '../kanban/static/summary-model.mjs';
@@ -27,4 +27,10 @@ test('combined Prefill reuses measured TTFT, never historical pure evaluation',(
  assert.equal(prefillP90({timing:{ttft_ms:{p90:0}}}),0);
  for(const v of [undefined,null,NaN,-1,'12']) assert.equal(prefillP90({timing:{ttft_ms:{p90:v}}}),null);
  assert.equal(prefillP90({timing:{prefill_ms:{p90:10}}}),null);
+});
+
+test('Prefill rate uses input tokens divided by P90 TTFT in seconds',()=>{
+ assert.equal(prefillSpeed({spec:{input_tokens:1024},timing:{ttft_ms:{p90:2000}}}),512);
+ for(const duration of [0,-1,null,NaN]) assert.equal(prefillSpeed({spec:{input_tokens:1024},timing:{ttft_ms:{p90:duration}}}),null);
+ for(const tokens of [undefined,0,-1,'1024',Infinity]) assert.equal(prefillSpeed({spec:{input_tokens:tokens},timing:{ttft_ms:{p90:2000}}}),null);
 });

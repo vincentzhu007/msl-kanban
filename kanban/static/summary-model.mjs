@@ -29,3 +29,10 @@ export function prefillP90(run) {
   const value = run.timing?.ttft_ms?.p90;
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 }
+
+// Rate at the P90 latency, not the P90 percentile of per-run rates.
+export function prefillSpeed(run) {
+  const duration = prefillP90(run), tokens = run.spec?.input_tokens;
+  if (duration === null || duration <= 0 || typeof tokens !== 'number' || !Number.isFinite(tokens) || tokens <= 0) return null;
+  return tokens * 1000 / duration;
+}
