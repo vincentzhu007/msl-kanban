@@ -8,7 +8,7 @@ USER root
 # never used: every task extracts original DDK zips and installs daily components.
 COPY --from=runner_distribution /opt/actions-runner/ /opt/actions-runner/
 COPY --from=runner_distribution /usr/local/bin/runner-entrypoint /usr/local/bin/runner-entrypoint
-RUN python3 -m pip install --no-cache-dir gguf==0.17.1
+RUN python3 -m pip install --no-cache-dir gguf==0.17.1 onnxslim==0.1.96 transformers==4.57.1 accelerate==1.15.0
 COPY hdc.sh /usr/local/bin/hdc
 RUN chmod +x /usr/local/bin/hdc
 WORKDIR /runner

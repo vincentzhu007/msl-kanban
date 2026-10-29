@@ -20,7 +20,7 @@ from recipe_ci.device_ready import awake_device
 from recipe_ci.planner import resolve, write_new
 from recipe_ci.recipe import load, digest, sha256_file, require
 from recipe_ci.results import summarize_recipe
-from .model_export import export_model
+from .model_export import export_model, source_manifest
 
 BASE_URL = 'https://repo.mindspore.cn/mindspore/mindspore-lite/version/'
 PACKAGE = 'mindspore-lite-llm-linux-x64-0.2.0.tar.gz'
@@ -251,7 +251,8 @@ def run(repo, recipe_path, config, day, force=False):
             actual_os = device_output(env, ['param', 'get', 'const.ohos.fullname'])
             require(actual_os == env['device']['os_version'], 'Device OS differs from configured environment')
             device_key = digest(env['device'])
-            key = digest({'build': build, 'recipe': recipe, 'code': code, 'device': device_key, 'day': day, 'model_generation': config.get('model_generation')})
+            source_identity = digest(source_manifest(Path(config['model_generation']['source_model']))) if backend == 'msl' and config.get('model_generation') else None
+            key = digest({'source_model': source_identity, 'build': build, 'recipe': recipe, 'code': code, 'device': device_key, 'day': day, 'model_generation': config.get('model_generation')})
             marker = root / 'completed' / (key + '.json')
             if marker.exists() and not force:
                 previous = json.loads(marker.read_text())

@@ -1,6 +1,5 @@
 """Run unmodified daily exporter and verify the exact raw prompt tokenizer first."""
 import argparse
-import importlib
 import json
 from pathlib import Path
 import subprocess
