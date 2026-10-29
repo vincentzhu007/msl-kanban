@@ -6,6 +6,9 @@ DDK tree, source manifest, export logs and output model.
 import copy
 import json
 import os
+import re
+import signal
+import time
 from pathlib import Path
 import shutil
 import stat
@@ -48,6 +51,44 @@ def source_manifest(source):
     require(any(p.suffix == '.safetensors' for p in files), 'Missing source model weights')
     return {p.relative_to(source).as_posix(): sha256_file(p) for p in files
             if '.cache' not in p.relative_to(source).parts}
+
+
+def run_export(command, *, env, task, timeout, poll_seconds=5):
+    """Bound the whole compiler process group; fail on confirmed missing-header errors."""
+    log = task / 'export.log'
+    with log.open('w') as stream:
+        stream.write(json.dumps(command) + '\n'); stream.flush()
+        process = subprocess.Popen(command, env=env, cwd=task, stdout=stream,
+                                   stderr=subprocess.STDOUT, start_new_session=True)
+        start = time.monotonic()
+        offset, tail, failed_op, missing_header = 0, '', False, False
+        try:
+            while process.poll() is None:
+                with log.open(errors='replace') as reader:
+                    reader.seek(offset)
+                    while chunk := reader.read(65536):
+                        text = tail + chunk
+                        failed_op |= 'single op compile failed' in text
+                        missing_header |= bool(re.search(r"fatal error: [^\n]+ file not found", text))
+                        tail = text[-4096:]
+                    offset = reader.tell()
+                if failed_op and missing_header:
+                    raise RuntimeError('DDK operator compilation failed: missing header; see export.log')
+                if time.monotonic() - start > timeout:
+                    raise TimeoutError('Daily model export exceeded configured timeout')
+                time.sleep(poll_seconds)
+            if process.returncode:
+                raise subprocess.CalledProcessError(process.returncode, command)
+        except BaseException:
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+                process.wait(timeout=10)
+            except ProcessLookupError:
+                pass
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+            raise
 
 
 def export_model(repo, recipe, env, config, task, build, run_command, write_json):
@@ -109,10 +150,7 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
                '--chunk-size', str(settings.get('chunk_size', 64)), '--keep-artifacts']
     command = ['bash', '-c', 'source "$1"; shift; exec "$@"', 'daily-ddk-env',
                str(ddk / 'tools/tools_ascendc/set_ascendc_env.sh'), *command]
-    with (task / 'export.log').open('w') as stream:
-        stream.write(json.dumps(command) + '\n'); stream.flush()
-        subprocess.run(command, env=export_env, cwd=task, stdout=stream, stderr=subprocess.STDOUT,
-                       check=True, timeout=settings.get('timeout_seconds', 5400))
+    run_export(command, env=export_env, task=task, timeout=settings.get('timeout_seconds', 5400))
     require(source_manifest(source) == manifest, 'Source model changed during export')
     require(output.is_file() and output.stat().st_size > 24, 'Exporter did not produce a model')
     with output.open('rb') as stream:

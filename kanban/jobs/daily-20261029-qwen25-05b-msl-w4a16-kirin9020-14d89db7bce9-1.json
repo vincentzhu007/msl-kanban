@@ -1,0 +1,15 @@
+{
+  "id": "daily-20261029-qwen25-05b-msl-w4a16-kirin9020-14d89db7bce9-1",
+  "date": "20261029",
+  "recipe_id": "qwen25-05b-msl-w4a16-kirin9020",
+  "code_commit": "fd4bc8e4a47a348ae36b4a10258d3c425db723ba",
+  "task_url": null,
+  "status": "FAILED",
+  "stage": "EXPORT_MODEL",
+  "started_at": "2026-10-29T16:06:47.583383+08:00",
+  "build_commit": "e77e35f8f5bb46165231d5b44b7c41f1dc7c175d",
+  "build_sha256": "aec5349fc33de936165f89f5ba5246efbfd07a0a12f43d9d11c3d1d96e56fc57",
+  "error_type": "CalledProcessError",
+  "finished_at": "2026-10-29T16:21:18.815256+08:00",
+  "reason": "当日模型编译失败：DDK tuple_impl.h 引用路径缺失；报错后等待的编译进程已终止，未回退旧模型。"
+}

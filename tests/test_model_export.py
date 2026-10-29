@@ -7,7 +7,7 @@ import zipfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from daily_ci.model_export import extract_zip, source_manifest, export_model
+from daily_ci.model_export import extract_zip, source_manifest, export_model, run_export
 
 
 class ModelExportTests(unittest.TestCase):
@@ -29,6 +29,16 @@ class ModelExportTests(unittest.TestCase):
             extract_zip(root/'ddk.zip',root/'out')
             self.assertTrue((root/'out/lib/alias.so').is_symlink())
             self.assertEqual((root/'out/lib/alias.so').read_bytes(),b'library')
+
+    def test_export_missing_header_and_timeout_stop_process(self):
+        import os
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            command=[sys.executable, '-u', '-c', "import time; print(\"single op compile failed; fatal error: 'missing.h' file not found\"); time.sleep(60)"]
+            with self.assertRaisesRegex(RuntimeError, 'missing header'):
+                run_export(command,env=os.environ.copy(),task=root,timeout=5,poll_seconds=.02)
+            with self.assertRaises(TimeoutError):
+                run_export([sys.executable,'-c','import time; time.sleep(60)'],env=os.environ.copy(),task=root,timeout=.05,poll_seconds=.02)
 
     def test_manifest_tracks_weights_and_tokenizer_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
