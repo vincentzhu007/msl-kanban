@@ -17,16 +17,28 @@ from recipe_ci.recipe import require, sha256_file, digest, validate
 
 def extract_zip(archive, destination):
     with zipfile.ZipFile(archive) as bundle:
-        for entry in bundle.infolist():
+        entries = {entry.filename: entry for entry in bundle.infolist()}
+        links = {}
+        for entry in entries.values():
             path = Path(entry.filename)
             mode = entry.external_attr >> 16
-            require(not path.is_absolute() and '..' not in path.parts and not stat.S_ISLNK(mode),
-                    'Unsafe DDK zip entry')
-        bundle.extractall(destination)
-        for entry in bundle.infolist():
+            require(not path.is_absolute() and '..' not in path.parts, 'Unsafe DDK zip entry')
+            if stat.S_ISLNK(mode):
+                target = bundle.read(entry).decode()
+                sibling = (path.parent / target).as_posix()
+                # Official simulator aliases point to a regular library in the same directory.
+                require(Path(target).name == target and target not in ('.', '..') and sibling in entries
+                        and stat.S_ISREG(entries[sibling].external_attr >> 16), 'Unsafe DDK zip symlink')
+                links[entry.filename] = target
+        for entry in entries.values():
+            if entry.filename in links:
+                continue
+            bundle.extract(entry, destination)
             if not entry.is_dir():
                 mode = entry.external_attr >> 16
                 (destination / entry.filename).chmod(0o755 if mode & 0o111 else 0o644)
+        for name, target in links.items():
+            (destination / name).symlink_to(target)
 
 
 def source_manifest(source):

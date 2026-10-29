@@ -1,11 +1,17 @@
-# Pin both image IDs/digests in the deployment environment and archive their identities.
+# Archive the resolved image IDs used by deployment.
 ARG EXPORT_BASE=qwen3-4b-s16s4-perf-env:pr37
 ARG RUNNER_IMAGE=msl-kanban-runner:2.338.2
-FROM ${EXPORT_BASE} AS export_dependencies
-FROM ${RUNNER_IMAGE}
+FROM ${RUNNER_IMAGE} AS runner_distribution
+FROM ${EXPORT_BASE}
 USER root
-# Only Python dependencies are reused: no models, PR source trees or installed DDK operators.
-COPY --from=export_dependencies /usr/local/ /usr/local/
+# This base supplies Python and its native dependencies. Its old DDK/operators are
+# never used: every task extracts original DDK zips and installs daily components.
+COPY --from=runner_distribution /opt/actions-runner/ /opt/actions-runner/
+COPY --from=runner_distribution /usr/local/bin/runner-entrypoint /usr/local/bin/runner-entrypoint
 RUN python3 -m pip install --no-cache-dir gguf==0.17.1
 COPY hdc.sh /usr/local/bin/hdc
 RUN chmod +x /usr/local/bin/hdc
+WORKDIR /runner
+ENV HOME=/runner
+ENTRYPOINT ["/usr/local/bin/runner-entrypoint"]
+CMD ["./run.sh"]

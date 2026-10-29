@@ -20,6 +20,16 @@ class ModelExportTests(unittest.TestCase):
                     z.writestr(info, 'outside')
                 with self.assertRaises(ValueError): extract_zip(root/'bad.zip',root/'out')
 
+    def test_ddk_preserves_safe_sibling_library_alias(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            with zipfile.ZipFile(root/'ddk.zip','w') as z:
+                lib=zipfile.ZipInfo('lib/real.so');lib.external_attr=0o100755 << 16;z.writestr(lib,b'library')
+                link=zipfile.ZipInfo('lib/alias.so');link.external_attr=0o120777 << 16;z.writestr(link,'real.so')
+            extract_zip(root/'ddk.zip',root/'out')
+            self.assertTrue((root/'out/lib/alias.so').is_symlink())
+            self.assertEqual((root/'out/lib/alias.so').read_bytes(),b'library')
+
     def test_manifest_tracks_weights_and_tokenizer_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)

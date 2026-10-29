@@ -60,3 +60,27 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 仓库 recipe 执行器在手机文件校验与推理前临时覆盖亮屏超时为30分钟，调用 `power-shell wakeup`，若窗口焦点在普通锁屏则按屏幕尺寸执行一次正常上滑，再启动 BinRunner 并确认焦点已进入应用。出现认证锁屏或无法进入前台时直接失败，不输入密码、不绕过认证。测量期间每10秒通过设备命令唤醒屏幕，避免系统重置超时后再次熄屏；不在测量中途做滑动或切换前台。执行结束或失败均停止保活并恢复屏幕超时。
 
 采集器将进程 cgroup 与内存原始数据一同归档；检测到 `freezer:/Frozen` 时拒绝该组结果。冻结前后续跑的数据不能作为有效性能对照，应清理本次 worker 后重新运行独立测量。
+
+## 每日重新生成 MSL 模型
+
+三个 MSL 任务通过 `config/daily/*.json` 的 `model_generation` 启用全链路：
+
+1. 选择指定日期最新成功发布的 master daily 包，校验归档 SHA256。
+2. 从同一包取 `mslite_llm` wheel、`mslite_llm_ops` wheel 和算子 `.run`。三者独立记录哈希，不混用 PR adapter 或既有算子。包中没有独立 internal Git SHA 时明确记为 null，不能将 runtime SHA 当作 internal SHA。
+3. 从只读挂载的原始 DDK 6.1.1.0 zips 为当次任务建立独立 DDK，安装当天算子；Python 工具安装到当次任务的独立目录。
+4. 原始 HF 权重/配置/tokenizer 建立哈希清单，验证 raw hello 的实际 token 数，按 recipe 上下文重新导出、量化、编译和打包。导出后再次校验源文件没有变化。
+5. 将新模型 SHA256、字节数和 token 证据写入本次解析的 recipe；部署新模型及探针，并核对手机侧 SHA256，再执行连续10次评测。
+6. 失败停在 EXPORT_MODEL/DEPLOY/MEASURE 等对应阶段，不使用旧模型生成成功记录。此前成功数据仍可在看板按历史实测查看。
+
+`tasks/<id>/` 保存每日组件、源权重清单、DDK zip 哈希、Python依赖、导出/编译日志、模型与解析后的recipe。基础 HF 权重仍固定；每日变化的是导出工具、算子和运行库。
+
+### Runner 导出环境
+
+使用 `infra/github-runner/Dockerfile.export` 构建 `msl-kanban-runner:daily-export`。EXPORT_BASE 提供 torch/transformers/onnx 等依赖，RUNNER_IMAGE 提供 GitHub runner 发行件；部署时记录实际镜像ID。任务不使用基础镜像自带 DDK 或旧算子。
+
+新增只读挂载：
+
+- `SOURCE_MODELS_DIR` → `/assets/source-models`（Qwen2.5-0.5B-Instruct、Qwen3-4B、Qwen3-0.6B）。
+- `DDK_PACKAGES_DIR` → `/assets/ddk-packages`（官方 DDK-tools 及两种芯片 plugin zip）。
+
+配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟；导出前检查至少12GiB可用空间，不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
