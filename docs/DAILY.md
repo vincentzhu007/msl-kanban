@@ -4,7 +4,7 @@
 
 ## 触发与配置
 
-工作流 `.github/workflows/daily-qwen25-9020.yml` 支持手动输入 YYYYMMDD（留空按北京时间当天）和 force 重跑。仅允许 main 分支执行。定时为北京时间每天 09:17，必须设置仓库变量 `DAILY_ENABLED=true` 才执行；首次手动端到端验证完成后启用。GitHub schedule 可能延迟或漏发，v0.2 不承诺严格准点；可手动补跑指定日期。
+工作流 `.github/workflows/daily-qwen25-9020.yml` 支持手动输入 YYYYMMDD（留空按北京时间当天）和 force 重跑。仅允许 main 分支执行。定时为北京时间每天 03:00（UTC 前一天 19:00），必须设置仓库变量 `DAILY_ENABLED=true` 才执行；首次手动端到端验证完成后启用。GitHub schedule 可能延迟或漏发，v0.2 不承诺严格准点；可手动补跑指定日期。
 
 Runner 使用 `infra/github-runner/compose.yaml` 加 `compose.daily.yaml` 启动。按 `config/daily-qwen25-9020.example.json` 配置设备、已归档模型和 BinRunner 路径，再把实际配置挂载为 `/config/daily.json`。构建新的探针，复用固定模型，不重新导出模型。模型及探针均需通过 host 和手机沙箱 SHA256 校验；手机需事先部署独立 sha256sum 工具。
 

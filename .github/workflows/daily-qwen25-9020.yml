@@ -12,7 +12,7 @@ on:
         default: false
         type: boolean
   schedule:
-    - cron: '17 1 * * *'
+    - cron: '0 19 * * *' # 03:00 Asia/Shanghai (UTC+8)
 
 permissions:
   contents: write
