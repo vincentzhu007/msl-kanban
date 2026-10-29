@@ -16,6 +16,7 @@ from urllib.request import urlopen
 import uuid
 
 from recipe_ci.execution import device_lease, execute
+from recipe_ci.device_ready import awake_device
 from recipe_ci.planner import resolve, write_new
 from recipe_ci.recipe import load, digest, sha256_file, require
 from recipe_ci.results import summarize_recipe
@@ -278,7 +279,8 @@ def run(repo, recipe_path, config, day, force=False):
             prefix = ['python3', '-m', 'binrunner', '-t', env['device']['serial'], '-p', env['device']['port']]
             update(stage='DEPLOY')
             ensure_forward(env, config.get('binrunner_device_port', 8888))
-            run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
+            with awake_device(env['device']['serial']):
+                run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
             update(stage='MEASURE')
             output = execute(lock)
             update(stage='VALIDATE')

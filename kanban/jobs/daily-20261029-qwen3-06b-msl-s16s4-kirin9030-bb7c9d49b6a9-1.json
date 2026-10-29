@@ -1,0 +1,13 @@
+{
+  "id": "daily-20261029-qwen3-06b-msl-s16s4-kirin9030-bb7c9d49b6a9-1",
+  "date": "20261029",
+  "recipe_id": "qwen3-06b-msl-s16s4-kirin9030",
+  "code_commit": "76f1f5ab7f79c1cd3cf6ec1e46770a20c75cc184",
+  "task_url": null,
+  "status": "SUCCEEDED",
+  "stage": "ARCHIVED",
+  "started_at": "2026-10-29T14:00:24.984903+08:00",
+  "finished_at": "2026-10-29T14:00:45.987076+08:00",
+  "build_commit": "e77e35f8f5bb46165231d5b44b7c41f1dc7c175d",
+  "result_id": "daily-20261029-qwen3-06b-msl-s16s4-kirin9030-bb7c9d49b6a9-1"
+}

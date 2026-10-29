@@ -39,6 +39,7 @@ def summarize_recipe(recipe, directory, *, legacy=False, log_name='inference.log
         'recipe_sha256': digest(recipe), 'comparison_key': comparison_key(recipe),
         'framework': 'MSL-LLM NPU' if backend == 'msl' else 'llama.cpp CPU',
         'build_commit': recipe['build']['commit'],
+        'backend': recipe['backend'],
         'spec': {'model': recipe['model']['name'], 'quantization': json.dumps(recipe['model']['quantization'], sort_keys=True),
                  'soc': recipe['device_pool'], 'context': work['context_tokens'],
                  'input_tokens': work['input_tokens'], 'output_tokens': work['output_tokens'],

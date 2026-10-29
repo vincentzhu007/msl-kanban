@@ -1,0 +1,13 @@
+{
+  "id": "daily-20261029-qwen3-06b-llama-q4km-kirin9030-f4ddb98cf4a0-1",
+  "date": "20261029",
+  "recipe_id": "qwen3-06b-llama-q4km-kirin9030",
+  "code_commit": "6d502243ee138e890f8f1714377bbe463dbf1bf2",
+  "task_url": null,
+  "status": "SUCCEEDED",
+  "stage": "ARCHIVED",
+  "started_at": "2026-10-29T13:49:56.901247+08:00",
+  "finished_at": "2026-10-29T13:52:43.639144+08:00",
+  "build_commit": "07822bddf80d73f1168e592c52e69caaff820f9c",
+  "result_id": "daily-20261029-qwen3-06b-llama-q4km-kirin9030-f4ddb98cf4a0-1"
+}
