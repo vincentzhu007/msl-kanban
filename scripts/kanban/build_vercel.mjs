@@ -40,6 +40,7 @@ let js = await readFile(join(source, 'app.js'), 'utf8');
 js = replaceRequired(js, "fetch('/api/runs')", "fetch('/runs.json', {cache:'no-store'})");
 js = replaceRequired(js, "fetch('/api/jobs')", "fetch('/jobs.json', {cache:'no-store'})");
 await Promise.all([
+  ...['iteration.html', 'iteration.js', 'iteration-config.js', 'iteration.css', 'mindspore-logo.svg'].map(name => copyFile(join(source, name), join(output, name))),
   writeFile(join(output, 'jobs.json'), JSON.stringify(jobs, null, 2) + '\n'),
   writeFile(join(output, 'detail.html'), html),
   copyFile(join(source, 'index.html'), join(output, 'index.html')),

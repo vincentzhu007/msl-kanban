@@ -43,3 +43,13 @@ docker compose -f kanban/compose.yaml up -d --build
 ## Recipe v1 扩展入口
 
 新增模型优先添加 `recipes/*.json`，设备与文件路径放在独立 environment 中。统一命令为 `python3 scripts/bench.py validate|resolve|run|summarize`。详见 [Recipe 使用说明](docs/RECIPE_V1.md)。当前支持 frozen model，daily 编排负责更新运行库和探针；基线批准和回退告警尚未实现。
+
+## 迭代进展
+
+顶部导航按「迭代进展 / 性能评测」分组。`/iteration.html` 展示分类特性清单及关键组合验证区域，`/iteration.html#models` 展示模型支持；Daily 总览和评测详情保留原入口。
+
+维护者通过 `kanban/static/iteration-config.js` 修改版本归属、特性分类和模型部署配置，随仓库发布生效。同一模型的多种配置会合并为一行，芯片平台去重显示；悬停量化方式可查看对应芯片。v0.2 模型列表包含 v0.1 已有配置。
+
+当前特性状态按已确认版本范围展示：v0.1 已完成、v0.2 开发中。PR/Bug、验收证据和关键组合仍是待录入区域，尚未接入自动同步；`combinations` 为预留配置，当前未实现其数据渲染。设计第一稿保存在 `design/llm-iteration-v1/`。
+
+本地运行仍使用上述 Python 服务；静态发布运行 `node scripts/kanban/build_vercel.mjs`，会一并打包迭代页面及配置。图标来源见 `design/llm-iteration-v1/assets/SOURCE.md`。
