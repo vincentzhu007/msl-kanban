@@ -23,6 +23,21 @@ def validate_rows(rows, backend="msl", count=5, input_tokens=1024, output_tokens
                 raise ValueError(f"Invalid {key} in run {row['run']}")
 
 
+def initialization(log):
+    """Once per process; never label a single model initialization as P90."""
+    import json
+    events = [json.loads(line[5:]) for line in log.splitlines() if line.startswith('INIT ')]
+    if not events:
+        return None
+    if len(events) != 1:
+        raise ValueError('Expected exactly one initialization event')
+    value = events[0].get('model_init_ms')
+    if isinstance(value, bool) or not isinstance(value, (float, int)) or not math.isfinite(value) or value < 0:
+        raise ValueError('Invalid model initialization duration')
+    return {'model_init_ms': value, 'samples': 1,
+            'scope': 'Backend/model/context/sampler or generation config ready; excludes process startup; filesystem cache uncontrolled'}
+
+
 def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False):
     clock = re.search(r"WALL_MS ([\d.]+) MONOTONIC_MS ([\d.]+)", log)
     if not clock:
@@ -80,6 +95,13 @@ def summarize(rows, memory):
         values = [row[key] for row in rows]
         timing[key] = {"p90": sorted(values)[math.ceil(.9 * len(values)) - 1],
                        "median": statistics.median(values), "min": min(values), "max": max(values)}
+    if any('prefill_ms' in row for row in rows):
+        values = [row.get('prefill_ms') for row in rows]
+        if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+               or v < 0 or v > row['ttft_ms'] for v, row in zip(values, rows)):
+            raise ValueError('Incomplete or invalid Prefill timings')
+        timing['prefill_ms'] = {'p90': sorted(values)[math.ceil(.9 * len(values)) - 1],
+                                'median': statistics.median(values), 'min': min(values), 'max': max(values)}
     result = {}
     for key in ("graph_kib", "total_pss_kib"):
         values = [sample[key] for sample in stable]

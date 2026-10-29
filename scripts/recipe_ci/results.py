@@ -2,7 +2,7 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from bench_common.metrics import read_memory, summarize, validate_rows, write_csv
+from bench_common.metrics import read_memory, summarize, validate_rows, write_csv, initialization
 from .recipe import require, digest, comparison_key
 
 
@@ -55,6 +55,11 @@ def summarize_recipe(recipe, directory, *, legacy=False, log_name='inference.log
         'protocol_note': 'Raw hello fixture; greedy; consecutive runs; total PSS includes Graph. '
                          'Baseline approval and environment qualification are separate steps.',
     }
+    init = initialization(log)
+    if init is not None:
+        result['initialization'] = init
+    result['timing_scope'] = {'ttft': 'Generate request to first token; excludes model initialization',
+                              'prefill': 'Tokenized input evaluation including synchronization; excludes sampling' if 'prefill_ms' in timing else 'unavailable: runtime stage timing not exposed'}
     lock_path = directory / 'resolved-recipe.json'
     if lock_path.exists() and not legacy:
         from .planner import load_lock

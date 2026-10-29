@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from bench_common.metrics import validate_rows, read_memory, summarize
+from bench_common.metrics import validate_rows, read_memory, summarize, initialization
 
 CASES = [
     ("scripts/edge_slm_bench/summarize_2k.py", "reports/edge-slm/20261026-qwen25-05b-w4a16-9020/context2048-input1024-output128"),
@@ -67,6 +67,25 @@ class MeasurementTests(unittest.TestCase):
                        graph_kib=10, total_pss_kib=20, start_epoch_ms=i) for i in (1, 2)]
         timing, _ = summarize(rows, memory)
         self.assertEqual(timing['decode_ms']['p90'], 9)
+
+    def test_optional_stage_timings(self):
+        self.assertIsNone(initialization('BUILD ms=123'))
+        self.assertEqual(initialization('INIT {"model_init_ms": 123}')['samples'], 1)
+        for log in ['INIT {"model_init_ms": -1}', 'INIT {"model_init_ms": true}',
+                    'INIT {"model_init_ms": 1}\nINIT {"model_init_ms": 2}']:
+            with self.assertRaises(ValueError):
+                initialization(log)
+        rows = [dict(prefill_ms=i, ttft_ms=i+1, decode_ms=2, total_ms=i+3, decode_tps=10)
+                for i in range(1, 11)]
+        memory = [dict(stable_decode=True, fully_in_inference=True, graph_kib=1,
+                       total_pss_kib=2, start_epoch_ms=i) for i in (1, 2)]
+        self.assertEqual(summarize(rows, memory)[0]['prefill_ms']['p90'], 9)
+        rows[0]['prefill_ms'] = 100
+        with self.assertRaises(ValueError):
+            summarize(rows, memory)
+        rows[0].pop('prefill_ms')
+        with self.assertRaises(ValueError):
+            summarize(rows, memory)
 
     def test_requires_device_clock_alignment(self):
         with self.assertRaisesRegex(ValueError, "clock alignment"):

@@ -98,3 +98,11 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
 覆盖三组既有时延及内存结果、配方拒绝条件、SPEC 不一致、锁篡改/防覆盖、预览禁止执行、设备互斥、旧入口兼容等。不替代真机验证。
+
+## 独立阶段计时
+
+- `initialization.model_init_ms`：探针单调时钟测量一次模型初始化。MSL 为 CreateModel 到 BuildModel 和生成配置完成；llama.cpp 为 backend 初始化到模型、context、sampler 就绪。不含进程启动，不控制文件缓存，不称为冷启动或 P90。
+- `samples[].prefill_ms` / `timing.prefill_ms`：llama.cpp 分词完成后，输入 batch 计算至显式同步结束，不含首 token 采样；按实际连续次数取最近秩 P90。
+- `ttft_ms`：已初始化模型的一次推理请求至首 token，包含分词、Prefill、采样和接口开销，不含上述初始化。不要相加两个 P90 推算端到端 P90。
+- MSL daily 公共生成接口没有独立 Prefill 事件，当前日志仅暴露初始化内部阶段。需要运行库提供阶段统计 API/事件后再采集纯 Prefill，不能用 TTFT 替代。
+- 历史结果没有这些字段时显示缺失，不补零。新探针输出 INIT 事件，解析器对重复、负值、非有限值及不完整 Prefill 数据拒绝发布。

@@ -79,6 +79,7 @@ int main(int argc,char **argv) {
   printf("PID %d MONOTONIC_MS %.6f\n", getpid(), ms(Clock::time_point{}, Clock::now())); fflush(stdout);
   printf("WALL_MS %.6f MONOTONIC_MS %.6f\n",std::chrono::duration<double,std::milli>(std::chrono::system_clock::now().time_since_epoch()).count(),ms(Clock::time_point{},Clock::now())); fflush(stdout);
   long before=rss_kib();
+  auto init_start=Clock::now();
   auto model=MSLLMCreateModel(); if (!model) return 3;
   auto start=Clock::now(); auto status=MSLLMBuildModel(model,argv[1]);
   printf("BUILD status=%d ms=%.6f rss_before_kib=%ld rss_loaded_kib=%ld\n",status,ms(start,Clock::now()),before,rss_kib());
@@ -86,6 +87,7 @@ int main(int argc,char **argv) {
   MSLLMGenerationConfig cfg{}; cfg.max_new_tokens=options.output; cfg.do_sample=false;
   cfg.temperature=1; cfg.top_k=1; cfg.top_p=1; cfg.repetition_penalty=1;
   if (MSLLMSetGenerationConfig(model,cfg)!=kMSLLM_SUCCESS) { MSLLMDestroyModel(&model); return 5; }
+  printf("INIT {\"model_init_ms\":%.6f}\n",ms(init_start,Clock::now()));
   for (int words : {options.input}) {
     std::string prompt;
     for (int i=0;i<words;++i) prompt += " hello";
