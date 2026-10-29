@@ -5,7 +5,7 @@
 - TTFT：生成 API 入口至首 token 回调；总时延覆盖整个生成；decode 速度按后续 127 token 计算。加载时间不计入生成时延。
 - P90：nearest-rank，`sorted[ceil(0.9*n)-1]`；n=5 时为最大值。
 - hidumper 的 Graph 第一列为 NPU PSS；Total 第一列为进程总 PSS。Total 已含 Graph，不能相加；DMA 可能重复反映同一内存。
-- 稳定值：用设备 wall/monotonic 时间对齐，选择完整落在第 2–5 次 decode 内的采样，计算中位数。
+- 稳定值：用设备 wall/monotonic 时间对齐，选择完整落在第 2 次至本组最后一次 decode（新 Daily 为第 2–10 次，历史 5 次记录为第 2–5 次） 内的采样，计算中位数。
 - 峰值是离散采样观测最大值，可能遗漏短暂峰值；同时保留全采样与推理阶段峰值。单位原始 KiB，网页转换 MiB。
 - ROM 为实际部署模型文件字节数，不包含运行库、app 与系统缓存。
 - 频率/温度未锁定，内存采样开销未扣除；不同芯片不作同硬件性能对比。MSL 与 GGUF 未验证逐 tensor 权重和量化一致性。

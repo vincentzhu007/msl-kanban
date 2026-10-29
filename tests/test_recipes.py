@@ -89,7 +89,11 @@ class RecipeTests(unittest.TestCase):
                 target = Path(tmp) / 'data'
                 shutil.copytree(ROOT / fixture, target)
                 old = json.loads((target / 'benchmark.json').read_text())
-                result = summarize_recipe(load(ROOT / 'recipes' / (name + '.json')), target, legacy=True, **options)
+                recipe = load(ROOT / 'recipes' / (name + '.json'))
+                # Preserve the archived five-run protocol for legacy evidence.
+                recipe['workload']['repetitions'] = 5
+                recipe['measurement']['stable_runs'] = list(range(2, 6))
+                result = summarize_recipe(recipe, target, legacy=True, **options)
                 self.assertEqual(result['timing'], old['timing'])
                 for key in ['graph_kib', 'total_pss_kib', 'samples', 'stable_samples', 'sample_interval_median_ms']:
                     self.assertEqual(result['memory'][key], old['memory'][key])

@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from bench_common.metrics import validate_rows, read_memory
+from bench_common.metrics import validate_rows, read_memory, summarize
 
 CASES = [
     ("scripts/edge_slm_bench/summarize_2k.py", "reports/edge-slm/20261026-qwen25-05b-w4a16-9020/context2048-input1024-output128"),
@@ -55,6 +55,18 @@ class MeasurementTests(unittest.TestCase):
             path.write_text(f"PID 123\n{(wall + 1001) * 1000000}\nother error\n{(wall + 1011) * 1000000}\n")
             with self.assertRaisesRegex(ValueError, 'Incomplete memory'):
                 read_memory(Path(tmp), log, rows)
+
+    def test_ten_runs_p90_and_count_validation(self):
+        rows = [dict(run=i, status=0, output_callbacks=128, input_tokens=1024,
+                     eog_tokens=0, ttft_ms=i, decode_ms=i, total_ms=i*2, decode_tps=i)
+                for i in range(1, 11)]
+        validate_rows(rows, backend="llama", count=10)
+        with self.assertRaises(ValueError):
+            validate_rows(rows[:5], backend="llama", count=10)
+        memory = [dict(stable_decode=True, fully_in_inference=True,
+                       graph_kib=10, total_pss_kib=20, start_epoch_ms=i) for i in (1, 2)]
+        timing, _ = summarize(rows, memory)
+        self.assertEqual(timing['decode_ms']['p90'], 9)
 
     def test_requires_device_clock_alignment(self):
         with self.assertRaisesRegex(ValueError, "clock alignment"):

@@ -31,8 +31,8 @@ docker compose -f kanban/compose.yaml up -d --build
 
 见 [运行说明](docs/RUNBOOK.md)、[数据口径](docs/MEASUREMENT.md)、[归档索引](docs/ARCHIVES.md)。
 
-- 正式规格：上下文 2048、输入 1024、输出 128，同进程连续 5 次。
-- P90 使用 nearest-rank，5 次测量对应最大值。
+- 正式规格：上下文 2048、输入 1024、输出 128，同进程连续 10 次（历史记录保留原始次数）。
+- P90 使用 nearest-rank，10 次测量取升序第 9 个值；历史 5 次测量取最大值。
 - 看板第四个指标及框架对比使用总 PSS 稳定中位数；Graph 代表 NPU 内存。
 - PR 验证为 daily 运行库 + !1362 导出适配 + !62 分支重编译算子，默认 `decode_layout=0`。
 - 手机执行脚本保留已验证的 dog 路径、设备及模型名。运行前核对这些配置；它们不是开箱即用的跨环境 CI。

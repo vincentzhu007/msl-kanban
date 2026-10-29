@@ -135,8 +135,9 @@ def public_result(result, run_id, build, code_commit, device_alias, task_url):
     result['source'] = 'daily 真机评测 · GitHub Actions'
     result['daily'] = {**build, 'code_commit': code_commit, 'task_url': task_url}
     source_note = '固定版本 llama.cpp 每日对照' if result.get('framework') == 'llama.cpp CPU' else 'Daily MSL 运行库'
+    spec = result.get('spec', {})
     result['protocol_note'] = (source_note + '与本次重编译探针；固定已归档模型。上下文2048、输入1024、输出128，'
-                               '同进程连续5次，无预热；总PSS包含Graph。温度/频率未锁定，不自动批准性能基线。')
+                               f"同进程连续{spec.get('consecutive_runs', len(result.get('samples', [])))}次，无预热；总PSS包含Graph。温度/频率未锁定，不自动批准性能基线。")
     return result
 
 

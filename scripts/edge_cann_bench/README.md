@@ -27,7 +27,7 @@ python3 -m binrunner -t 127.0.0.1:2000 -p 18888 run "check-cann-runtime @/bin/li
 - 确认上下文 2048，原始 ` hello` 重复 1024 的 tokenizer 实际输入计数为 1024；greedy 输出实际达到 128，不注入聊天模板。
 - 同进程连续 5 次，无预热；每次重置会话/KV 并关闭历史 prompt cache；记录实际输入/输出计数和完成状态。
 - 外部单调时钟记录调用到首 token 的 TTFT、首 token 到末 token 的 decode 和 E2E。SDK prefill 时间单列，不等同 TTFT；回调可能包含多个 token，必须核对实际 token 数。
-- 复用仓库 hidumper 采样和统计口径：P90 最近秩，推理 2–5 的 decode 完整采样区间计算 Total PSS 稳定中位值，另报峰值及 Graph；不重复累加 Graph。
+- 复用仓库 hidumper 采样和统计口径：P90 最近秩，推理 2–N 的 decode（后续 Daily 规格 N=10） 完整采样区间计算 Total PSS 稳定中位值，另报峰值及 Graph；不重复累加 Graph。
 - 在 recipe/planner/execution/results 中实现经过验证的 CANN backend 后，才运行并写入 kanban 数据。当前 validator 仍只接受 MSL/llama，防止预检记录混入性能结果。
 
 详细证据见 `docs/CANN_KIT_LLM.md`。
