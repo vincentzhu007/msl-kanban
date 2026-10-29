@@ -1,3 +1,4 @@
+import {prefillP90} from '../kanban/static/summary-model.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {overview, toptP90} from '../kanban/static/summary-model.mjs';
@@ -19,4 +20,11 @@ test('TOPT uses per-run token count, excludes first token and takes nearest-rank
 });
 test('TOPT does not invent zero for absent or invalid metrics',()=>{
  for(const samples of [[],[{status:0,decode_ms:null,output_callbacks:128}],[{status:0,decode_ms:1,output_callbacks:1}],[{status:1,decode_ms:10,output_callbacks:128}]]) assert.equal(toptP90({samples}),null);
+});
+
+test('combined Prefill reuses measured TTFT, never historical pure evaluation',()=>{
+ assert.equal(prefillP90({timing:{ttft_ms:{p90:12},prefill_ms:{p90:10}}}),12);
+ assert.equal(prefillP90({timing:{ttft_ms:{p90:0}}}),0);
+ for(const v of [undefined,null,NaN,-1,'12']) assert.equal(prefillP90({timing:{ttft_ms:{p90:v}}}),null);
+ assert.equal(prefillP90({timing:{prefill_ms:{p90:10}}}),null);
 });

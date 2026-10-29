@@ -22,3 +22,10 @@ export function toptP90(run) {
   values.sort((a,b) => a-b);
   return values[Math.ceil(values.length * 0.9) - 1];
 }
+
+// Kanban Prefill includes tokenizer + input evaluation + first-token sampling.
+// The existing request-to-first-token measurement is exactly this public API boundary.
+export function prefillP90(run) {
+  const value = run.timing?.ttft_ms?.p90;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}

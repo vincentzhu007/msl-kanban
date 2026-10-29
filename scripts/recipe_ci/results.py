@@ -60,6 +60,11 @@ def summarize_recipe(recipe, directory, *, legacy=False, log_name='inference.log
         result['initialization'] = init
     result['timing_scope'] = {'ttft': 'Generate request to first token; excludes model initialization',
                               'prefill': 'Tokenized input evaluation including synchronization; excludes sampling' if 'prefill_ms' in timing else 'unavailable: runtime stage timing not exposed'}
+    # Public prompt-stage metric: reuse the measured request-to-first-token interval.
+    # Preserve prefill_ms as the historical pure evaluation measurement when available.
+    if not legacy:
+        timing['prefill_total_ms'] = dict(timing['ttft_ms'])
+    result['timing_scope']['prefill_total'] = 'Tokenizer + input evaluation + first-token sampling/callback overhead; identical to TTFT; excludes initialization'
     lock_path = directory / 'resolved-recipe.json'
     if lock_path.exists() and not legacy:
         from .planner import load_lock

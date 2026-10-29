@@ -106,3 +106,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 - `ttft_ms`：已初始化模型的一次推理请求至首 token，包含分词、Prefill、采样和接口开销，不含上述初始化。不要相加两个 P90 推算端到端 P90。
 - MSL daily 公共生成接口没有独立 Prefill 事件，当前日志仅暴露初始化内部阶段。需要运行库提供阶段统计 API/事件后再采集纯 Prefill，不能用 TTFT 替代。
 - 历史结果没有这些字段时显示缺失，不补零。新探针输出 INIT 事件，解析器对重复、负值、非有限值及不完整 Prefill 数据拒绝发布。
+
+### 看板 Prefill 口径调整
+
+看板 Prefill 当前包含 Tokenizer、输入计算和首 token 采样，采用请求到首 token 的已有计时边界，含回调前接口开销，不含模型初始化，与 TTFT 数值相同。历史数据也可直接使用已实测 TTFT 展示此口径，不需要估算或重测。新结果同时导出 `timing.prefill_total_ms`，复制 TTFT 统计并注明来源。原 `prefill_ms` 保留为纯输入计算的底层观测，不覆盖历史值；MSL 仍无纯输入计算观测，但可以展示此合并口径。
