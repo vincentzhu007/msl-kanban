@@ -1,0 +1,11 @@
+# Pin both image IDs/digests in the deployment environment and archive their identities.
+ARG EXPORT_BASE=qwen3-4b-s16s4-perf-env:pr37
+ARG RUNNER_IMAGE=msl-kanban-runner:2.338.2
+FROM ${EXPORT_BASE} AS export_dependencies
+FROM ${RUNNER_IMAGE}
+USER root
+# Only Python dependencies are reused: no models, PR source trees or installed DDK operators.
+COPY --from=export_dependencies /usr/local/ /usr/local/
+RUN python3 -m pip install --no-cache-dir gguf==0.17.1
+COPY hdc.sh /usr/local/bin/hdc
+RUN chmod +x /usr/local/bin/hdc

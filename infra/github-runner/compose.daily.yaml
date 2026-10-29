@@ -12,3 +12,5 @@ services:
       - ${QWEN3_4B_ARCHIVE_DIR:?Set Qwen3 4B archive directory}:/assets/qwen3-4b:ro
       - ${QWEN3_06B_ARCHIVE_DIR:?Set Qwen3 0.6B archive directory}:/assets/qwen3-06b:ro
       - ${LLAMA_ARCHIVE_DIR:?Set llama archive directory}:/assets/llama:ro
+      - ${SOURCE_MODELS_DIR:?Set source HF models directory}:/assets/source-models:ro
+      - ${DDK_PACKAGES_DIR:?Set original DDK packages directory}:/assets/ddk-packages:ro

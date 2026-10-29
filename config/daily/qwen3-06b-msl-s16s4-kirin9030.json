@@ -31,5 +31,14 @@
       }
     }
   },
-  "binrunner_device_port": 8888
+  "binrunner_device_port": 8888,
+  "model_generation": {
+    "mode": "master_daily",
+    "source_model": "/assets/source-models/Qwen3-0.6B",
+    "ddk_packages": "/assets/ddk-packages",
+    "quant_type": "s16s4",
+    "chunk_size": 64,
+    "python": "/usr/local/bin/python3",
+    "timeout_seconds": 5400
+  }
 }

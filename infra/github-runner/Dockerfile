@@ -8,6 +8,8 @@ COPY runner-dist/ /opt/actions-runner/
 COPY entrypoint.sh /usr/local/bin/runner-entrypoint
 COPY hdc.sh /usr/local/bin/hdc
 RUN chmod +x /usr/local/bin/runner-entrypoint /usr/local/bin/hdc
+# Export-capable base images provide torch/transformers/onnx and Python pip.
+# Daily wheels are installed per task, never overlaid with PR sources.
 WORKDIR /runner
 ENV HOME=/runner
 ENTRYPOINT ["/usr/local/bin/runner-entrypoint"]

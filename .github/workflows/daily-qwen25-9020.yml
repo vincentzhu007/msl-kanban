@@ -47,7 +47,7 @@ jobs:
           - cann-kit-llm-kirin9020
     name: ${{ matrix.task }}
     runs-on: [self-hosted, dog, msl-kanban, container]
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v5
       - name: Evaluate daily with repository recipe

@@ -20,6 +20,7 @@ from recipe_ci.device_ready import awake_device
 from recipe_ci.planner import resolve, write_new
 from recipe_ci.recipe import load, digest, sha256_file, require
 from recipe_ci.results import summarize_recipe
+from .model_export import export_model
 
 BASE_URL = 'https://repo.mindspore.cn/mindspore/mindspore-lite/version/'
 PACKAGE = 'mindspore-lite-llm-linux-x64-0.2.0.tar.gz'
@@ -137,7 +138,8 @@ def public_result(result, run_id, build, code_commit, device_alias, task_url):
     result['daily'] = {**build, 'code_commit': code_commit, 'task_url': task_url}
     source_note = '固定版本 llama.cpp 每日对照' if result.get('framework') == 'llama.cpp CPU' else 'Daily MSL 运行库'
     spec = result.get('spec', {})
-    result['protocol_note'] = (source_note + '与本次重编译探针；固定已归档模型。上下文2048、输入1024、输出128，'
+    model_note = '当天 master daily 导出工具及算子重新生成模型' if build.get('model_generation') == 'master_daily' else '固定已归档模型'
+    result['protocol_note'] = (source_note + '与本次重编译探针；' + model_note + '。上下文2048、输入1024、输出128，'
                                f"同进程连续{spec.get('consecutive_runs', len(result.get('samples', [])))}次，无预热；总PSS包含Graph。温度/频率未锁定，不自动批准性能基线。")
     return result
 
@@ -249,7 +251,7 @@ def run(repo, recipe_path, config, day, force=False):
             actual_os = device_output(env, ['param', 'get', 'const.ohos.fullname'])
             require(actual_os == env['device']['os_version'], 'Device OS differs from configured environment')
             device_key = digest(env['device'])
-            key = digest({'build': build, 'recipe': recipe, 'code': code, 'device': device_key, 'day': day})
+            key = digest({'build': build, 'recipe': recipe, 'code': code, 'device': device_key, 'day': day, 'model_generation': config.get('model_generation')})
             marker = root / 'completed' / (key + '.json')
             if marker.exists() and not force:
                 previous = json.loads(marker.read_text())
@@ -259,13 +261,18 @@ def run(repo, recipe_path, config, day, force=False):
                 return 0
             archive, probe = (prepare_msl(repo, config, build, task, root / 'packages')
                               if backend == 'msl' else prepare_llama(repo, config, build, task))
+            regenerated = backend == 'msl' and bool(config.get('model_generation'))
+            if regenerated:
+                update(stage='EXPORT_MODEL')
+                recipe, components = export_model(repo, recipe, env, config, task, build, run_command, write_json)
+                build = dict(build, model_generation='master_daily', daily_components=components)
             native = Path(config['native'])
             write_json(task / 'toolchain.json', {'compiler': subprocess.check_output(
                 [str(native / 'llvm/bin/clang++'), '--version'], text=True),
                 'compiler_sha256': sha256_file(native / 'llvm/bin/clang++'),
                 'binrunner_commit': subprocess.check_output(['git', '-C', env['binrunner'], 'rev-parse', 'HEAD'], text=True).strip()})
-            recipe['build'] = {**build, **({'components': recipe['build']['components']} if 'components' in recipe['build'] else {})}
-            recipe['description'] = 'Daily runtime with fixed archived model; compiled recipe probe'
+            recipe['build'] = {**{k: build[k] for k in ['commit', 'source_url', 'sha256'] if k in build}, **({'components': recipe['build']['components']} if 'components' in recipe['build'] else {})}
+            recipe['description'] = ('Master daily exporter/operators regenerated model' if regenerated else 'Daily runtime with fixed archived model')
             env['output_root'] = str(root / 'runs')
             env['artifacts']['probe'] = {'host_path': str(probe), 'device_path': '@/bin/' + probe.name, 'sha256': sha256_file(probe)}
             env['artifacts']['runtime'] = {'host_path': str(archive), 'sha256': build['sha256']}
@@ -281,6 +288,11 @@ def run(repo, recipe_path, config, day, force=False):
             ensure_forward(env, config.get('binrunner_device_port', 8888))
             with awake_device(env['device']['serial']):
                 run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
+                if regenerated:
+                    # BinRunner push defaults to basename; match the locked device path exactly.
+                    deployed = task / Path(env['artifacts']['model']['device_path']).name
+                    os.link(env['artifacts']['model']['host_path'], deployed)
+                    run_command(prefix + ['push', str(deployed)], task / 'push-model.log', cwd=env['binrunner'], timeout=600)
             update(stage='MEASURE')
             output = execute(lock)
             update(stage='VALIDATE')
