@@ -34,3 +34,24 @@ test('Prefill rate uses input tokens divided by P90 TTFT in seconds',()=>{
  for(const duration of [0,-1,null,NaN]) assert.equal(prefillSpeed({spec:{input_tokens:1024},timing:{ttft_ms:{p90:duration}}}),null);
  for(const tokens of [undefined,0,-1,'1024',Infinity]) assert.equal(prefillSpeed({spec:{input_tokens:tokens},timing:{ttft_ms:{p90:2000}}}),null);
 });
+
+import {dailyDate, selectDaily} from '../kanban/static/summary-model.mjs';
+test('Daily dates use archive date, with Beijing time for legacy jobs', () => {
+ assert.equal(dailyDate({date:'20261028',started_at:'2026-10-29T01:00:00+08:00'}),'2026-10-28');
+ assert.equal(dailyDate({started_at:'2026-10-28T19:00:00Z'}),'2026-10-29');
+ assert.equal(dailyDate({}),null);
+});
+test('date selection isolates failures from other dates and preserves historical selection', () => {
+ const runs=[{id:'old'}];
+ const jobs=[{date:'20261028',recipe_id:'m',status:'SUCCEEDED',result_id:'old',started_at:'2026-10-28T03:00:00+08:00'}, {date:'20261029',recipe_id:'m',status:'FAILED',started_at:'2026-10-29T03:00:00+08:00'}];
+ const latest=selectDaily(runs,jobs);
+ assert.deepEqual(latest.dates,['2026-10-29','2026-10-28']);
+ assert.equal(latest.date,'2026-10-29');
+ assert.equal(latest.items[0].run,null);
+ const previous=selectDaily(runs,jobs,'2026-10-28');
+ assert.equal(previous.date,'2026-10-28');
+ assert.equal(previous.items[0].run.id,'old');
+ assert.equal(previous.jobs.length,1);
+ assert.equal(selectDaily(runs,jobs,'missing').date,'2026-10-29');
+ assert.deepEqual(selectDaily([],[]),{dates:[],date:'',jobs:[],items:[]});
+});

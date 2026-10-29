@@ -61,3 +61,18 @@ export function buildVersionLink(record, runs = []) {
     return `<a href="${escape(url.href)}" target="_blank" rel="noopener noreferrer" title="在新标签页打开 Daily 归档发布件">${label}</a>`;
   } catch { return label; }
 }
+
+// Prefer the requested Daily archive date, even when a retry runs after midnight.
+export function dailyDate(job) {
+  const match = String(job.date ?? '').match(/^(\d{4})-?(\d{2})-?(\d{2})$/);
+  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  const timestamp = Date.parse(job.started_at);
+  return Number.isFinite(timestamp) ? new Date(timestamp + 8 * 3600000).toISOString().slice(0,10) : null;
+}
+
+export function selectDaily(runs, jobs, requestedDate) {
+  const dates = [...new Set(jobs.map(dailyDate).filter(Boolean))].sort().reverse();
+  const date = dates.includes(requestedDate) ? requestedDate : dates[0] ?? '';
+  const selectedJobs = jobs.filter(job => dailyDate(job) === date);
+  return {dates, date, jobs:selectedJobs, items:overview(runs, selectedJobs)};
+}
