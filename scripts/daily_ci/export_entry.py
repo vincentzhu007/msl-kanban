@@ -1,6 +1,7 @@
 """Run unmodified daily exporter and verify the exact raw prompt tokenizer first."""
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,6 +13,9 @@ def main():
     parser.add_argument('--evidence', required=True, type=Path)
     parser.add_argument('--input-tokens', required=True, type=int)
     args, export_args = parser.parse_known_args()
+    import te_fusion
+    if not Path(te_fusion.__file__).resolve().is_relative_to(Path(os.environ['DDK_PATH']).resolve()):
+        raise RuntimeError('DDK Python modules resolved outside task DDK')
     import mslite_llm_export as exporter
     import mslite_llm_ops as operators
     for module in [exporter, operators]:

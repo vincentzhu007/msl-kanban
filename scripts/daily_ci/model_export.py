@@ -86,6 +86,9 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
     platform = ddk / 'tools/platform' / target
     platform.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(staging / 'image/ddk_platform_plugin' / target, platform, dirs_exist_ok=True)
+    run_command(['env', 'PIP_NO_INDEX=1', 'PIP_NO_DEPS=1', 'bash', '-c', 'source "$1"',
+                 'daily-ddk-install', str(ddk / 'tools/tools_ascendc/install.sh')],
+                task / 'install-ddk.log', timeout=300)
     python = settings.get('python', '/usr/local/bin/python3')
     python_target = task / 'python'
     run_command([python, '-m', 'pip', 'install', '--no-index', '--no-deps', '--target', str(python_target),
@@ -104,6 +107,8 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
                '--model', str(source), '--output', str(output), '--target', target,
                '--quant-type', settings['quant_type'], '--max-length', str(recipe['workload']['context_tokens']),
                '--chunk-size', str(settings.get('chunk_size', 64)), '--keep-artifacts']
+    command = ['bash', '-c', 'source "$1"; shift; exec "$@"', 'daily-ddk-env',
+               str(ddk / 'tools/tools_ascendc/set_ascendc_env.sh'), *command]
     with (task / 'export.log').open('w') as stream:
         stream.write(json.dumps(command) + '\n'); stream.flush()
         subprocess.run(command, env=export_env, cwd=task, stdout=stream, stderr=subprocess.STDOUT,
