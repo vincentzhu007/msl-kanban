@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "id": "qwen3-06b-llama-q4km-kirin9030",
+  "description": "Qwen3-0.6B GGUF Q4_K_M CPU comparison against Kirin9030 MSL S16S4; fixed public quantized artifact, ten-run protocol.",
+  "model": {
+    "name": "Qwen3-0.6B",
+    "variant": "base",
+    "sha256": "9acfc1e001311f34b4252001b626f2e466d592a42065f66571bff3790d4e1b14",
+    "bytes": 484220320,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "Q4_K_M",
+      "mixed_tensor_types": true
+    },
+    "provenance": {
+      "repository": "bartowski/Qwen_Qwen3-0.6B-GGUF",
+      "revision": "60b85c0e3d8fe0f6474f406922a26d12aca4550d",
+      "base_model": "Qwen/Qwen3-0.6B",
+      "quantizer": "llama.cpp b5200 imatrix",
+      "source_url": "https://huggingface.co/bartowski/Qwen_Qwen3-0.6B-GGUF/resolve/60b85c0e3d8fe0f6474f406922a26d12aca4550d/Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+    }
+  },
+  "backend": {
+    "name": "llama",
+    "target": "cpu",
+    "options": {
+      "threads": 4,
+      "batch": 64
+    }
+  },
+  "build": {
+    "commit": "07822bddf80d73f1168e592c52e69caaff820f9c"
+  },
+  "device_pool": "Kirin9030",
+  "preparation": "frozen_model",
+  "workload": {
+    "context_tokens": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "repetitions": 10,
+    "warmup_runs": 0,
+    "generation": "greedy",
+    "prompt": "hello-repeat-v1",
+    "input_verification": {
+      "model_sha256": "9acfc1e001311f34b4252001b626f2e466d592a42065f66571bff3790d4e1b14",
+      "tokens": 1024,
+      "evidence": "Repository recipe-llama probe tokenizes hello-repeat-v1 with this exact GGUF vocabulary and rejects any input count other than 1024 before generation. Successful raw logs are required evidence."
+    }
+  },
+  "measurement": {
+    "version": 1,
+    "collector": "hidumper",
+    "stable_runs": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ]
+  }
+}
