@@ -7,7 +7,7 @@ import zipfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from daily_ci.model_export import extract_zip, source_manifest, export_model, run_export
+from daily_ci.model_export import extract_zip, source_manifest, export_model, run_export, restore_ddk_header_link
 
 
 class ModelExportTests(unittest.TestCase):
@@ -39,6 +39,22 @@ class ModelExportTests(unittest.TestCase):
                 run_export(command,env=os.environ.copy(),task=root,timeout=5,poll_seconds=.02)
             with self.assertRaises(TimeoutError):
                 run_export([sys.executable,'-c','import time; time.sleep(60)'],env=os.environ.copy(),task=root,timeout=.05,poll_seconds=.02)
+
+    def test_ddk_materialized_header_alias_restores_relative_include(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ddk=Path(tmp)
+            root=ddk/'tools/tools_ascendc/include/tikcpp'
+            for folder in ['tikcfw/lib/std','api/lib/std','api/impl/std/tuple']:
+                (root/folder).mkdir(parents=True)
+            header='#include "../../impl/std/tuple/tuple_impl.h"'
+            for folder in ['tikcfw/lib/std','api/lib/std']:
+                (root/folder/'tuple.h').write_text(header)
+            (root/'api/impl/std/tuple/tuple_impl.h').write_text('// vendor implementation')
+            self.assertFalse((root/'tikcfw/impl/std/tuple/tuple_impl.h').exists())
+            restore_ddk_header_link(ddk)
+            self.assertEqual((root/'tikcfw/lib/std/tuple.h').resolve(),(root/'api/lib/std/tuple.h').resolve())
+            self.assertEqual((root/'tikcfw/lib.ddk-6.1.1.0-materialized.bak/std/tuple.h').read_text(),header)
+            restore_ddk_header_link(ddk)
 
     def test_manifest_tracks_weights_and_tokenizer_changes(self):
         with tempfile.TemporaryDirectory() as tmp:

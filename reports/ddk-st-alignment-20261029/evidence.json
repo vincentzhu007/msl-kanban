@@ -1,0 +1,78 @@
+{
+  "result": {
+    "date": "20261029",
+    "build": {
+      "commit": "e77e35f8f5bb46165231d5b44b7c41f1dc7c175d",
+      "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261029/master_20261029010014_e77e35f8f5bb46165231d5b44b7c41f1dc7c175d_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+      "sha256": "aec5349fc33de936165f89f5ba5246efbfd07a0a12f43d9d11c3d1d96e56fc57"
+    },
+    "status": "PASS"
+  },
+  "generated-model": {
+    "sha256": "c09e6262b4eb335d984227500076ad0fad75afc77088e274d391f3f23ec7347b",
+    "bytes": 295225856,
+    "source_manifest_sha256": "6dbb5b55e9f5ccc742e90425f88381f95e9930d0aa31bca8d85ae29aa329907f",
+    "daily_components": {
+      "exporter": {
+        "filename": "mslite_llm-0.2.0-py3-none-any.whl",
+        "sha256": "96a590b582fdf40e14fce30bb66d5e6328ef4cf0fa799d400c3db5e3484f3595"
+      },
+      "operator_plugin": {
+        "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+        "sha256": "20c1769e7a61f96e28afd8a5b8b5d9909b4afc9fe02e43888fea8f5e828c7216"
+      },
+      "operators": {
+        "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+        "sha256": "e7a72f7fa394ff080ec5897587ef090588aa31bb221cce3c249d9a70129f615a"
+      }
+    },
+    "tokenizer": {
+      "input_tokens": 1024,
+      "prompt": "hello-repeat-v1",
+      "add_special_tokens": false,
+      "token_ids": [
+        23811
+      ]
+    }
+  },
+  "ddk-environment": {
+    "header_link": "tikcfw/lib -> ../api/lib",
+    "reference": "ms-pipeline 8803de62b2298b13a6c5bb162131cfe1aae38f9b install-ddk.sh",
+    "daily_components_modified": false
+  },
+  "ddk-packages": {
+    "DDK-tools-next-6.1.1.0.zip": "87d7e3f186ad5c527a9385cea555559ea53c63b87dc483820523bcf7bf6f87e5",
+    "kirin9020-plugin-next-6.1.1.0.zip": "da4ebea4ce88889d94f96baf7bde43ff178153d68425e24d4e0db5b25089aa3f"
+  },
+  "daily-components": {
+    "archive": {
+      "commit": "e77e35f8f5bb46165231d5b44b7c41f1dc7c175d",
+      "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261029/master_20261029010014_e77e35f8f5bb46165231d5b44b7c41f1dc7c175d_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+      "sha256": "aec5349fc33de936165f89f5ba5246efbfd07a0a12f43d9d11c3d1d96e56fc57"
+    },
+    "components": {
+      "exporter": {
+        "filename": "mslite_llm-0.2.0-py3-none-any.whl",
+        "sha256": "96a590b582fdf40e14fce30bb66d5e6328ef4cf0fa799d400c3db5e3484f3595"
+      },
+      "operator_plugin": {
+        "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+        "sha256": "20c1769e7a61f96e28afd8a5b8b5d9909b4afc9fe02e43888fea8f5e828c7216"
+      },
+      "operators": {
+        "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+        "sha256": "e7a72f7fa394ff080ec5897587ef090588aa31bb221cce3c249d9a70129f615a"
+      }
+    },
+    "policy": "Unmodified exporter and operators shipped together in selected master daily",
+    "mslite_internal_commit": null
+  },
+  "identical_inputs": {
+    "daily-components.json": true,
+    "ddk-packages.json": true,
+    "source-model-manifest.json": true
+  },
+  "log_sha256": "1fbedd6ee6cab45499781fcd815308483da608b81a40011fb50df3772ab8d634",
+  "model_magic": ".MSL",
+  "device_inference_tested": false
+}

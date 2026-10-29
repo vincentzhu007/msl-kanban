@@ -44,6 +44,28 @@ def extract_zip(archive, destination):
             (destination / name).symlink_to(target)
 
 
+def restore_ddk_header_link(ddk):
+    """Match ms-pipeline install-ddk.sh: restore the vendor API library alias.
+
+    DDK 6.1.1.0 materializes tikcfw/lib in its zip, breaking relative includes.
+    Keep that original directory as evidence; no daily component is modified.
+    """
+    root = ddk / 'tools/tools_ascendc/include/tikcpp'
+    link = root / 'tikcfw/lib'
+    target = root / 'api/lib'
+    require(target.is_dir(), 'DDK API library headers are missing')
+    if link.is_symlink():
+        require(link.resolve() == target.resolve(), 'Unexpected DDK header symlink')
+    else:
+        require(link.is_dir(), 'DDK tikcfw library headers are missing')
+        backup = link.with_name('lib.ddk-6.1.1.0-materialized.bak')
+        require(not backup.exists(), 'DDK header backup already exists')
+        link.rename(backup)
+        link.symlink_to('../api/lib', target_is_directory=True)
+    require((link / 'std/tuple.h').resolve().parent.joinpath('../../impl/std/tuple/tuple_impl.h').is_file(),
+            'DDK tuple implementation is missing after restoring header link')
+
+
 def source_manifest(source):
     require(source.is_dir(), 'Source model directory is unavailable')
     files = sorted(p for p in source.rglob('*') if p.is_file())
@@ -124,6 +146,11 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
     extract_zip(tools_zip, staging)
     extract_zip(platform_zip, staging)
     shutil.move(str(staging / 'DDK-tools-next-6.1.1.0'), ddk)
+    restore_ddk_header_link(ddk)
+    write_json(task / 'ddk-environment.json', {
+        'header_link': 'tikcfw/lib -> ../api/lib',
+        'reference': 'ms-pipeline 8803de62b2298b13a6c5bb162131cfe1aae38f9b install-ddk.sh',
+        'daily_components_modified': False})
     platform = ddk / 'tools/platform' / target
     platform.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(staging / 'image/ddk_platform_plugin' / target, platform, dirs_exist_ok=True)
