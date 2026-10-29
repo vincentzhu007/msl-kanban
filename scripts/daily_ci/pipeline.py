@@ -127,6 +127,9 @@ def ensure_forward(env, remote_port):
 def public_result(result, run_id, build, code_commit, device_alias, task_url):
     result = copy.deepcopy(result)
     result['id'] = run_id
+    if result.get('memory_samples'):
+        measured = result['memory_samples'][0]['start_epoch_ms'] / 1000
+        result['date'] = datetime.fromtimestamp(measured, timezone(timedelta(hours=8))).date().isoformat()
     result['model'].pop('provenance', None)
     result['device'] = device_alias
     result['source'] = 'daily 真机评测 · GitHub Actions'

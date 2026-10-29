@@ -104,6 +104,13 @@ class DailyTests(unittest.TestCase):
                 prepare_llama(ROOT,config,{'sha256':'0'*64},Path(tmp))
             command.assert_not_called()
 
+    def test_daily_display_date_uses_beijing_measurement_day(self):
+        from datetime import datetime, timezone
+        epoch=datetime(2026,10,28,19,0,tzinfo=timezone.utc).timestamp()*1000
+        result={'model':{}, 'memory_samples':[{'start_epoch_ms':epoch}], 'date':'2026-10-28'}
+        public=public_result(result,'run',{},'c'*40,'device',None)
+        self.assertEqual(public['date'],'2026-10-29')
+
     def test_public_result_omits_private_model_paths(self):
         result={'model':{'name':'Qwen','provenance':{'source':'/private/path'}}, 'device':'serial'}
         public=public_result(result,'run',{'commit':'a'*40},'b'*40,'dog-kirin9020',None)
