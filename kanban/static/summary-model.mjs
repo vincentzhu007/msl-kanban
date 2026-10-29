@@ -8,3 +8,17 @@ export function overview(runs, jobs) {
     return {id, latest:history[0], measured, run:measured ? byId.get(measured.result_id) : null};
   });
 }
+
+// Per-run time per output token excludes the first token already timed by TTFT.
+export function toptP90(run) {
+  const samples = (run?.samples || []).filter(s => !s.warmup);
+  if (!samples.length) return null;
+  const values = samples.map(s => {
+    if (s.status !== 0 || !Number.isFinite(s.decode_ms) || s.decode_ms < 0 ||
+        !Number.isInteger(s.output_callbacks) || s.output_callbacks <= 1) return null;
+    return s.decode_ms / (s.output_callbacks - 1);
+  });
+  if (values.some(v => v === null)) return null;
+  values.sort((a,b) => a-b);
+  return values[Math.ceil(values.length * 0.9) - 1];
+}

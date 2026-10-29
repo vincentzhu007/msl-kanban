@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {overview} from '../kanban/static/summary-model.mjs';
+import {overview, toptP90} from '../kanban/static/summary-model.mjs';
 test('latest failure remains visible beside historical metrics',()=>{
  const [row]=overview([{id:'old'}],[{recipe_id:'m',status:'SUCCEEDED',result_id:'old',started_at:'2026-10-28T03:00:00+08:00'},{recipe_id:'m',status:'FAILED',started_at:'2026-10-29T03:00:00+08:00'}]);
  assert.equal(row.latest.status,'FAILED');assert.equal(row.run.id,'old');
@@ -10,4 +10,13 @@ test('timestamp determines latest result, not result identifier order',()=>{
 });
 test('blocked task has no invented performance result',()=>{
  const [row]=overview([],[{recipe_id:'cann',status:'BLOCKED',started_at:'2026-10-29T03:00:00+08:00'}]);assert.equal(row.run,null);
+});
+
+test('TOPT uses per-run token count, excludes first token and takes nearest-rank P90',()=>{
+ const samples = [10,20,30,40,50].map((v,i)=>({status:0,decode_ms:v*(i+1),output_callbacks:i+2}));
+ samples.push({warmup:true,status:0,decode_ms:9999,output_callbacks:2});
+ assert.equal(toptP90({samples}),50);
+});
+test('TOPT does not invent zero for absent or invalid metrics',()=>{
+ for(const samples of [[],[{status:0,decode_ms:null,output_callbacks:128}],[{status:0,decode_ms:1,output_callbacks:1}],[{status:1,decode_ms:10,output_callbacks:128}]]) assert.equal(toptP90({samples}),null);
 });
