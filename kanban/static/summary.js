@@ -12,7 +12,7 @@ function row(item) {
   const q = r.model?.quantization;
   const quant = q && typeof q === 'object' ? Object.entries(q).map(([k,v])=>`${k}: ${v}`).join(' · ') : r.spec.quantization;
   const stale = j.result_id !== r.id ? '<small class="warning">以下为历史实测，非最新任务产出</small>' : '';
-  return `<tr><td><a href="detail.html?run=${encodeURIComponent(r.id)}">${esc(r.spec.model)}</a></td><td>${esc(r.spec.soc)}</td><td class="config-cell"><strong>${esc(r.framework)}</strong><small>${esc(quant)}</small><small>ctx ${esc(r.spec.context)} / in ${esc(r.spec.input_tokens)} / out ${esc(r.spec.output_tokens)} · ${esc(r.spec.consecutive_runs)} 次</small></td><td>${num(r.model?.bytes,1048576)}</td><td>${num(r.memory?.total_pss_kib?.stable_median,1024)} / ${num(r.memory?.total_pss_kib?.sampled_peak,1024)}<small>稳定采样 ${esc(r.memory?.stable_samples)} 个</small></td><td class="muted">未单独采集</td><td>${num(r.timing?.ttft_ms?.p90,1000,3)}</td><td>${num(toptP90(r))}</td><td>${num(r.timing?.decode_tps?.p90)}</td><td>${status}${stale}<small>实测 ${esc(r.date)}<br>版本 ${esc(r.build_commit?.slice(0,12))}</small><a href="detail.html?run=${encodeURIComponent(r.id)}">查看记录 →</a></td></tr>`;
+  return `<tr><td><a href="detail.html?run=${encodeURIComponent(r.id)}">${esc(r.spec.model)}</a></td><td>${esc(r.spec.soc)}</td><td class="config-cell"><strong>${esc(r.framework)}</strong><small>${esc(quant)}</small></td><td>${num(r.model?.bytes,1048576)}</td><td>${num(r.memory?.total_pss_kib?.stable_median,1024)} / ${num(r.memory?.total_pss_kib?.sampled_peak,1024)}<small>稳定采样 ${esc(r.memory?.stable_samples)} 个</small></td><td class="muted">未单独采集</td><td>${num(r.timing?.ttft_ms?.p90,1000,3)}</td><td>${num(toptP90(r))}</td><td>${num(r.timing?.decode_tps?.p90)}</td><td>${status}${stale}<small>实测 ${esc(r.date)}<br>版本 ${esc(r.build_commit?.slice(0,12))}</small><a href="detail.html?run=${encodeURIComponent(r.id)}">查看记录 →</a></td></tr>`;
 }
 async function refresh() {
   $('summary-refresh').disabled = true;
@@ -21,6 +21,17 @@ async function refresh() {
     if (!a.ok || !b.ok) throw Error('数据暂不可用');
     const [runs,jobs] = await Promise.all([a.json(),b.json()]);
     const items = overview(runs,jobs);
+    const protocols = new Map();
+    for (const {run:r} of items) {
+      if (!r) continue;
+      const s = r.spec;
+      const label = `上下文 ${s.context ?? '—'} tokens · 输入 ${s.input_tokens ?? '—'} tokens · 输出 ${s.output_tokens ?? '—'} tokens · 连续推理 ${s.consecutive_runs ?? '—'} 次`;
+      if (!protocols.has(label)) protocols.set(label, []);
+      protocols.get(label).push(`${s.model} / ${s.soc} / ${r.framework}`);
+    }
+    $('summary-protocol').textContent = protocols.size
+      ? [...protocols].map(([label,models]) => label + (protocols.size > 1 ? `（适用：${models.join('；')}）` : '')).join('；\n')
+      : '暂无有效实测，测试规格待记录发布后展示。';
     const msl = items.filter(x => x.id.includes('-msl-'));
     const competitors = items.filter(x => !x.id.includes('-msl-'));
     const empty = '<tr><td colspan="10">暂无 Daily 记录</td></tr>';
