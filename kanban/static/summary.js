@@ -1,4 +1,4 @@
-import {overview, toptP90, prefillSpeed, quantizationLabel} from './summary-model.mjs';
+import {overview, toptP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, scale=1, digits=2) => typeof v === 'number' && Number.isFinite(v) ? (v/scale).toFixed(digits) : '—';
@@ -13,7 +13,7 @@ function row(item) {
   const options = r.backend?.options || {};
   const backendConfig = Object.entries(options).map(([k,v]) => `${k}: ${v}`).join(' · ');
   const stale = j.result_id !== r.id ? '<small class="warning">以下为历史实测，非最新任务产出</small>' : '';
-  return `<tr><td><a href="detail.html?run=${encodeURIComponent(r.id)}">${esc(r.spec.model)}</a></td><td>${esc(r.spec.soc)}</td><td class="config-cell"><strong>${esc(r.framework)}</strong>${backendConfig ? `<small>${esc(backendConfig)}</small>` : ''}<small>${esc(quant)}</small></td><td>${num(r.model?.bytes,1048576)}</td><td>${num(r.memory?.total_pss_kib?.stable_median,1024)} / ${num(r.memory?.total_pss_kib?.sampled_peak,1024)}<small>稳定采样 ${esc(r.memory?.stable_samples)} 个</small></td><td>${num(r.initialization?.model_init_ms,1000,3)}</td><td>${num(r.timing?.ttft_ms?.p90,1000,3)}</td><td>${num(toptP90(r))}</td><td>${num(prefillSpeed(r))}<small>按 TTFT P90 换算</small></td><td>${num(r.timing?.decode_tps?.p90)}</td><td>${status}${stale}<small>实测 ${esc(r.date)}<br>版本 ${esc(r.build_commit?.slice(0,12))}</small></td><td><a href="detail.html?run=${encodeURIComponent(r.id)}" target="_blank" rel="noopener noreferrer" title="在新标签页查看评测详情">查看评测详情 ↗</a></td></tr>`;
+  return `<tr><td><a href="detail.html?run=${encodeURIComponent(r.id)}">${esc(r.spec.model)}</a></td><td>${esc(r.spec.soc)}</td><td class="config-cell"><strong>${esc(r.framework)}</strong>${backendConfig ? `<small>${esc(backendConfig)}</small>` : ''}<small>${esc(quant)}</small></td><td>${num(r.model?.bytes,1048576)}</td><td>${num(r.memory?.total_pss_kib?.stable_median,1024)} / ${num(r.memory?.total_pss_kib?.sampled_peak,1024)}<small>稳定采样 ${esc(r.memory?.stable_samples)} 个</small></td><td>${num(r.initialization?.model_init_ms,1000,3)}</td><td>${num(r.timing?.ttft_ms?.p90,1000,3)}</td><td>${num(toptP90(r))}</td><td>${num(prefillSpeed(r))}<small>按 TTFT P90 换算</small></td><td>${num(r.timing?.decode_tps?.p90)}</td><td>${status}${stale}<small>实测 ${esc(r.date)}<br>版本 ${buildVersionLink(r)}</small></td><td><a href="detail.html?run=${encodeURIComponent(r.id)}" target="_blank" rel="noopener noreferrer" title="在新标签页查看评测详情">查看评测详情 ↗</a></td></tr>`;
 }
 async function refresh() {
   $('summary-refresh').disabled = true;
