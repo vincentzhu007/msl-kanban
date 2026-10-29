@@ -46,8 +46,11 @@ def run_profile(profile, argv=None):
                         raise RuntimeError("Multiple matching workers; cannot attribute memory")
                     if pids:
                         pid = pids[0]
-                        data = shell(f"date +%s%N; hidumper --mem {pid}; date +%s%N")
+                        group = f"cat /proc/{pid}/cgroup; " if profile.get("require_thawed") else ""
+                        data = shell(group + f"date +%s%N; hidumper --mem {pid}; date +%s%N")
                         (out / f"memory-{index:04d}.txt").write_text(f"PID {pid}\n" + data)
+                        if profile.get("require_thawed") and re.search(r"freezer:/Frozen(?:/|\s|$)", data):
+                            raise RuntimeError("Device worker frozen during measurement; discard this run")
                         index += 1
                 except subprocess.TimeoutExpired:
                     pass

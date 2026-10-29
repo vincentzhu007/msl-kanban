@@ -12,6 +12,7 @@ import uuid
 from bench_common.runner import run_profile
 from .planner import resolve, write_new
 from .recipe import require, digest
+from .device_ready import awake_device
 
 
 @contextmanager
@@ -38,7 +39,7 @@ def execute(lock):
     process = 'recipe-msl' if backend == 'msl' else 'recipe-llama'
     root = Path(env['output_root'])
     device = env['device']
-    with device_lease(root / '.leases', device['serial']):
+    with device_lease(root / '.leases', device['serial']), awake_device(device['serial']):
         prefix = ['python3', '-m', 'binrunner', '-t', device['serial'], '-p', device['port']]
         procs = subprocess.run(['hdc', '-t', device['serial'], 'shell', 'ps -A -o PID,COMM'],
                                check=True, capture_output=True, text=True, timeout=10).stdout
@@ -66,7 +67,7 @@ def execute(lock):
         profile = {'device': device['serial'], 'port': device['port'], 'binrunner': env['binrunner'],
                    'output': str(output), 'binary': env['artifacts']['probe']['device_path'],
                    'model': env['artifacts']['model']['device_path'], 'log': run_id + '.log',
-                   'process': process, 'backend': backend, 'initial_wait': 70,
+                   'process': process, 'backend': backend, 'initial_wait': 70, 'require_thawed': True,
                    'completion': 'DESTROY status=0' if backend == 'msl' else 'DONE status=0',
                    'workload': recipe['workload'], 'backend_options': recipe['backend']['options'],
                    'command_template': lock['command_template'], 'resolved_recipe': lock}
