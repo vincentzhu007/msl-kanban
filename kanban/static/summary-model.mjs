@@ -48,7 +48,7 @@ export function quantizationLabel(run) {
   return match ? match[0].toUpperCase() : '—';
 }
 
-// Link only to the recorded official artifact for this exact build.
+// Open the directory containing the recorded official artifact for this exact build.
 export function buildVersionLink(record, runs = []) {
   const escape = value => String(value ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
   const commit = record.build_commit;
@@ -58,7 +58,7 @@ export function buildVersionLink(record, runs = []) {
   try {
     const url = new URL(daily.source_url);
     if (url.protocol !== 'https:' || url.hostname !== 'repo.mindspore.cn' || url.port || url.username || url.password || !url.pathname.includes(`_${commit}_newest/`)) return label;
-    return `<a href="${escape(url.href)}" target="_blank" rel="noopener noreferrer" title="在新标签页打开 Daily 归档发布件">${label}</a>`;
+    return `<a href="${escape(new URL('.', url).href)}" target="_blank" rel="noopener noreferrer" title="在新标签页打开 Daily 归档发布件所在目录">${label}</a>`;
   } catch { return label; }
 }
 
