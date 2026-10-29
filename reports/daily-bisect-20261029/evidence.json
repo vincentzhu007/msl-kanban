@@ -1,0 +1,259 @@
+{
+  "experiments": [
+    {
+      "date": "20260914",
+      "build": {
+        "commit": "9ca4cb05ee423d5058ab4accfc45450791f2a2c4",
+        "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202609/20260914/master_20260914193631_9ca4cb05ee423d5058ab4accfc45450791f2a2c4_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.1.0.tar.gz",
+        "sha256": "ba4fc7bd8db9a4a1da7e9d75d95891f60401c90f87841bbe88e2236e2cd23c64"
+      },
+      "status": "FAIL",
+      "error": "Expected one daily component: */tool/mslite_llm-*.whl",
+      "source-model-manifest": {
+        "LICENSE": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+        "README.md": "b19c806a904db6dc878a0462e70b551f6b7ac78dfbb88c2eb966ca2b9109ae15",
+        "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+        "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+        "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+        "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      "classification": "INCOMPATIBLE_PACKAGE_STRUCTURE"
+    },
+    {
+      "date": "20260924",
+      "build": {
+        "commit": "04ea35a3a42eab4cd15885d3703cdd469e2ae2ba",
+        "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202609/20260924/master_20260924160014_04ea35a3a42eab4cd15885d3703cdd469e2ae2ba_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.1.0.tar.gz",
+        "sha256": "cf7cc047c9852565016dcf4426132aef49a2303a3ce24380069e7cc85d156419"
+      },
+      "status": "FAIL",
+      "error": "Expected one daily component: */tool/mslite_llm-*.whl",
+      "source-model-manifest": {
+        "LICENSE": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+        "README.md": "b19c806a904db6dc878a0462e70b551f6b7ac78dfbb88c2eb966ca2b9109ae15",
+        "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+        "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+        "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+        "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      "classification": "INCOMPATIBLE_PACKAGE_STRUCTURE"
+    },
+    {
+      "date": "20260929",
+      "build": {
+        "commit": "dc2bda546163971be50303fb749fc306442700e1",
+        "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202609/20260929/master_20260929160015_dc2bda546163971be50303fb749fc306442700e1_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.1.0.tar.gz",
+        "sha256": "ebe8cb4079e95e72ee876232940f4d852d1e380b0c2ce415c46f38374be305bb"
+      },
+      "status": "FAIL",
+      "error": "DDK operator compilation failed: missing header; see export.log",
+      "daily-components": {
+        "archive": {
+          "commit": "dc2bda546163971be50303fb749fc306442700e1",
+          "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202609/20260929/master_20260929160015_dc2bda546163971be50303fb749fc306442700e1_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.1.0.tar.gz",
+          "sha256": "ebe8cb4079e95e72ee876232940f4d852d1e380b0c2ce415c46f38374be305bb"
+        },
+        "components": {
+          "exporter": {
+            "filename": "mslite_llm-0.1.0-py3-none-any.whl",
+            "sha256": "5438e2b7afc3bf15b72cbc2427fe4fccc23c75d829cdd25e74dfae4b6f89eb71"
+          },
+          "operator_plugin": {
+            "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+            "sha256": "191b910bb8c67ccab0a437506bf8ff3598c42637dcf3127b45210b3690d1236f"
+          },
+          "operators": {
+            "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+            "sha256": "2ef4eb4c6fb7b540d3b0ca9fda279a25b341889c024997c6fde581288e5b32e0"
+          }
+        },
+        "policy": "Unmodified exporter and operators shipped together in selected master daily",
+        "mslite_internal_commit": null
+      },
+      "ddk-packages": {
+        "DDK-tools-next-6.1.1.0.zip": "87d7e3f186ad5c527a9385cea555559ea53c63b87dc483820523bcf7bf6f87e5",
+        "kirin9020-plugin-next-6.1.1.0.zip": "da4ebea4ce88889d94f96baf7bde43ff178153d68425e24d4e0db5b25089aa3f"
+      },
+      "source-model-manifest": {
+        "LICENSE": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+        "README.md": "b19c806a904db6dc878a0462e70b551f6b7ac78dfbb88c2eb966ca2b9109ae15",
+        "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+        "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+        "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+        "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      "first_fatal_error": "/data/comparisons/daily-bisect-20261029/20260929/ddk/tools/tools_ascendc/include/tikcpp/tikcfw/lib/std/tuple.h:18:10: fatal error: '../../impl/std/tuple/tuple_impl.h' file not found",
+      "log_sha256": "3be35fabf94096d115494576d92a222258e5eb7b8f2003ab09afbb84e0a591a2",
+      "classification": "SAME_HEADER_FAILURE"
+    },
+    {
+      "date": "20261004",
+      "build": {
+        "commit": "7ab4deba56d7ece98d0fc2164ff4e46cfe2ff981",
+        "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261004/master_20261004160014_7ab4deba56d7ece98d0fc2164ff4e46cfe2ff981_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.1.0.tar.gz",
+        "sha256": "af5a7394f8f015b97163239174a08960074729e527f31cd3e2c841659ed976db"
+      },
+      "status": "FAIL",
+      "error": "DDK operator compilation failed: missing header; see export.log",
+      "daily-components": {
+        "archive": {
+          "commit": "7ab4deba56d7ece98d0fc2164ff4e46cfe2ff981",
+          "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261004/master_20261004160014_7ab4deba56d7ece98d0fc2164ff4e46cfe2ff981_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.1.0.tar.gz",
+          "sha256": "af5a7394f8f015b97163239174a08960074729e527f31cd3e2c841659ed976db"
+        },
+        "components": {
+          "exporter": {
+            "filename": "mslite_llm-0.1.0-py3-none-any.whl",
+            "sha256": "f3493279610d96c3edd997220c4c6e87c2d84f860e75b3f99c7e363bbac04e4c"
+          },
+          "operator_plugin": {
+            "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+            "sha256": "d1e54fd3412d8599ac57c1db8b022f4832829d41506eb24513c38fe15d27c179"
+          },
+          "operators": {
+            "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+            "sha256": "c373bef5a6c0fa76fb2376bb32679cf9a1c46a4e051e960ae83fb63120a5ecc9"
+          }
+        },
+        "policy": "Unmodified exporter and operators shipped together in selected master daily",
+        "mslite_internal_commit": null
+      },
+      "ddk-packages": {
+        "DDK-tools-next-6.1.1.0.zip": "87d7e3f186ad5c527a9385cea555559ea53c63b87dc483820523bcf7bf6f87e5",
+        "kirin9020-plugin-next-6.1.1.0.zip": "da4ebea4ce88889d94f96baf7bde43ff178153d68425e24d4e0db5b25089aa3f"
+      },
+      "source-model-manifest": {
+        "LICENSE": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+        "README.md": "b19c806a904db6dc878a0462e70b551f6b7ac78dfbb88c2eb966ca2b9109ae15",
+        "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+        "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+        "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+        "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      "first_fatal_error": "/data/comparisons/daily-bisect-20261029/20261004/ddk/tools/tools_ascendc/include/tikcpp/tikcfw/lib/std/tuple.h:18:10: fatal error: '../../impl/std/tuple/tuple_impl.h' file not found",
+      "log_sha256": "252381f1d14f374e3e0f6bdb5be28ea70ab42b728b2f16af8c9f8b0d6eba7055",
+      "classification": "SAME_HEADER_FAILURE"
+    },
+    {
+      "date": "20261020",
+      "build": {
+        "commit": "e9edd6f1ae77e649b65ed46de0901b49c748ec46",
+        "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261020/master_20261020160012_e9edd6f1ae77e649b65ed46de0901b49c748ec46_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+        "sha256": "6856720dab242f6065c246a96ef6429dfd160fde52ffa3ac7e414859f3a7cfd4"
+      },
+      "status": "FAIL",
+      "error": "DDK operator compilation failed: missing header; see export.log",
+      "daily-components": {
+        "archive": {
+          "commit": "e9edd6f1ae77e649b65ed46de0901b49c748ec46",
+          "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261020/master_20261020160012_e9edd6f1ae77e649b65ed46de0901b49c748ec46_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+          "sha256": "6856720dab242f6065c246a96ef6429dfd160fde52ffa3ac7e414859f3a7cfd4"
+        },
+        "components": {
+          "exporter": {
+            "filename": "mslite_llm-0.2.0-py3-none-any.whl",
+            "sha256": "657c769a39a2a6bf4076ec254a32de9aa5bc61d18608c03af00888e82c494f56"
+          },
+          "operator_plugin": {
+            "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+            "sha256": "6e4e42710e9100bb768135d8ef232839dcbc74155c3f4ce28002109a8256bb1b"
+          },
+          "operators": {
+            "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+            "sha256": "d5de929100f353c1f0e17b94b7c28c4eb4251e63b798ccfdea4ab005c077ec92"
+          }
+        },
+        "policy": "Unmodified exporter and operators shipped together in selected master daily",
+        "mslite_internal_commit": null
+      },
+      "ddk-packages": {
+        "DDK-tools-next-6.1.1.0.zip": "87d7e3f186ad5c527a9385cea555559ea53c63b87dc483820523bcf7bf6f87e5",
+        "kirin9020-plugin-next-6.1.1.0.zip": "da4ebea4ce88889d94f96baf7bde43ff178153d68425e24d4e0db5b25089aa3f"
+      },
+      "source-model-manifest": {
+        "LICENSE": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+        "README.md": "b19c806a904db6dc878a0462e70b551f6b7ac78dfbb88c2eb966ca2b9109ae15",
+        "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+        "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+        "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+        "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      "first_fatal_error": "/data/comparisons/daily-bisect-20261029/20261020/ddk/tools/tools_ascendc/include/tikcpp/tikcfw/lib/std/tuple.h:18:10: fatal error: '../../impl/std/tuple/tuple_impl.h' file not found",
+      "log_sha256": "00fee7d32f6b1006f6e566a442e1fbb75760a4b6ea93cedc88f324f3f1460053",
+      "classification": "SAME_HEADER_FAILURE"
+    },
+    {
+      "date": "20261028",
+      "build": {
+        "commit": "f6cd160f2ce885b15db7eb9415fd4941c5e03775",
+        "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261028/master_20261028160013_f6cd160f2ce885b15db7eb9415fd4941c5e03775_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+        "sha256": "9bf38e2ab665aceeefb7a0e0b9ef731afce1237b8f06e7977fbf2abfe2b32a07"
+      },
+      "status": "FAIL",
+      "error": "DDK operator compilation failed: missing header; see export.log",
+      "daily-components": {
+        "archive": {
+          "commit": "f6cd160f2ce885b15db7eb9415fd4941c5e03775",
+          "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202610/20261028/master_20261028160013_f6cd160f2ce885b15db7eb9415fd4941c5e03775_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+          "sha256": "9bf38e2ab665aceeefb7a0e0b9ef731afce1237b8f06e7977fbf2abfe2b32a07"
+        },
+        "components": {
+          "exporter": {
+            "filename": "mslite_llm-0.2.0-py3-none-any.whl",
+            "sha256": "60a0bd294caae549c9ca8f51962a1513cd980caf2724951315b504357097aa72"
+          },
+          "operator_plugin": {
+            "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+            "sha256": "20c1769e7a61f96e28afd8a5b8b5d9909b4afc9fe02e43888fea8f5e828c7216"
+          },
+          "operators": {
+            "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+            "sha256": "e7a72f7fa394ff080ec5897587ef090588aa31bb221cce3c249d9a70129f615a"
+          }
+        },
+        "policy": "Unmodified exporter and operators shipped together in selected master daily",
+        "mslite_internal_commit": null
+      },
+      "ddk-packages": {
+        "DDK-tools-next-6.1.1.0.zip": "87d7e3f186ad5c527a9385cea555559ea53c63b87dc483820523bcf7bf6f87e5",
+        "kirin9020-plugin-next-6.1.1.0.zip": "da4ebea4ce88889d94f96baf7bde43ff178153d68425e24d4e0db5b25089aa3f"
+      },
+      "source-model-manifest": {
+        "LICENSE": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+        "README.md": "b19c806a904db6dc878a0462e70b551f6b7ac78dfbb88c2eb966ca2b9109ae15",
+        "config.json": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+        "generation_config.json": "e558847a8b4402616f1273797b015104dc266fe4b520056fca88823ba8f8ebe6",
+        "merges.txt": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3",
+        "model.safetensors": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+        "tokenizer.json": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+        "tokenizer_config.json": "5b5d4f65d0acd3b2d56a35b56d374a36cbc1c8fa5cf3b3febbbfabf22f359583",
+        "vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+      },
+      "first_fatal_error": "/data/comparisons/daily-bisect-20261029/20261028/ddk/tools/tools_ascendc/include/tikcpp/tikcfw/lib/std/tuple.h:18:10: fatal error: '../../impl/std/tuple/tuple_impl.h' file not found",
+      "log_sha256": "1711503a344cdf8fda6121cae53390bf30e9e6e29dedd0f04e97b70faff54c02",
+      "classification": "SAME_HEADER_FAILURE"
+    }
+  ],
+  "ddk_tuple_headers": {
+    "DDK-tools-next-6.1.1.0/tools/tools_ascendc/include/tikcpp/api/lib/std/tuple.h": "/*\n * Copyright (c) 2024 Huawei Technologies Co., Ltd. 2024\n * This file is a part of the CANN Open Software.\n * Licensed under CANN Open Software License Agreement Version 1.0 (the \"License\").\n * Please refer to the License for details. You may not use this file except in compliance with the License.\n * THIS SOFTWARE IS PROVIDED ON AN \"AS IS\" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,\n * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.\n * See LICENSE in the root of the software repository for the full text of the License.\n */\n\n/* !\n * \\file tuple.h\n * \\brief\n */\n#ifndef LIB_STD_ASCENDC_STD_TUPLE__H\n#define LIB_STD_ASCENDC_STD_TUPLE__H\n\n#include \"../../impl/std/tuple/tuple_impl.h\"\n\nnamespace AscendC {\nnamespace Std {\n\n// tuple\ntemplate <typename ...Tps>\nclass tuple;\n\n// tuple_size\ntemplate <typename ...Tps>\nstruct tuple_size;\n\n// tuple_element\ntemplate <size_t N, typename ...Tps>\nstruct tuple_element;\n\n// make_tuple\ntemplate <typename ...Tps>\nASCENDC_HOST_AICORE inline constexpr tuple<unwrap_decay_t<Tps>...> make_tuple(Tps&& ...args);\n\n// tie\ntemplate <typename ...Tps>\nASCENDC_HOST_AICORE inline constexpr tuple<Tps& ...> tie(Tps& ...args) noexcept;\n\n// get\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline typename tuple_element<N, tuple<Tps...> >::type& get(tuple<Tps...>& t) noexcept;\n\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline const typename tuple_element<N, tuple<Tps...> >::type& get(const tuple<Tps...>& t) noexcept;\n\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline typename tuple_element<N, tuple<Tps...> >::type&& get(tuple<Tps...>&& t) noexcept;\n\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline const typename tuple_element<N, tuple<Tps...> >::type&& get(const tuple<Tps...>&& t) noexcept;\n\n}\n}\n\n#endif // LIB_STD_ASCENDC_STD_TUPLE__H\n",
+    "DDK-tools-next-6.1.1.0/tools/tools_ascendc/include/tikcpp/tikcfw/lib/std/tuple.h": "/*\n * Copyright (c) 2024 Huawei Technologies Co., Ltd. 2024\n * This file is a part of the CANN Open Software.\n * Licensed under CANN Open Software License Agreement Version 1.0 (the \"License\").\n * Please refer to the License for details. You may not use this file except in compliance with the License.\n * THIS SOFTWARE IS PROVIDED ON AN \"AS IS\" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,\n * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.\n * See LICENSE in the root of the software repository for the full text of the License.\n */\n\n/* !\n * \\file tuple.h\n * \\brief\n */\n#ifndef LIB_STD_ASCENDC_STD_TUPLE__H\n#define LIB_STD_ASCENDC_STD_TUPLE__H\n\n#include \"../../impl/std/tuple/tuple_impl.h\"\n\nnamespace AscendC {\nnamespace Std {\n\n// tuple\ntemplate <typename ...Tps>\nclass tuple;\n\n// tuple_size\ntemplate <typename ...Tps>\nstruct tuple_size;\n\n// tuple_element\ntemplate <size_t N, typename ...Tps>\nstruct tuple_element;\n\n// make_tuple\ntemplate <typename ...Tps>\nASCENDC_HOST_AICORE inline constexpr tuple<unwrap_decay_t<Tps>...> make_tuple(Tps&& ...args);\n\n// tie\ntemplate <typename ...Tps>\nASCENDC_HOST_AICORE inline constexpr tuple<Tps& ...> tie(Tps& ...args) noexcept;\n\n// get\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline typename tuple_element<N, tuple<Tps...> >::type& get(tuple<Tps...>& t) noexcept;\n\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline const typename tuple_element<N, tuple<Tps...> >::type& get(const tuple<Tps...>& t) noexcept;\n\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline typename tuple_element<N, tuple<Tps...> >::type&& get(tuple<Tps...>&& t) noexcept;\n\ntemplate <size_t N, typename ...Tps>\nASCENDC_HOST_AICORE inline const typename tuple_element<N, tuple<Tps...> >::type&& get(const tuple<Tps...>&& t) noexcept;\n\n}\n}\n\n#endif // LIB_STD_ASCENDC_STD_TUPLE__H\n"
+  },
+  "ddk_tuple_implementations": [
+    "DDK-tools-next-6.1.1.0/tools/tools_ascendc/include/tikcpp/api/impl/std/tuple/tuple_impl.h"
+  ]
+}
