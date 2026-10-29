@@ -40,6 +40,25 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(len(json.loads((out / 'samples.json').read_text())), 5)
             self.assertTrue(list(out.glob('memory-*.txt')))
 
+    def test_frozen_worker_invalidates_measurement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'run'
+            profile = dict(device='test', port='1', binrunner=tmp, output=str(out),
+                           binary='test', model='model', log='result.log',
+                           process='worker', backend='msl', completion='DONE', require_thawed=True)
+            def execute(command, **kwargs):
+                if command[0] == 'hdc':
+                    result = '123 worker\n' if command[-1].startswith('ps ') else '1:freezer:/Frozen\n'
+                else:
+                    result = 'WORKER_PID 123'
+                return subprocess.CompletedProcess(command, 0, result, '')
+            with patch('bench_common.runner.subprocess.run', side_effect=execute):
+                with self.assertRaisesRegex(RuntimeError, 'Memory sampler failed') as caught:
+                    run_profile(profile, ['--initial-wait', '.05'])
+            self.assertIn('frozen', str(caught.exception.__cause__))
+            self.assertFalse((out / 'samples.json').exists())
+            self.assertIn('Frozen', (out / 'memory-0000.txt').read_text())
+
     def test_existing_output_is_not_overwritten(self):
         with tempfile.TemporaryDirectory() as tmp:
             marker = Path(tmp) / 'existing.log'

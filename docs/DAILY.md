@@ -54,3 +54,9 @@ python3 scripts/daily.py --config /config/tasks/qwen3-4b-msl-s16s4-kirin9030.jso
 采样中遇到 `hidumper: No such process`，只有时间戳证明整份采样位于最后一次推理结束后才排除；该原始记录仍在 dog 归档中。推理期间的缺失、其他错误及稳定期有效样本不足仍会使校验失败。
 
 llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存在；构建命令保存在 configure.log / compile.log。编译采用 Release/O3、armv8.2-a+dotprod、静态库、关闭 OpenMP/KleidiAI。与旧历史编译配置不同的结果不能直接认定为运行库性能变化。
+
+## 自动唤醒与防冻结
+
+仓库 recipe 执行器在手机文件校验与推理前临时覆盖亮屏超时为30分钟，调用 `power-shell wakeup`，若窗口焦点在普通锁屏则按屏幕尺寸执行一次正常上滑，再启动 BinRunner 并确认焦点已进入应用。出现认证锁屏或无法进入前台时直接失败，不输入密码、不绕过认证。测量期间每10秒通过设备命令唤醒屏幕，避免系统重置超时后再次熄屏；不在测量中途做滑动或切换前台。执行结束或失败均停止保活并恢复屏幕超时。
+
+采集器将进程 cgroup 与内存原始数据一同归档；检测到 `freezer:/Frozen` 时拒绝该组结果。冻结前后续跑的数据不能作为有效性能对照，应清理本次 worker 后重新运行独立测量。
