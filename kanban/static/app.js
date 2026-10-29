@@ -13,12 +13,12 @@ async function refreshJobs(){
     const response=await fetch('/api/jobs');
     if(!response.ok)throw Error('任务记录不可用');
     const jobs=await response.json();
-    const names={SUCCEEDED:'评测成功',FAILED:'失败',SKIPPED:'已有有效结果',NO_BUILD:'暂无发布件',CANCELLED:'已取消',RUNNING:'运行中'};
+    const names={SUCCEEDED:'评测成功',FAILED:'失败',SKIPPED:'已有有效结果',NO_BUILD:'暂无发布件',CANCELLED:'已取消',RUNNING:'运行中',BLOCKED:'依赖阻塞'};
     $('jobs').innerHTML=jobs.sort((a,b)=>String(b.started_at).localeCompare(String(a.started_at))).slice(0,30).map(j=>{
       const safe=/^https:\/\/github\.com\/vincentzhu007\/msl-kanban\/actions\/runs\/[0-9]+$/.test(j.task_url||'');
-      return `<tr><td>${esc(j.started_at)}</td><td>${esc(j.build_commit?.slice(0,12))}</td><td>${esc(names[j.status]||j.status)}</td><td>${esc(j.stage)}</td><td>${safe?`<a href="${esc(j.task_url)}" target="_blank" rel="noopener">查看日志</a>`:'—'}</td></tr>`;
-    }).join('')||'<tr><td colspan="5">暂无 Daily 任务记录</td></tr>';
-  } catch(e){$('jobs').innerHTML='<tr><td colspan="5">'+esc(e.message)+'</td></tr>'}
+      return `<tr><td>${esc(j.started_at)}</td><td>${esc(j.recipe_id||'—')}</td><td>${esc(j.build_commit?.slice(0,12)||'—')}</td><td>${esc(names[j.status]||j.status)}${j.reason?`<br><small>${esc(j.reason)}</small>`:''}</td><td>${esc(j.stage)}</td><td>${safe?`<a href="${esc(j.task_url)}" target="_blank" rel="noopener">查看日志</a>`:'—'}</td></tr>`;
+    }).join('')||'<tr><td colspan="6">暂无 Daily 任务记录</td></tr>';
+  } catch(e){$('jobs').innerHTML='<tr><td colspan="6">'+esc(e.message)+'</td></tr>'}
 }
 function renderTrend(){
   const group=current?.device_comparison_key?runs.filter(r=>r.device_comparison_key===current.device_comparison_key).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.id).localeCompare(String(b.id))):[];

@@ -2,7 +2,7 @@ ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 USER root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl git python3 libicu70 libssl3 libkrb5-3 zlib1g libatomic1 libstdc++6 \
+    ca-certificates curl git python3 cmake make libicu70 libssl3 libkrb5-3 zlib1g libatomic1 libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 COPY runner-dist/ /opt/actions-runner/
 COPY entrypoint.sh /usr/local/bin/runner-entrypoint

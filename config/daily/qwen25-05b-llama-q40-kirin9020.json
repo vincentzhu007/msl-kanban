@@ -1,0 +1,35 @@
+{
+  "archive_root": "/data",
+  "device_alias": "dog-kirin9020",
+  "native": "/assets/native",
+  "environment": {
+    "schema_version": 1,
+    "host": "dog",
+    "device": {
+      "serial": "127.0.0.1:2000",
+      "port": "18888",
+      "pool": "Kirin9020",
+      "soc": "Kirin9020",
+      "os_version": "OpenHarmony-6.1.1.120"
+    },
+    "binrunner": "/assets/binrunner",
+    "output_root": "/data/runs",
+    "artifacts": {
+      "model": {
+        "host_path": "/assets/llama/model/qwen2.5-0.5b-instruct-q4_0.gguf",
+        "device_path": "@/bin/qwen2.5-0.5b-instruct-q4_0.gguf",
+        "sha256": "7671c0c304e6ce5a7fc577bcb12aba01e2c155cc2efd29b2213c95b18edaf6ed"
+      },
+      "probe": {
+        "host_path": "/home/zhugd/llm_validation/msllm-dev-ci-9020-e2e-v2/recipe-msl",
+        "device_path": "@/bin/recipe-msl",
+        "sha256": "225bda426fac66adca6e2e050d4e7606404b4a968db28b17b217886edbc8476b"
+      },
+      "runtime": {
+        "host_path": "/assets/llama/source/llama.cpp-07822bdd.tar.gz",
+        "sha256": "a16f066998e9242fd477f8176e8f3a23dcd9b61bcc30846e8521968fd197a6a8"
+      }
+    }
+  },
+  "binrunner_device_port": 8888
+}

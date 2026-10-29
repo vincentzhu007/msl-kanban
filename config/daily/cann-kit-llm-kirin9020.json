@@ -1,0 +1,5 @@
+{
+  "archive_root": "/data",
+  "task_id": "cann-kit-llm-kirin9020",
+  "blocked": "缺少鸿蒙原生 CANN Kit LLM SDK、配套 2K 模型包及运行配置；当前仅有预检工具。见 docs/CANN_KIT_LLM.md。"
+}

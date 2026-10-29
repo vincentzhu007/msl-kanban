@@ -8,3 +8,7 @@ services:
       - ${BINRUNNER_DIR:?Set BinRunner source directory}:/assets/binrunner:ro
       - ${OHOS_NATIVE_DIR:?Set OHOS native toolchain directory}:/assets/native:ro
       - ${MODEL_ARCHIVE_DIR:?Set archived model directory}:/assets/model:ro
+      - ${DAILY_CONFIG_DIR:?Set daily task config directory}:/config/tasks:ro
+      - ${QWEN3_4B_ARCHIVE_DIR:?Set Qwen3 4B archive directory}:/assets/qwen3-4b:ro
+      - ${QWEN3_06B_ARCHIVE_DIR:?Set Qwen3 0.6B archive directory}:/assets/qwen3-06b:ro
+      - ${LLAMA_ARCHIVE_DIR:?Set llama archive directory}:/assets/llama:ro

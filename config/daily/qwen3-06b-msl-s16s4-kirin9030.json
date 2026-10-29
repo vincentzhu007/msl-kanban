@@ -1,0 +1,35 @@
+{
+  "archive_root": "/data",
+  "device_alias": "dog-kirin9030",
+  "native": "/assets/native",
+  "environment": {
+    "schema_version": 1,
+    "host": "dog",
+    "device": {
+      "serial": "5JV0226127000651",
+      "port": "18940",
+      "pool": "Kirin9030",
+      "soc": "Kirin9030",
+      "os_version": "OpenHarmony-6.0.2.130"
+    },
+    "binrunner": "/assets/binrunner",
+    "output_root": "/data/runs",
+    "artifacts": {
+      "model": {
+        "host_path": "/assets/qwen3-06b/qwen3-06b-s16s4-9030-2048.msl",
+        "device_path": "@/bin/qwen3-06b-s16s4-9030-2048.msl",
+        "sha256": "b817f3bd7e28db5774615822e4fcb41b8f36bf3e5074adf1e76cb56b6e4a7141"
+      },
+      "probe": {
+        "host_path": "/home/zhugd/llm_validation/msllm-dev-ci-9020-e2e-v2/recipe-msl",
+        "device_path": "@/bin/recipe-msl",
+        "sha256": "225bda426fac66adca6e2e050d4e7606404b4a968db28b17b217886edbc8476b"
+      },
+      "runtime": {
+        "host_path": "/home/zhugd/llm_archive/20261026-qwen25-05b-w4a16-kirin9020-ctx2048-in1024-out128/runtime/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+        "sha256": "29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046"
+      }
+    }
+  },
+  "binrunner_device_port": 8888
+}

@@ -4,7 +4,7 @@ import argparse
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
-from daily_ci.pipeline import run
+from daily_ci.pipeline import run, record_blocked
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
@@ -20,4 +20,7 @@ if __name__ == '__main__':
     except ValueError as error:
         parser.error(str(error))
     repo = Path(__file__).resolve().parents[1]
-    raise SystemExit(run(repo, repo / args.recipe, json.loads(args.config.read_text()), args.date, args.force))
+    config = json.loads(args.config.read_text())
+    if config.get('blocked'):
+        raise SystemExit(record_blocked(repo, config, args.date))
+    raise SystemExit(run(repo, repo / args.recipe, config, args.date, args.force))

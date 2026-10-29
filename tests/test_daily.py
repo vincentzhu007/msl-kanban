@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from daily_ci.pipeline import select_build, safe_extract, download, public_result, run, ensure_forward
+from daily_ci.pipeline import select_build, safe_extract, download, public_result, run, ensure_forward, record_blocked, prepare_llama
 
 
 class DailyTests(unittest.TestCase):
@@ -71,6 +71,38 @@ class DailyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'another device'):
                 ensure_forward({'device': {'serial': 'phone', 'port': '18888'}}, 8888)
         remove.assert_not_called()
+
+    def test_blocked_task_records_status_without_performance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo=Path(tmp)/'repo'; repo.mkdir()
+            config={'task_id':'cann-kit-llm-kirin9020', 'archive_root':str(Path(tmp)/'archive'), 'blocked':'Missing SDK'}
+            with patch('daily_ci.pipeline.subprocess.check_output', return_value='c'*40):
+                self.assertEqual(record_blocked(repo,config,'20261029'),0)
+            status=json.loads(next((repo/'kanban/jobs').glob('*.json')).read_text())
+            self.assertEqual(status['status'],'BLOCKED')
+            self.assertEqual(status['reason'],'Missing SDK')
+            self.assertFalse((repo/'kanban/data').exists())
+
+    def test_task_ids_do_not_collide_across_models_in_same_workflow(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo=Path(tmp)/'repo'; repo.mkdir()
+            config=json.loads((ROOT/'config/daily-qwen25-9020.example.json').read_text())
+            config['archive_root']=str(Path(tmp)/'archive')
+            with patch.dict('os.environ', {'GITHUB_RUN_ID':'123','GITHUB_RUN_ATTEMPT':'1'}), \
+                 patch('daily_ci.pipeline.run_command'), \
+                 patch('daily_ci.pipeline.subprocess.check_output', return_value='c'*40), \
+                 patch('daily_ci.pipeline.discover', return_value=None):
+                for name in ['qwen25-05b-msl-w4a16-kirin9020','qwen3-4b-msl-s16s4-kirin9030']:
+                    self.assertEqual(run(repo,ROOT/'recipes'/ (name+'.json'),config,'20261029'),0)
+            self.assertEqual(len(list((repo/'kanban/jobs').glob('*.json'))),2)
+
+    def test_llama_source_checksum_checked_before_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            archive=Path(tmp)/'source'; archive.write_bytes(b'bad')
+            config={'environment':{'artifacts':{'runtime':{'host_path':str(archive)}}}}
+            with patch('daily_ci.pipeline.run_command') as command, self.assertRaisesRegex(ValueError,'checksum mismatch'):
+                prepare_llama(ROOT,config,{'sha256':'0'*64},Path(tmp))
+            command.assert_not_called()
 
     def test_public_result_omits_private_model_paths(self):
         result={'model':{'name':'Qwen','provenance':{'source':'/private/path'}}, 'device':'serial'}

@@ -1,4 +1,4 @@
-name: Daily Qwen2.5 Kirin9020
+name: Daily model evaluations
 
 on:
   workflow_dispatch:
@@ -7,6 +7,17 @@ on:
         description: 'Daily date YYYYMMDD (empty: today in Asia/Shanghai)'
         required: false
         type: string
+      task:
+        description: 'Task to run (default: all)'
+        type: choice
+        default: all
+        options:
+          - all
+          - qwen25-05b-msl-w4a16-kirin9020
+          - qwen3-4b-msl-s16s4-kirin9030
+          - qwen3-06b-msl-s16s4-kirin9030
+          - qwen25-05b-llama-q40-kirin9020
+          - cann-kit-llm-kirin9020
       force:
         description: 'Re-evaluate an already archived build'
         default: false
@@ -18,26 +29,39 @@ permissions:
   contents: write
 
 concurrency:
-  group: device-dog-kirin9020
+  group: daily-model-evaluations
   cancel-in-progress: false
 
 jobs:
   daily:
     if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.DAILY_ENABLED == 'true')
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        task:
+          - qwen25-05b-msl-w4a16-kirin9020
+          - qwen3-4b-msl-s16s4-kirin9030
+          - qwen3-06b-msl-s16s4-kirin9030
+          - qwen25-05b-llama-q40-kirin9020
+          - cann-kit-llm-kirin9020
+    name: ${{ matrix.task }}
     runs-on: [self-hosted, dog, msl-kanban, container]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - name: Evaluate daily with repository recipe
         id: evaluate
+        if: github.event_name == 'schedule' || inputs.task == 'all' || inputs.task == matrix.task || inputs.task == ''
         env:
+          TASK: ${{ matrix.task }}
           DAILY_DATE: ${{ inputs.date }}
           FORCE: ${{ inputs.force }}
         shell: bash
         run: |
           set -euo pipefail
           test -f /.dockerenv
-          args=(--config /config/daily.json)
+          args=(--config "/config/tasks/${TASK}.json" --recipe "recipes/${TASK}.json")
           if [ -n "$DAILY_DATE" ]; then args+=(--date "$DAILY_DATE"); fi
           if [ "$FORCE" = 'true' ]; then args+=(--force); fi
           python3 scripts/daily.py "${args[@]}"
@@ -51,7 +75,7 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "data: daily Kirin9020 evaluation ${GITHUB_RUN_ID}"
+          git commit -m "data: daily evaluation ${GITHUB_RUN_ID}"
           for attempt in 1 2 3; do
             if ! timeout 120 git -c http.lowSpeedLimit=100 -c http.lowSpeedTime=30 fetch origin main; then
               sleep 10
@@ -63,17 +87,20 @@ jobs:
           done
           exit 1
       - name: Write task summary
-        if: always()
+        if: always() && steps.evaluate.outcome != 'skipped'
+        env:
+          TASK: ${{ matrix.task }}
         shell: bash
         run: |
           python3 - <<'PY'
           import json, os
           from pathlib import Path
-          matches = list(Path('kanban/jobs').glob('*-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'] + '.json'))
+          matches = list(Path('kanban/jobs').glob('*-' + os.environ['TASK'] + '-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'] + '.json'))
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
               if matches:
                   state = json.loads(matches[0].read_text())
                   out.write(f"Daily status: **{state['status']}**, stage: **{state['stage']}**\n")
+                  out.write(state.get('reason', '') + '\n')
                   out.write('Full artifacts remain on dog. Git publication and Vercel deployment are separate stages.\n')
               else:
                   out.write('No task record was generated; inspect setup or configuration errors.\n')
