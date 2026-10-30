@@ -1,6 +1,6 @@
 # msl-kanban
 
-当前开发版本：v0.2；已发布版本：v0.1。
+当前看板发布版本：v0.2（2026-10-30）。看板版本与 lite_llm 框架版本独立管理。
 
 MindSpore Lite 端侧 LLM 开发者看板。看板内容包括：LLM模型评测、业界框架性能对比（llama.cpp、hisi lm_engine）、性能Profiling。
 
