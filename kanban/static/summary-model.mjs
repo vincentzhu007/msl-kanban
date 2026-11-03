@@ -10,7 +10,7 @@ export function overview(runs, jobs) {
 }
 
 // Per-run time per output token excludes the first token already timed by TTFT.
-export function toptP90(run) {
+export function tpotP90(run) {
   const samples = (run?.samples || []).filter(s => !s.warmup);
   if (!samples.length) return null;
   const values = samples.map(s => {
