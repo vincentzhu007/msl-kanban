@@ -1,0 +1,15 @@
+{
+  "id": "daily-20261103-qwen3-4b-msl-s16s4-kirin9030-41559614789-1",
+  "date": "20261103",
+  "recipe_id": "qwen3-4b-msl-s16s4-kirin9030",
+  "code_commit": "c46676f94a0dcf514a6e3b5c6a9f44ae111e3cea",
+  "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/41559614789",
+  "status": "FAILED",
+  "stage": "EXPORT_MODEL",
+  "started_at": "2026-11-03T09:33:42.341796+08:00",
+  "build_commit": "e0af651140e7f6121e484d828ffc6fc589cfd691",
+  "build_sha256": "2c230f57a9edd52a76ae52aa3f0cfb34b0429fb643d92e0667960b5afeb74c43",
+  "error_type": "CalledProcessError",
+  "reason": "当日 master daily 模型生成失败；未回退旧模型，完整日志保存在 dog。",
+  "finished_at": "2026-11-03T09:51:49.472699+08:00"
+}
