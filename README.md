@@ -48,7 +48,7 @@ docker compose -f kanban/compose.yaml up -d --build
 
 顶部导航按「迭代进展 / 性能评测」分组。`/iteration.html` 展示分类特性清单及关键组合验证区域，`/iteration.html#models` 展示模型支持；Daily 总览和评测详情保留原入口。
 
-维护者通过 `kanban/static/iteration-config.js` 修改版本归属、特性分类和模型部署配置，随仓库发布生效。同一模型的多种配置会合并为一行，芯片平台去重显示；悬停量化方式可查看对应芯片。v0.2 模型列表包含 v0.1 已有配置。
+维护者通过 `kanban/static/iteration-config.js` 修改版本归属、特性分类和模型支持配置，随仓库发布生效。模型清单按模型规格、芯片和量化方式展示；空白组合表示待确认，模型支持清单当前不按版本筛选。
 
 当前特性状态按已确认版本范围展示：v0.1 已完成、v0.2 开发中。PR/Bug、验收证据和关键组合仍是待录入区域，尚未接入自动同步；`combinations` 为预留配置，当前未实现其数据渲染。设计第一稿保存在 `design/llm-iteration-v1/`。
 
