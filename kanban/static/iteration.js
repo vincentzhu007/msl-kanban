@@ -22,6 +22,7 @@ function overview(){
  document.querySelector('#search').addEventListener('input',update);document.querySelector('#category').addEventListener('change',update);
 }
 function models(){
+ const collapsed=new Set();
  const renderRows=()=>{
   const query=document.querySelector('#model-search').value.trim().toLowerCase();
   const chip=document.querySelector('#model-chip').value;
@@ -29,11 +30,25 @@ function models(){
   const shown=modelSupport.filter(m=>(family==='全部架构'||m.family===family)&&`${m.family} ${m.size} ${m.family}-${m.size}`.toLowerCase().includes(query));
   const chips=chip==='全部芯片'?modelChips:[chip];
   document.querySelector('#model-table-head').innerHTML=`<tr><th rowspan="2" scope="col">模型架构 / 参数量</th><th rowspan="2" scope="col">模型链接</th>${chips.map(c=>`<th scope="colgroup" colspan="${modelQuants.length}">${c}</th>`).join('')}</tr><tr>${chips.map(()=>modelQuants.map(q=>`<th scope="col">${q}</th>`).join('')).join('')}</tr>`;
-  document.querySelector('#model-rows').innerHTML=shown.length?shown.map(m=>`<tr><th scope="row" class="model-name"><strong>${m.family}</strong><span>${m.size}</span></th><td class="model-link">${m.url?`<a href="${m.url}" target="_blank" rel="noopener noreferrer">查看模型 ↗</a>`:`<span class="model-link-warning">${m.linkNote}</span>`}</td>${chips.map(c=>modelQuants.map(q=>{const yes=(m.supported[c]||[]).includes(q);return `<td class="model-status-cell"><span class="model-state ${yes?'confirmed':'unknown'}">${yes?'支持':'待确认'}</span></td>`}).join('')).join('')}</tr>`).join(''):`<tr><td class="blank" colspan="${2+chips.length*modelQuants.length}">没有匹配的模型。</td></tr>`;
+  document.querySelector('#model-rows').innerHTML=shown.length?[...new Set(shown.map(m=>m.family))].map(family=>{
+   const items=shown.filter(m=>m.family===family);
+   const isCollapsed=collapsed.has(family);
+   const heading=`<tr class="model-family-row"><th colspan="${2+chips.length*modelQuants.length}" scope="rowgroup"><button type="button" class="model-family-toggle" data-model-family="${family}" aria-expanded="${!isCollapsed}"><span class="model-family-chevron" aria-hidden="true">${isCollapsed?'▸':'▾'}</span><strong>${family}</strong><span class="model-family-count">${items.length} 个规格</span></button></th></tr>`;
+   if(isCollapsed)return heading;
+   return heading+items.map(m=>`<tr><th scope="row" class="model-name"><strong>${m.family}</strong><span>${m.size}</span></th><td class="model-link">${m.url?`<a href="${m.url}" target="_blank" rel="noopener noreferrer">查看模型 ↗</a>`:`<span class="model-link-warning">${m.linkNote}</span>`}</td>${chips.map(c=>modelQuants.map(q=>{const listed=!m.listed||(m.listed[c]||[]).includes(q);const yes=(m.supported[c]||[]).includes(q);return `<td class="model-status-cell"><span class="model-state ${!listed?'unlisted':yes?'confirmed':'unknown'}">${!listed?'未列出':yes?'支持':'待确认'}</span></td>`}).join('')).join('')}</tr>`).join('');
+  }).join(''):`<tr><td class="blank" colspan="${2+chips.length*modelQuants.length}">没有匹配的模型。</td></tr>`;
   document.querySelector('#model-count').textContent=`${shown.length} 个模型规格`;
  };
- content.innerHTML=`<section class="panel model-panel"><div class="model-panel-head"><div><h2>模型支持清单</h2><p>按模型、芯片和量化方式查看支持情况</p></div><div class="model-legend"><span class="model-state confirmed">支持</span><span>表格标记 YES</span><span class="model-state unknown">待确认</span><span>表格未填写</span></div></div><div class="model-filters"><label>搜索模型<input id="model-search" type="search" placeholder="搜索架构或参数量" aria-label="搜索模型"></label><label>模型架构<select id="model-family" aria-label="筛选模型架构"><option>全部架构</option>${[...new Set(modelSupport.map(m=>m.family))].map(f=>`<option>${f}</option>`).join('')}</select></label><label>芯片平台<select id="model-chip" aria-label="筛选芯片平台"><option>全部芯片</option>${modelChips.map(c=>`<option>${c}</option>`).join('')}</select></label></div><div class="model-table-wrap" tabindex="0" aria-label="模型支持表，可横向滚动"><table class="model-table"><thead id="model-table-head"></thead><tbody id="model-rows"></tbody></table></div><div class="model-foot"><span id="model-count"></span><span>数据来源：模型支持清单 · 维护者确认</span></div></section><p class="model-disclaimer">空白项表示待确认，不能据此判断不支持。</p>`;
+ content.innerHTML=`<section class="panel model-panel"><div class="model-panel-head"><div><h2>模型支持清单</h2><p>按模型、芯片和量化方式查看支持情况</p></div><div class="model-legend"><span class="model-state confirmed">支持</span><span>表格标记 YES</span><span class="model-state unknown">待确认</span><span>表格未填写</span><span class="model-state unlisted">未列出</span><span>表格无此组合</span></div></div><div class="model-filters"><label>搜索模型<input id="model-search" type="search" placeholder="搜索架构或参数量" aria-label="搜索模型"></label><label>模型架构<select id="model-family" aria-label="筛选模型架构"><option>全部架构</option>${[...new Set(modelSupport.map(m=>m.family))].map(f=>`<option>${f}</option>`).join('')}</select></label><label>芯片平台<select id="model-chip" aria-label="筛选芯片平台"><option>全部芯片</option>${modelChips.map(c=>`<option>${c}</option>`).join('')}</select></label></div><div class="model-table-wrap" tabindex="0" aria-label="模型支持表，可横向滚动"><table class="model-table"><thead id="model-table-head"></thead><tbody id="model-rows"></tbody></table></div><div class="model-foot"><span id="model-count"></span><span>数据来源：模型支持清单 · 维护者确认</span></div></section><p class="model-disclaimer">表格中的空白状态为待确认；未列出的组合也不能据此判断不支持。</p>`;
  for(const id of ['model-search','model-family','model-chip']) document.querySelector('#'+id).addEventListener(id==='model-search'?'input':'change',renderRows);
+ document.querySelector('#model-rows').addEventListener('click',event=>{
+  const button=event.target.closest('[data-model-family]');
+  if(!button)return;
+  const family=button.dataset.modelFamily;
+  if(collapsed.has(family))collapsed.delete(family);else collapsed.add(family);
+  renderRows();
+  [...document.querySelectorAll('[data-model-family]')].find(el=>el.dataset.modelFamily===family)?.focus();
+ });
  renderRows();
 }
 function render(){view=location.hash==='#models'?'models':'overview';document.querySelector('#nav').innerHTML=`<a href="#overview" class="${view==='overview'?'active':''}" ${view==='overview'?'aria-current="page"':''}>特性列表</a><a href="#models" class="${view==='models'?'active':''}" ${view==='models'?'aria-current="page"':''}>模型支持</a>`;document.querySelector('#page-title').textContent=view==='overview'?'特性列表':'模型支持';document.querySelector('#page-subtitle').textContent=view==='overview'?`lite_llm ${version} · ${selected().length} 项${version==='v0.1'?'已完成':'开发中'}`:'按芯片和量化方式查看模型支持';document.querySelector('.version-control').hidden=view==='models';(view==='overview'?overview:models)()}
