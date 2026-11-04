@@ -43,5 +43,5 @@ const modelSupport = [
   {family:'Qwen3.5', size:'4B', url:'https://huggingface.co/Qwen/Qwen3.5-4B', supported:{}},
   {family:'Qwen3.5 MoE', size:'35B-A3B', url:'https://huggingface.co/Qwen/Qwen3.5-35B-A3B', listed:{'Kirin 9030':['S16S4','S16S2']}, supported:{}}
 ];
-const modelChips = ['Kirin 9020', 'Kirin 9030'];
+const modelChips = ['Kirin 9020', 'Kirin 9030', 'Kirin 9050'];
 const modelQuants = ['Q4_0', 'Q3_0_MSL', 'S16S4', 'S16S2'];
