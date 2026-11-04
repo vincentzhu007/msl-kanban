@@ -38,7 +38,7 @@ const modelSupport = [
   {family:'Qwen2.5', size:'3B', url:'https://huggingface.co/Qwen/Qwen2.5-3B-Instruct', supported:{}},
   {family:'Qwen3', size:'0.6B', url:'https://huggingface.co/Qwen/Qwen3-0.6B', supported:{}},
   {family:'Qwen3', size:'1.7B', url:'https://huggingface.co/Qwen/Qwen3-1.7B', supported:{}},
-  {family:'Qwen3', size:'4B', url:'https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507', supported:{}},
+  {family:'Qwen3', size:'4B', url:'https://huggingface.co/Qwen/Qwen3-4B', supported:{}},
   {family:'Qwen3.5', size:'0.8B', url:'https://huggingface.co/Qwen/Qwen3.5-0.8B', supported:{}},
   {family:'Qwen3.5', size:'2B', url:'https://huggingface.co/Qwen/Qwen3.5-2B', supported:{}},
   {family:'Qwen3.5', size:'4B', url:'https://huggingface.co/Qwen/Qwen3.5-4B', supported:{}},
