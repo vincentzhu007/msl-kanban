@@ -31,9 +31,10 @@ const groups = [
 const combinations = [];
 // 模型支持清单，依据 2026-11-03 提供的工作簿；只有明确记录的支持项填入 supported。
 // 未列出的芯片 / 量化组合均为待确认，不代表不支持。
+// 可选字段 unsupported:{芯片:[量化]} 表示维护者确认未支持。
 const modelSupport = [
   {family:'Qwen2.5', size:'0.5B', url:'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct', supported:{'Kirin 9020':['Q4_0']}},
-  {family:'Qwen2.5', size:'1.5B', url:'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct', supported:{'Kirin 9020':['Q4_0']}},
+  {family:'Qwen2.5', size:'1.5B', url:'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct', supported:{}, unsupported:{'Kirin 9020':['Q4_0']}},
   {family:'Qwen2.5', size:'3B', url:'https://huggingface.co/Qwen/Qwen2.5-3B-Instruct', supported:{}},
   {family:'Qwen3', size:'0.6B', url:'https://huggingface.co/Qwen/Qwen3-0.6B', supported:{}},
   {family:'Qwen3', size:'1.7B', url:'https://huggingface.co/Qwen/Qwen3-1.7B', supported:{}},
@@ -41,7 +42,7 @@ const modelSupport = [
   {family:'Qwen3.5', size:'0.8B', url:'https://huggingface.co/Qwen/Qwen3.5-0.8B', supported:{}},
   {family:'Qwen3.5', size:'2B', url:'https://huggingface.co/Qwen/Qwen3.5-2B', supported:{}},
   {family:'Qwen3.5', size:'4B', url:'https://huggingface.co/Qwen/Qwen3.5-4B', supported:{}},
-  {family:'Qwen3.5 MoE', size:'35B-A3B', url:'https://huggingface.co/Qwen/Qwen3.5-35B-A3B', listed:{'Kirin 9030':['S16S4','S16S2']}, supported:{}}
+  {family:'Qwen3.5 MoE', size:'35B-A3B', url:'https://huggingface.co/Qwen/Qwen3.5-35B-A3B', listed:{'Kirin 9030':['S16S4','S16S2']}, supported:{}, unsupported:{'Kirin 9030':['S16S4','S16S2']}}
 ];
 const modelChips = ['Kirin 9020', 'Kirin 9030', 'Kirin 9050'];
 const modelQuants = ['Q4_0', 'Q3_0_MSL', 'S16S4', 'S16S2'];
