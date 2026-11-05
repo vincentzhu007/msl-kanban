@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from daily_ci.pipeline import select_build, safe_extract, download, public_result, run, ensure_forward, record_blocked, prepare_llama
+from daily_ci.pipeline import DeviceOfflineError, device_output, select_build, safe_extract, download, public_result, run, ensure_forward, record_blocked, prepare_llama
 
 
 class DailyTests(unittest.TestCase):
@@ -117,5 +117,32 @@ class DailyTests(unittest.TestCase):
         self.assertNotIn('provenance',public['model'])
         self.assertEqual(public['device'],'dog-kirin9020')
         self.assertIn('provenance',result['model'])
+
+
+class DeviceOutputTests(unittest.TestCase):
+    ENV = {'device': {'serial': 'device'}}
+
+    def completed(self, stdout, stderr=''):
+        import subprocess
+        return subprocess.CompletedProcess(['hdc'], 0, stdout, stderr)
+
+    def test_hdc_fail_on_stdout_is_device_offline_not_os_mismatch(self):
+        with patch('daily_ci.pipeline.subprocess.run',
+                   return_value=self.completed('[Fail][E001005] Device not found or connected\n')):
+            with self.assertRaisesRegex(DeviceOfflineError, 'E001005'):
+                device_output(self.ENV, ['param', 'get', 'const.ohos.fullname'])
+
+    def test_hdc_fail_on_stderr_is_device_offline(self):
+        with patch('daily_ci.pipeline.subprocess.run',
+                   return_value=self.completed('', '[Fail]Connect failed\n')):
+            with self.assertRaises(DeviceOfflineError):
+                device_output(self.ENV, ['ps', '-A'])
+
+    def test_normal_output_is_returned_stripped(self):
+        with patch('daily_ci.pipeline.subprocess.run',
+                   return_value=self.completed('OpenHarmony-6.1.1.120\n')):
+            self.assertEqual(device_output(self.ENV, ['param', 'get', 'const.ohos.fullname']),
+                             'OpenHarmony-6.1.1.120')
+
 
 if __name__ == '__main__': unittest.main()

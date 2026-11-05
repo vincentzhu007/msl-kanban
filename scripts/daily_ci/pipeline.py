@@ -96,9 +96,20 @@ def run_command(command, log, *, cwd=None, timeout=180):
         subprocess.run(command, cwd=cwd, check=True, stdout=stream, stderr=subprocess.STDOUT, timeout=timeout)
 
 
+class DeviceOfflineError(RuntimeError):
+    """hdc could not reach the device; no device-side data was read."""
+
+
 def device_output(env, command):
-    return subprocess.run(['hdc', '-t', env['device']['serial'], 'shell', *command],
-                          check=True, capture_output=True, text=True, timeout=20).stdout.strip()
+    completed = subprocess.run(['hdc', '-t', env['device']['serial'], 'shell', *command],
+                               check=True, capture_output=True, text=True, timeout=20)
+    output = completed.stdout.strip()
+    # hdc reports connection errors such as "[Fail][E001005] Device not found or connected"
+    # on stdout with exit code 0; never compare that text as if it were device output.
+    if output.startswith('[Fail]') or (completed.stderr or '').lstrip().startswith('[Fail]'):
+        detail = (output or completed.stderr.strip()).splitlines()[0]
+        raise DeviceOfflineError('Device unreachable via hdc: ' + detail)
+    return output
 
 
 def ensure_forward(env, remote_port):
@@ -309,7 +320,12 @@ def run(repo, recipe_path, config, day, force=False):
     except Exception as error:
         # Full errors stay on dog; the public status contains only stage and exception type.
         (task / 'error.txt').write_text(str(error))
-        reason = '当日 master daily 模型生成失败；未回退旧模型，完整日志保存在 dog。' if status['stage'] == 'EXPORT_MODEL' else '任务未通过校验，未发布新的性能结果。'
+        if isinstance(error, DeviceOfflineError):
+            reason = '测试真机离线（hdc 无法连接），未执行测量，未发布新的性能结果。'
+        elif status['stage'] == 'EXPORT_MODEL':
+            reason = '当日 master daily 模型生成失败；未回退旧模型，完整日志保存在 dog。'
+        else:
+            reason = '任务未通过校验，未发布新的性能结果。'
         update(status='FAILED', error_type=type(error).__name__, reason=reason)
         print(f'Daily failed at {status["stage"]}: {error}', flush=True)
         return 1
