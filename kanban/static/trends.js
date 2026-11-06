@@ -1,4 +1,4 @@
-import {metrics,trendGroups,trendPoints,improvement,baselineHistory,trendTaskStates} from './trends.mjs';
+import {metrics,trendGroups,trendPoints,improvement,baselineHistory,trendTaskStates,trendScale} from './trends.mjs';
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>v==null?'—':v.toFixed(2);
@@ -27,9 +27,11 @@ function draw(){
  const change=initial&&last?improvement(initial.value,last.value,m.higher):null;
  $('trend-baseline-heading').textContent=grain==='week'?'较周末阶段基线':'较当日阶段基线';
  $('trend-baseline').textContent=base?`自动基线 S${base.number}：${fmt(base.value)} ${m.unit} · ${base.start} 起采样，${base.date} 确认 · 初始基线 ${initial.date}：${fmt(initial.value)} ${m.unit}`:`建立基线中：${state?.seedCount||0} / 3 个有效日`;
- $('trend-change').textContent=change===null?'等待自动基线':`累计${change>=0?'提升':'劣化'} ${Math.abs(change).toFixed(1)}% · 较初始基线${grain==='week'?'（最新周中位数）':''}`;
- $('trend-change').className=change===null?'muted':change>=0?'trend-good':'trend-bad';
- $('trend-note').innerHTML=`<span class="trend-key"><i class="key-line"></i> 实测性能</span><span class="trend-key"><i class="key-base"></i> 初始基线</span><span class="trend-key trend-good">● 改善 &gt;5%</span><span class="trend-key trend-bad">● 劣化 &gt;5%</span><span class="trend-key trend-bad">× 运行失败（非性能值）</span><span class="trend-key">○ 缺测 / 无有效指标</span><span class="trend-key">◇ 阻塞 / 运行中 / 复用</span><br>${m.unit}，越${m.higher?'高':'低'}越好 · 缺测处断线 · 周视图为有效日中位数 · 颜色相对当时阶段基线，累计幅度相对初始基线。`;
+ const absoluteChange=initial&&last?last.value-initial.value:null;
+ const magnitude=absoluteChange===null?'':`${absoluteChange>=0?'+':''}${absoluteChange.toFixed(2)} ${m.unit}`;
+ $('trend-change').textContent=change===null?'等待自动基线':Math.abs(change)<=5?`基本持平 · ${magnitude}（${Math.abs(change).toFixed(2)}%）`:`累计${change>0?'提升':'劣化'} ${Math.abs(change).toFixed(1)}% · 较初始基线${grain==='week'?'（最新周中位数）':''}`;
+ $('trend-change').className=change===null||Math.abs(change)<=5?'muted':change>0?'trend-good':'trend-bad';
+ $('trend-note').innerHTML=`<span class="trend-key"><i class="key-line"></i> 实测性能</span><span class="trend-key"><i class="key-base"></i> 初始基线</span><span class="trend-key trend-good">● 改善 &gt;5%</span><span class="trend-key trend-bad">● 劣化 &gt;5%</span><span class="trend-key trend-bad">× 运行失败（非性能值）</span><span class="trend-key">○ 缺测 / 无有效指标</span><span class="trend-key">◇ 阻塞 / 运行中 / 复用</span><br>${m.unit}，越${m.higher?'高':'低'}越好 · 缺测处断线 · 周视图为有效日中位数 · ±5% 内按基本持平展示（关注阈值，非统计显著性结论）。颜色相对当时阶段基线，累计幅度相对初始基线。${metric==='rom'?'ROM 纵轴从 0 起算，按实际体积比例展示。':'纵轴至少覆盖基线约 ±10%，避免放大小波动。'}`;
  const eventNames={initial:'基线',improved:'提升确认',regressed:'劣化确认'};
  const visibleEvents=policy.events.filter(e=>e.date>=daily[0]?.date);
  $('trend-events').innerHTML=visibleEvents.map(e=>{
@@ -41,13 +43,14 @@ function draw(){
  else{
   const W=1040,H=360,L=80,R=45,T=44,B=88;
   const reference=initial?[initial.value]:[];
-  let lo=Math.min(...valid.map(p=>p.value),...reference),hi=Math.max(...valid.map(p=>p.value),...reference);
-  const pad=(hi-lo)*.2 || Math.max(hi*.05,1);lo=Math.max(0,lo-pad);hi+=pad;
+  const scale=trendScale([...valid.map(p=>p.value),...reference],metric,initial?.value);
+  const lo=scale.min,hi=scale.max;
+  const axisValue=v=>metric==='rom'&&hi>=2048?`${Number((v/1024).toFixed(2))} GiB`:`${Number(v.toFixed(2))}`;
   const x=i=>L+i*(W-L-R)/Math.max(1,points.length-1), y=v=>H-B-(v-lo)/(hi-lo)*(H-T-B);
   const deltaFor=p=>{const b=stageFor(p);return b&&p.value!==null?improvement(b.value,p.value,m.higher):null;};
   const color=p=>{const d=deltaFor(p);return d!==null&&d < -5?'#c34e48':d!==null&&d>5?'#09866a':'#376f83';};
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.label)}，${grain==='day'?'日':'周'}趋势，实测与失败状态分开展示"><title>${esc(m.label)}，详细数值见下表</title>`;
-  for(let i=0;i<5;i++){const v=lo+(hi-lo)*i/4;svg+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#e4ecef"/><text x="${L-10}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`;}
+  for(const v of scale.ticks){svg+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#e4ecef"/><text x="${L-10}" y="${y(v)+4}" text-anchor="end">${axisValue(v)}</text>`;}
   if(initial){
    const first=points.findIndex(p=>periodEnd(p)>=initial.date);
    if(first>=0)svg+=`<line x1="${x(first)}" x2="${W-R}" y1="${y(initial.value)}" y2="${y(initial.value)}" stroke="#b97929" stroke-width="1.5" stroke-dasharray="6 5"/><text x="${x(first)}" y="${y(initial.value)+19}" fill="#956222">${initial.date.slice(5)} 基线 ${fmt(initial.value)}</text>`;
@@ -76,7 +79,7 @@ function draw(){
   });
   $('trend-chart').innerHTML=svg+'</svg>';
  }
- const deltaLabel=v=>v===null?'—':`${v>=0?'提升':'劣化'} ${Math.abs(v).toFixed(1)}%`;
+ const deltaLabel=v=>v===null?'—':Math.abs(v)<=5?`基本持平（${v>=0?'+':''}${v.toFixed(2)}%）`:`${v>0?'提升':'劣化'} ${Math.abs(v).toFixed(1)}%`;
  $('trend-history').innerHTML=[...points].reverse().map(p=>{
   const b=stageFor(p),dailyState=policy.states.get(p.date),established=grain==='day'&&['initial','improved'].includes(dailyState?.event?.type);
   const delta=b&&p.value!==null?improvement(b.value,p.value,m.higher):null;

@@ -55,3 +55,13 @@ test('task failure is retained separately from measured performance and excludes
  assert.equal(states.get('2026-11-01').status,'FAILED');assert.equal(states.has('2026-11-02'),false);
  assert.equal(trendPoints(runs,jobs,seriesKey(runs[0]),'2026-11-01','day',1)[0].value,100);
 });
+
+import {trendScale} from '../kanban/static/trends.mjs';
+test('ROM starts at zero and tiny changes do not exaggerate the axis',()=>{
+ const s=trendScale([281.49,281.50],'rom',281.49);
+ assert.equal(s.min,0);assert.ok(s.max>=300);assert.ok(s.ticks.length<=7);
+ const speed=trendScale([35.1,35.2],'decode',35.1);
+ assert.ok(speed.max-speed.min>=7.02);
+ const regression=trendScale([35,20],'decode',35);
+ assert.ok(regression.min<=20&&regression.max>=35);
+});

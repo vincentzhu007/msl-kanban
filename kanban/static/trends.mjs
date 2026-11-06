@@ -97,3 +97,24 @@ export function trendTaskStates(runs,jobs,key){
  }
  return dates;
 }
+
+
+// Do not magnify measurement noise. Storage uses an absolute zero origin.
+export function trendScale(values, metric, reference){
+ const finite=values.filter(v=>Number.isFinite(v)&&v>=0);
+ if(!finite.length)return {min:0,max:1,step:0.25,ticks:[0,0.25,0.5,0.75,1]};
+ const low=Math.min(...finite),high=Math.max(...finite);
+ const center=Number.isFinite(reference)&&reference>0?reference:(low+high)/2;
+ let min,max;
+ if(metric==='rom'){min=0;max=Math.max(high*1.1,64);}
+ else{
+  const span=Math.max(high-low,center*.2,metric==='ram'?64:1);
+  min=Math.max(0,Math.min(low-span*.1,center-span/2));
+  max=Math.max(high+span*.1,center+span/2);
+ }
+ const raw=(max-min)/4,power=10**Math.floor(Math.log10(raw));
+ const step=([1,2,2.5,5,10].find(n=>n*power>=raw)||10)*power;
+ min=Math.floor(min/step)*step;max=Math.ceil(max/step)*step;
+ const ticks=[];for(let v=min;v<=max+step*.001;v+=step)ticks.push(Number(v.toPrecision(12)));
+ return {min,max,step,ticks};
+}
