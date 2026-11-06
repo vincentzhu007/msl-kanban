@@ -10,7 +10,9 @@ export const metrics = {
 };
 const canonical = x => x && typeof x==='object' ? Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])) : x;
 export function seriesKey(r) {
- return JSON.stringify(canonical({recipe:r.recipe_id,framework:r.framework,backend:r.backend,spec:r.spec,device:r.device,quant:quantizationLabel(r)}));
+ const s=r.spec || {};
+ // Trend identity follows the visible deployment and workload, not archive metadata or sample count.
+ return JSON.stringify(canonical({model:s.model,soc:s.soc,framework:r.framework,quant:quantizationLabel(r),context:s.context,input:s.input_tokens,output:s.output_tokens}));
 }
 export function trendGroups(runs) {
  const groups=new Map();

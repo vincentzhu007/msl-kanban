@@ -15,8 +15,10 @@ test('weekly aggregates daily values equally and separates Monday boundaries',()
  assert.deepEqual(p.map(x=>[x.date,x.value,x.values.length]),[['2026-10-26',10,1],['2026-11-02',55,2]]);
  assert.equal(weekStart('2027-01-01'),'2026-12-28');
 });
-test('test protocol changes are separate series and improvements respect metric direction',()=>{
- assert.notEqual(seriesKey(run('a',10,5)),seriesKey(run('b',10,10)));
+test('sample counts share a series while other protocol changes remain separate',()=>{
+ assert.equal(seriesKey(run('a',10,5)),seriesKey(run('b',10,10)));
+ const different=run('c',10); different.spec.input_tokens=2048;
+ assert.notEqual(seriesKey(run('a',10)),seriesKey(different));
  assert.equal(improvement(100,120,true),19.999999999999996);
  assert.ok(Math.abs(improvement(100,80,false)-20)<1e-8);
  assert.equal(improvement(0,10,true),null);
