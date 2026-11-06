@@ -49,7 +49,7 @@ function draw(){
   const x=i=>L+i*(W-L-R)/Math.max(1,points.length-1), y=v=>H-B-(v-lo)/(hi-lo)*(H-T-B);
   const deltaFor=p=>{const b=stageFor(p);return b&&p.value!==null?improvement(b.value,p.value,m.higher):null;};
   const color=p=>{const d=deltaFor(p);return d!==null&&d < -5?'#c34e48':d!==null&&d>5?'#09866a':'#376f83';};
-  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.label)}，${grain==='day'?'日':'周'}趋势，实测与失败状态分开展示"><title>${esc(m.label)}，详细数值见下表</title>`;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.label)}，${grain==='day'?'日':'周'}趋势，实测与失败状态分开展示">`;
   if(metric==='rom'&&initial){
    const lower=initial.value*.95,upper=initial.value*1.05;
    svg+=`<rect x="${L}" y="${y(upper)}" width="${W-L-R}" height="${y(lower)-y(upper)}" fill="#edf3f6"/><line x1="${L}" x2="${W-R}" y1="${y(upper)}" y2="${y(upper)}" stroke="#9aabb5" stroke-dasharray="3 5"/><line x1="${L}" x2="${W-R}" y1="${y(lower)}" y2="${y(lower)}" stroke="#9aabb5" stroke-dasharray="3 5"/><text x="${L+8}" y="${y(upper)-7}">+5% · ${fmt(upper)} MiB</text><text x="${L+8}" y="${y(lower)+16}">−5% · ${fmt(lower)} MiB</text>`;
