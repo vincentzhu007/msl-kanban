@@ -29,6 +29,9 @@ def summarize_recipe(recipe, directory, *, legacy=False, log_name='inference.log
         validate_spec(log, work, recipe['backend']['options'])
     memory = read_memory(directory, log, rows, memory_pattern, skip_invalid=False)
     timing, stats = summarize(rows, memory)
+    baseline_lock = directory / 'resolved-recipe.json'
+    if not legacy and baseline_lock.exists() and 'runtime_so' in json.loads(baseline_lock.read_text()).get('environment', {}).get('artifacts', {}):
+        require('net_pss_kib' in stats, 'Pre-runtime baseline missing from dynamically loaded MSL probe')
     stats.update(stable_definition='Complete samples within decode runs 2..N; device clock aligned',
                  peak_scope='Observed samples only; short peaks may be missed',
                  measurement_version=recipe['measurement']['version'])

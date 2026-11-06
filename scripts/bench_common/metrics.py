@@ -44,6 +44,15 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
         raise ValueError("Missing device wall/monotonic clock alignment")
     wall, monotonic = map(float, clock.groups())
     offset = wall - monotonic
+    baseline = re.search(r"MEMORY_BASELINE scope=before_runtime_load pid=(\d+)", log)
+    bounds = None
+    if baseline:
+        begin = re.findall(r"PHASE baseline_start monotonic_ms=([\d.]+)", log)
+        finish = re.findall(r"PHASE baseline_end monotonic_ms=([\d.]+)", log)
+        if len(begin) != 1 or len(finish) != 1 or float(finish[0]) <= float(begin[0]) + 2000:
+            raise ValueError("Missing or invalid pre-runtime baseline phase")
+        bounds = (float(begin[0]) + offset + 2000, float(finish[0]) + offset)
+
     starts = {int(n): float(t) + offset for n, t in re.findall(
         r"PHASE inference run=(\d+) monotonic_ms=([\d.]+)", log)}
     ends = {int(n): float(t) + offset for n, t in re.findall(
@@ -67,7 +76,10 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
                 and int(timestamps[0]) / 1e6 >= ends[len(rows)]):
             warnings.warn(f"Worker exited after final inference; excluded terminal sample: {file}")
             continue
-        if len(timestamps) != 2 or not all(values.values()):
+        if baseline and (not pid or pid[1] != baseline[1]):
+            raise ValueError("Baseline and inference samples must belong to the same PID")
+        # Graph can be absent before loading the NPU runtime; Total PSS is still mandatory.
+        if len(timestamps) != 2 or not values['Total'] or (not baseline and not values['Graph']):
             if skip_invalid:
                 warnings.warn(f"Skipping incomplete memory sample: {file}")
                 continue
@@ -78,10 +90,13 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
         stable = any(start >= starts[r["run"]] + r["ttft_ms"] and
                      end <= ends[r["run"]] for r in rows if r["run"] >= 2)
         memory.append({"file": file.name, "start_epoch_ms": start, "end_epoch_ms": end,
-                       "graph_kib": int(values["Graph"][1]),
+                       "graph_kib": int(values["Graph"][1]) if values["Graph"] else 0,
                        "total_pss_kib": int(values["Total"][1]),
                        "stable_decode": stable,
                        "fully_in_inference": start >= starts[1] and end <= ends[len(rows)]})
+        if baseline:
+            memory[-1]['baseline_sample'] = start >= bounds[0] and end <= bounds[1]
+            memory[-1]['pid'] = int(pid[1])
     return memory
 
 
@@ -113,6 +128,22 @@ def summarize(rows, memory):
                   sample_interval_median_ms=statistics.median([
                       b["start_epoch_ms"] - a["start_epoch_ms"] for a, b in zip(memory, memory[1:])]),
                   total_includes_graph=True)
+    if any('baseline_sample' in sample for sample in memory):
+        floor = [sample['total_pss_kib'] for sample in memory if sample['baseline_sample']]
+        if len(floor) < 3:
+            raise ValueError("At least three complete pre-runtime PSS baseline samples required")
+        baseline = statistics.median(floor)
+        if max(floor) - min(floor) > max(2048, baseline * .1):
+            raise ValueError("Pre-runtime PSS baseline is unstable")
+        total = result['total_pss_kib']
+        keys = ('sampled_peak', 'inference_sampled_peak', 'stable_median', 'stable_min', 'stable_max')
+        net = {key: total[key] - baseline for key in keys}
+        if any(value < 0 for value in net.values()):
+            raise ValueError("Negative baseline-subtracted PSS; measurement cannot be accepted")
+        result['baseline_pss_kib'] = {'median': baseline, 'min': min(floor), 'max': max(floor),
+                                      'samples': len(floor), 'scope': 'same PID before runtime dlopen; first 2 seconds excluded'}
+        result['net_pss_kib'] = net
+        result['ram_method'] = 'pre-runtime-pss-v1'
     return timing, result
 
 

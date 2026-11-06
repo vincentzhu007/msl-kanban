@@ -47,7 +47,7 @@ def execute(lock):
                 'Existing worker detected; wait for it to exit before retrying')
         # BinRunner resolves @ paths inside the app sandbox. Fail closed if hashing
         # is unavailable or exceeds the launcher's execution limit.
-        for name in ['model', 'probe']:
+        for name in ['model', 'probe'] + (['runtime_so'] if 'runtime_so' in env['artifacts'] else []):
             artifact = env['artifacts'][name]
             evidence = root / "verification" / uuid.uuid4().hex
             evidence.mkdir(parents=True)

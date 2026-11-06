@@ -18,13 +18,13 @@ def resolve(recipe, environment, *, verify_files=True):
     for key in ['binrunner', 'output_root']:
         require(Path(environment[key]).is_absolute(), f'{key} must be absolute')
     artifacts = environment['artifacts']
-    keys(artifacts, ['model', 'probe', 'runtime'])
+    keys(artifacts, ['model', 'probe', 'runtime'], ['runtime_so'])
     for name, artifact in artifacts.items():
         keys(artifact, ['host_path', 'sha256'], ['device_path'])
         require(isinstance(artifact['sha256'], str) and len(artifact['sha256']) == 64 and
                 all(c in '0123456789abcdef' for c in artifact['sha256']), f'{name}: invalid SHA256')
         require(Path(artifact['host_path']).is_absolute(), f'{name}: host_path must be absolute')
-        if name in ['model', 'probe']:
+        if name in ['model', 'probe', 'runtime_so']:
             path = artifact.get('device_path', '')
             require(path.startswith('@/bin/') and len(path) > 6 and
                     all(c.isalnum() or c in '@/_-.' for c in path) and '..' not in path,

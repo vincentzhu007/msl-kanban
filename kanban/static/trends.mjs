@@ -4,7 +4,8 @@ export const metrics = {
  prefill: {label:'Prefill 速度（P90 时延换算）',unit:'token/s',higher:true,get:prefillSpeed},
  ttft: {label:'TTFT P90',unit:'ms',get:r=>r.timing?.ttft_ms?.p90},
  tpot: {label:'TPOT P90',unit:'ms/token',get:tpotP90},
- ram: {label:'RAM · 稳定总 PSS 中位数',unit:'MiB',get:r=>r.memory?.total_pss_kib?.stable_median == null ? null : r.memory.total_pss_kib.stable_median/1024},
+ ram: {label:'RAM · 扣底噪稳定 PSS',unit:'MiB',get:r=>r.memory?.net_pss_kib?.stable_median == null ? null : r.memory.net_pss_kib.stable_median/1024},
+ ram_raw: {label:'RAM · 原始总 PSS（未扣除）',unit:'MiB',get:r=>r.memory?.total_pss_kib?.stable_median == null ? null : r.memory.total_pss_kib.stable_median/1024},
  rom: {label:'ROM',unit:'MiB',get:r=>r.model?.bytes == null ? null : r.model.bytes/1048576},
  init: {label:'模型初始化',unit:'ms',get:r=>r.initialization?.model_init_ms}
 };

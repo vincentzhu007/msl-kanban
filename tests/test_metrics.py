@@ -94,3 +94,28 @@ class MeasurementTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class BaselinePssTests(unittest.TestCase):
+    def samples(self):
+        return [dict(stable_decode=i>=3, fully_in_inference=i>=3,
+                     graph_kib=0 if i<3 else 50, total_pss_kib=v,
+                     start_epoch_ms=i*1000, baseline_sample=i<3, pid=12)
+                for i,v in enumerate([100,102,98,200,220])]
+
+    def test_subtracts_median_and_preserves_raw(self):
+        _, stats=summarize([dict(ttft_ms=1,decode_ms=1,total_ms=2,decode_tps=1)],self.samples())
+        self.assertEqual(stats['baseline_pss_kib']['median'],100)
+        self.assertEqual(stats['total_pss_kib']['stable_median'],210)
+        self.assertEqual(stats['net_pss_kib']['stable_median'],110)
+        self.assertEqual(stats['net_pss_kib']['sampled_peak'],120)
+
+    def test_requires_enough_baseline_samples(self):
+        samples=self.samples();samples[0]['baseline_sample']=False
+        with self.assertRaisesRegex(ValueError,'three complete'):
+            summarize([dict(ttft_ms=1,decode_ms=1,total_ms=2,decode_tps=1)],samples)
+
+    def test_rejects_negative_net_values(self):
+        samples=self.samples()
+        for s in samples[3:]:s['total_pss_kib']=90
+        with self.assertRaisesRegex(ValueError,'Negative'):
+            summarize([dict(ttft_ms=1,decode_ms=1,total_ms=2,decode_tps=1)],samples)

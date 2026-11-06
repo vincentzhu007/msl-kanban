@@ -1,5 +1,6 @@
 #include "../bench_common/probe_options.h"
 #include <chrono>
+#include <dlfcn.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -78,8 +79,34 @@ int main(int argc,char **argv) {
   printf("MODEL_BYTES %lld\n",static_cast<long long>(st.st_size));
   printf("PID %d MONOTONIC_MS %.6f\n", getpid(), ms(Clock::time_point{}, Clock::now())); fflush(stdout);
   printf("WALL_MS %.6f MONOTONIC_MS %.6f\n",std::chrono::duration<double,std::milli>(std::chrono::system_clock::now().time_since_epoch()).count(),ms(Clock::time_point{},Clock::now())); fflush(stdout);
+  FILE *maps=fopen("/proc/self/maps","r");
+  if(!maps){printf("ERROR cannot verify pre-runtime address space\n");return 14;}
+  char mapping[4096]; bool already_loaded=false;
+  while(fgets(mapping,sizeof(mapping),maps))if(strstr(mapping,"libmindspore-lite-llm.so"))already_loaded=true;
+  fclose(maps);
+  if(already_loaded){printf("ERROR runtime already loaded before baseline\n");return 14;}
+  // Establish the process floor before dlopen: runtime code/data remains in net RAM.
+  printf("MEMORY_BASELINE scope=before_runtime_load pid=%d\n",getpid());
+  printf("PHASE baseline_start monotonic_ms=%.6f\n",ms(Clock::time_point{},Clock::now()));
+  sleep(20);
+  printf("PHASE baseline_end monotonic_ms=%.6f\n",ms(Clock::time_point{},Clock::now()));
   long before=rss_kib();
   auto init_start=Clock::now();
+  std::string executable(argv[0]);
+  std::string library=executable.substr(0,executable.find_last_of('/')+1)+"libmindspore-lite-llm.so";
+  void *handle=dlopen(library.c_str(),RTLD_NOW|RTLD_LOCAL);
+  if(!handle){printf("ERROR runtime dlopen: %s\n",dlerror());return 12;}
+  auto MSLLMCreateModel=reinterpret_cast<decltype(&::MSLLMCreateModel)>(dlsym(handle,"MSLLMCreateModel"));
+  if(!MSLLMCreateModel){printf("ERROR runtime symbol MSLLMCreateModel\n");return 13;}
+  auto MSLLMBuildModel=reinterpret_cast<decltype(&::MSLLMBuildModel)>(dlsym(handle,"MSLLMBuildModel"));
+  if(!MSLLMBuildModel){printf("ERROR runtime symbol MSLLMBuildModel\n");return 13;}
+  auto MSLLMDestroyModel=reinterpret_cast<decltype(&::MSLLMDestroyModel)>(dlsym(handle,"MSLLMDestroyModel"));
+  if(!MSLLMDestroyModel){printf("ERROR runtime symbol MSLLMDestroyModel\n");return 13;}
+  auto MSLLMSetGenerationConfig=reinterpret_cast<decltype(&::MSLLMSetGenerationConfig)>(dlsym(handle,"MSLLMSetGenerationConfig"));
+  if(!MSLLMSetGenerationConfig){printf("ERROR runtime symbol MSLLMSetGenerationConfig\n");return 13;}
+  auto MSLLMStreamGenerate=reinterpret_cast<decltype(&::MSLLMStreamGenerate)>(dlsym(handle,"MSLLMStreamGenerate"));
+  if(!MSLLMStreamGenerate){printf("ERROR runtime symbol MSLLMStreamGenerate\n");return 13;}
+
   auto model=MSLLMCreateModel(); if (!model) return 3;
   auto start=Clock::now(); auto status=MSLLMBuildModel(model,argv[1]);
   printf("BUILD status=%d ms=%.6f rss_before_kib=%ld rss_loaded_kib=%ld\n",status,ms(start,Clock::now()),before,rss_kib());
