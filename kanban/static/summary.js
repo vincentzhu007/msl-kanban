@@ -1,3 +1,4 @@
+import {updateTrends} from './trends.js';
 import {selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -20,6 +21,7 @@ let selectedDate = new URL(location.href).searchParams.get('date') || '';
 function render() {
     const {dates,date,jobs,items} = selectDaily(records,tasks,selectedDate);
     selectedDate = date;
+    updateTrends(records,tasks,date);
     $('summary-date').innerHTML = dates.length ? dates.map(d => `<option value="${d}">${d}${d === dates[0] ? ' · 最新' : ''}</option>`).join('') : '<option value="">暂无 Daily 记录</option>';
     $('summary-date').value = date;
     $('summary-date').disabled = !dates.length;
