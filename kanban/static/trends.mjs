@@ -14,7 +14,7 @@ export function seriesKey(r) {
 }
 export function trendGroups(runs) {
  const groups=new Map();
- for(const r of runs){const key=seriesKey(r);if(!groups.has(key)) groups.set(key,{key,run:r,label:`${r.spec?.model} / ${r.spec?.soc} / ${r.framework} / ${quantizationLabel(r)} · ${r.spec?.consecutive_runs ?? '?'} 次`});}
+ for(const r of runs){const key=seriesKey(r);if(!groups.has(key)) groups.set(key,{key,run:r,label:`${r.spec?.model} / ${r.spec?.soc} / ${r.framework} / ${quantizationLabel(r)}`});}
  const result=[...groups.values()];
  const counts=new Map(); for(const g of result) counts.set(g.label,(counts.get(g.label)||0)+1);
  for(const g of result) if(counts.get(g.label)>1) g.label+=` · 配置 ${result.indexOf(g)+1}`;
