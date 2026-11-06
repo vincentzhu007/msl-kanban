@@ -15,3 +15,5 @@
 #trend-chart{position:relative}.trend-tooltip{position:absolute;z-index:5;pointer-events:none;white-space:pre-line;background:#153442;color:#fff;padding:12px 15px;border-radius:8px;box-shadow:0 5px 20px #102d3b30;font-size:12px;line-height:1.9;max-width:min(340px,100%)}.trend-hit{cursor:crosshair}.trend-hit:focus{outline:none;stroke:#168b80;stroke-width:2}
 
 .trend-hit{transition:fill .15s,stroke .15s,stroke-width .15s}.trend-hit.is-selected,.trend-hit:focus{fill:transparent;stroke:none;filter:none}.trend-selection{transition:opacity .15s}
+
+.trend-controls{grid-template-columns:2fr 1fr 2fr}.trend-controls label:first-child{grid-column:auto}@media(max-width:800px){.trend-controls{grid-template-columns:1fr 1fr}.trend-controls label:first-child{grid-column:1/-1}}@media(max-width:480px){.trend-controls{grid-template-columns:1fr}.trend-controls label:first-child{grid-column:auto}}

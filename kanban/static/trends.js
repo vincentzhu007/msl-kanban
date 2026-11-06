@@ -1,17 +1,33 @@
+import {quantizationLabel} from './summary-model.mjs';
 import {metrics,trendGroups,trendPoints,improvement,baselineHistory,trendTaskStates,trendScale} from './trends.mjs';
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>v==null?'—':v.toFixed(2);
-let records=[],tasks=[],end='';
+let records=[],tasks=[],end='',groups=[];
 $('trend-metric').innerHTML=Object.entries(metrics).map(([k,m])=>`<option value="${k}">${m.label}</option>`).join('');
 export function updateTrends(runs,jobs,date){
  records=runs;tasks=jobs;end=date;
- const old=$('trend-series').value;
  const measuredIds=new Set(jobs.filter(j=>j.status==='SUCCEEDED').map(j=>j.result_id));
  const backendRank=r=>r.backend?.name==='msl'||/MSL|MindSpore/i.test(r.framework||'')?0:/llama/i.test(r.framework||'')?2:1;
  const measured=runs.filter(r=>measuredIds.has(r.id)).sort((a,b)=>backendRank(a)-backendRank(b) || String(b.date).localeCompare(String(a.date)) || String(a.framework).localeCompare(String(b.framework)));
- $('trend-series').innerHTML=trendGroups(measured).map(g=>`<option value="${esc(g.key)}">${esc(g.label)}</option>`).join('');
- if([...$('trend-series').options].some(o=>o.value===old)) $('trend-series').value=old;
+ groups=trendGroups(measured);
+ syncFilters();
+}
+function setOptions(id,options){
+ const el=$(id),old=el.value;
+ el.innerHTML=options.length?options.map(([value,label])=>`<option value="${esc(value)}">${esc(label)}</option>`).join(''):'<option value="">暂无数据</option>';
+ if(options.some(([value])=>value===old))el.value=old;
+ el.disabled=!options.length;
+}
+function syncFilters(){
+ const models=[...new Set(groups.map(g=>g.run.spec.model))];
+ setOptions('trend-model',models.map(v=>[v,v]));
+ const byModel=groups.filter(g=>g.run.spec.model===$('trend-model').value);
+ const chips=[...new Set(byModel.map(g=>g.run.spec.soc))];
+ setOptions('trend-chip',chips.map(v=>[v,v]));
+ const byChip=byModel.filter(g=>g.run.spec.soc===$('trend-chip').value);
+ const labels=byChip.map(g=>`${g.run.framework} / ${quantizationLabel(g.run)}`);
+ setOptions('trend-series',byChip.map((g,i)=>[g.key,labels[i]+(labels.filter(v=>v===labels[i]).length>1?` · 上下文 ${g.run.spec.context} / 输入 ${g.run.spec.input_tokens} / 输出 ${g.run.spec.output_tokens}`:'')]));
  draw();
 }
 function draw(){
@@ -98,6 +114,7 @@ function draw(){
   return `<tr><td>${p.date}${grain==='week'?' 周':''}${grain==='day'&&taskStates.get(p.date)?.status==='FAILED'?'<br><span class="trend-bad">运行失败</span>':''}</td><td>${fmt(p.value)} ${esc(m.unit)}</td><td>${b?`S${b.number} · ${b.date}<br>${fmt(b.value)} ${esc(m.unit)}`:'积累中'}</td><td>${established?(dailyState.event.type==='initial'?'基线':'阶段基线更新'):deltaLabel(delta)}</td><td>${deltaLabel(total)}</td><td>${p.values.length} / ${p.days} 天</td><td>${p.runs.map(({date,run})=>`<a target="_blank" rel="noopener noreferrer" href="detail.html?run=${encodeURIComponent(run.id)}">${date} · ${esc(run.build_commit?.slice(0,8)||'详情')} ↗</a>`).join(' · ')||'无有效实测'}</td></tr>`;
  }).join('');
 }
+for(const id of ['trend-model','trend-chip']) $(id).addEventListener('change',syncFilters);
 for(const id of ['trend-series','trend-metric','trend-grain','trend-range']) $(id).addEventListener('change',draw);
 
 
