@@ -71,3 +71,10 @@ test('default automatic baseline confirms sustained four-percent improvement',()
  assert.equal(result.stages.length,2);assert.equal(result.stages[1].value,104);
  assert.equal(automaticBaseline(days([100,100,100,102,102,102]),true).stages.length,1);
 });
+
+import {isBugRegression} from '../kanban/static/trends.mjs';
+test('bug marking includes ten-percent degradation, never improvement or missing data',()=>{
+ assert.equal(isBugRegression(improvement(100,90,true)),true);
+ assert.equal(isBugRegression(improvement(100,110,false)),true);
+ for(const v of [-9.9,10,null,undefined,NaN])assert.equal(isBugRegression(v),false);
+});

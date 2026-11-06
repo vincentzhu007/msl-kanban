@@ -122,3 +122,6 @@ export function trendScale(values, metric, reference){
  const ticks=[];for(let v=min;v<=max+step*.001;v+=step)ticks.push(Number(v.toPrecision(12)));
  return {min,max,step,ticks};
 }
+
+// Tolerance avoids missing the exact 10% boundary through floating-point rounding.
+export function isBugRegression(delta){return Number.isFinite(delta)&&delta<=-10+1e-9;}
