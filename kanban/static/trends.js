@@ -8,7 +8,8 @@ export function updateTrends(runs,jobs,date){
  records=runs;tasks=jobs;end=date;
  const old=$('trend-series').value;
  const measuredIds=new Set(jobs.filter(j=>j.status==='SUCCEEDED').map(j=>j.result_id));
- const measured=runs.filter(r=>measuredIds.has(r.id)).sort((a,b)=>String(b.date).localeCompare(String(a.date)) || String(a.framework).localeCompare(String(b.framework)));
+ const backendRank=r=>r.backend?.name==='msl'||/MSL|MindSpore/i.test(r.framework||'')?0:/llama/i.test(r.framework||'')?2:1;
+ const measured=runs.filter(r=>measuredIds.has(r.id)).sort((a,b)=>backendRank(a)-backendRank(b) || String(b.date).localeCompare(String(a.date)) || String(a.framework).localeCompare(String(b.framework)));
  $('trend-series').innerHTML=trendGroups(measured).map(g=>`<option value="${esc(g.key)}">${esc(g.label)}</option>`).join('');
  if([...$('trend-series').options].some(o=>o.value===old)) $('trend-series').value=old;
  draw();
