@@ -86,3 +86,14 @@ export function baselineHistory(runs,jobs,key,end,metric){
  const days=Math.round((Date.parse(end)-Date.parse(dates[0]))/86400000)+1;
  return automaticBaseline(trendPoints(runs,jobs,key,end,'day',days,metric),metrics[metric].higher);
 }
+
+// Task failures are execution state, never a zero performance sample.
+export function trendTaskStates(runs,jobs,key){
+ const recipes=new Set(runs.filter(r=>seriesKey(r)===key).map(r=>r.recipe_id).filter(Boolean));
+ const dates=new Map();
+ for(const job of [...jobs].sort((a,b)=>Date.parse(a.started_at)-Date.parse(b.started_at))){
+  if(!recipes.has(job.recipe_id))continue;
+  const date=dailyDate(job);if(date)dates.set(date,job);
+ }
+ return dates;
+}

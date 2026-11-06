@@ -46,3 +46,12 @@ test('lower latency is improvement; insufficient and zero baselines do not inven
  assert.equal(automaticBaseline(days([100,null,100]),true).initial,null);
  assert.equal(automaticBaseline(days([0,0,0,10,10,10]),true).stages.length,1);
 });
+
+import {trendTaskStates} from '../kanban/static/trends.mjs';
+test('task failure is retained separately from measured performance and excludes other recipes',()=>{
+ const runs=[run('a',100)];
+ const jobs=[{...job('2026-11-01','a'),recipe_id:'m'}, {...job('2026-11-01',null,'FAILED','05'),recipe_id:'m'}, {...job('2026-11-02',null,'FAILED'),recipe_id:'other'}];
+ const states=trendTaskStates(runs,jobs,seriesKey(runs[0]));
+ assert.equal(states.get('2026-11-01').status,'FAILED');assert.equal(states.has('2026-11-02'),false);
+ assert.equal(trendPoints(runs,jobs,seriesKey(runs[0]),'2026-11-01','day',1)[0].value,100);
+});
