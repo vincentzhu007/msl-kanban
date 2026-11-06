@@ -64,6 +64,8 @@ function draw(){
    if(p.value===null)return;
    const previous=points[i-1];
    if(previous?.value!==null&&previous?.value!==undefined)svg+=`<path d="M${x(i-1)},${y(previous.value)} L${x(i)},${y(p.value)}" fill="none" stroke="${color(p)}" stroke-width="3"/>`;
+   const baselinePoint=policy.events.some(e=>['initial','improved'].includes(e.type)&&e.date>=p.date&&e.date<=periodEnd(p));
+   if(baselinePoint)svg+=`<circle cx="${x(i)}" cy="${y(p.value)}" r="10" fill="none" stroke="#b97929" stroke-width="2.5"/>`;
    const pointBase=stageFor(p),pointDelta=pointBase?improvement(pointBase.value,p.value,m.higher):null;
    const pointJob=taskStates.get(p.date),statusLabels={FAILED:'最近任务失败（数值来自当日成功实测）',SUCCEEDED:'评测成功',SKIPPED:'最近任务复用结果',BLOCKED:'最近任务阻塞',RUNNING:'任务运行中',CANCELLED:'任务取消',NO_BUILD:'暂无发布件'};
    const tip=`${p.date}${grain==='week'?' 周 · '+p.values.length+' 个有效日':''}\n${m.label}：${fmt(p.value)} ${m.unit}\n${pointBase?'阶段基线：'+fmt(pointBase.value)+' '+m.unit+'（'+pointBase.date+'）':'基线积累中'}${pointDelta===null?'':'\n较阶段基线：'+(Math.abs(pointDelta)<=5?'基本持平':pointDelta>0?'提升':'劣化')+' '+Math.abs(pointDelta).toFixed(2)+'%'}\n${grain==='week'?'周内有效日中位数':statusLabels[pointJob?.status]||'有效实测'}`;
