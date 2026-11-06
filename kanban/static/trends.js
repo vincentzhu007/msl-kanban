@@ -64,7 +64,10 @@ function draw(){
    if(p.value===null)return;
    const previous=points[i-1];
    if(previous?.value!==null&&previous?.value!==undefined)svg+=`<path d="M${x(i-1)},${y(previous.value)} L${x(i)},${y(p.value)}" fill="none" stroke="${color(p)}" stroke-width="3"/>`;
-   svg+=`<circle cx="${x(i)}" cy="${y(p.value)}" r="5" fill="${color(p)}" stroke="white" stroke-width="1.5"><title>${p.date}: ${fmt(p.value)} ${m.unit}</title></circle>`;
+   const pointBase=stageFor(p),pointDelta=pointBase?improvement(pointBase.value,p.value,m.higher):null;
+   const pointJob=taskStates.get(p.date),statusLabels={FAILED:'最近任务失败（数值来自当日成功实测）',SUCCEEDED:'评测成功',SKIPPED:'最近任务复用结果',BLOCKED:'最近任务阻塞',RUNNING:'任务运行中',CANCELLED:'任务取消',NO_BUILD:'暂无发布件'};
+   const tip=`${p.date}${grain==='week'?' 周 · '+p.values.length+' 个有效日':''}\n${m.label}：${fmt(p.value)} ${m.unit}\n${pointBase?'阶段基线：'+fmt(pointBase.value)+' '+m.unit+'（'+pointBase.date+'）':'基线积累中'}${pointDelta===null?'':'\n较阶段基线：'+(Math.abs(pointDelta)<=5?'基本持平':pointDelta>0?'提升':'劣化')+' '+Math.abs(pointDelta).toFixed(2)+'%'}\n${grain==='week'?'周内有效日中位数':statusLabels[pointJob?.status]||'有效实测'}`;
+   svg+=`<circle cx="${x(i)}" cy="${y(p.value)}" r="5" fill="${color(p)}" stroke="white" stroke-width="1.5"/><circle class="trend-hit" data-tooltip="${esc(tip)}" cx="${x(i)}" cy="${y(p.value)}" r="14" fill="transparent" tabindex="0" role="img" aria-label="${esc(tip)}"/>`;
    const d=deltaFor(p),prior=previous?deltaFor(previous):null;
    if(d!==null&&Math.abs(d)>5&&(prior===null||Math.sign(prior)!==Math.sign(d)||Math.abs(prior)<=5)){
     const anchor=i>points.length-3?'end':'start';
@@ -81,7 +84,8 @@ function draw(){
    svg+=`<text x="${x(i)}" y="${H-48}" text-anchor="middle" style="fill:${failed?'#c34e48':blocked?'#a46b1a':p.value===null?'#8798a2':'#09866a'};font-size:16px">${failed?'×':blocked?'◇':p.value===null?'○':'·'}<title>${p.date} ${title}</title></text>`;
    if(i%Math.max(1,Math.ceil(points.length/8))===0||i===points.length-1)svg+=`<text x="${x(i)}" y="${H-18}" text-anchor="middle">${p.date.slice(5)}</text>`;
   });
-  $('trend-chart').innerHTML=svg+'</svg>';
+  $('trend-chart').innerHTML=svg+'</svg><div class="trend-tooltip" role="tooltip" hidden></div>';
+  attachTooltips();
  }
  const deltaLabel=v=>v===null?'—':Math.abs(v)<=5?`基本持平（${v>=0?'+':''}${v.toFixed(2)}%）`:`${v>0?'提升':'劣化'} ${Math.abs(v).toFixed(1)}%`;
  $('trend-history').innerHTML=[...points].reverse().map(p=>{
@@ -92,3 +96,23 @@ function draw(){
  }).join('');
 }
 for(const id of ['trend-series','trend-metric','trend-grain','trend-range']) $(id).addEventListener('change',draw);
+
+
+function attachTooltips(){
+ const chart=$('trend-chart'),tip=chart.querySelector('.trend-tooltip');
+ const show=(point,event)=>{
+  tip.textContent=point.dataset.tooltip;tip.hidden=false;
+  const box=chart.getBoundingClientRect(),dot=point.getBoundingClientRect();
+  const px=event?.clientX??(dot.left+dot.width/2),py=event?.clientY??dot.top;
+  tip.style.left=`${Math.max(0,Math.min(px-box.left+14,box.width-tip.offsetWidth))}px`;
+  tip.style.top=`${Math.max(0,py-box.top-tip.offsetHeight-12)}px`;
+ };
+ for(const point of chart.querySelectorAll('.trend-hit')){
+  point.addEventListener('pointerenter',e=>show(point,e));
+  point.addEventListener('pointermove',e=>show(point,e));
+  point.addEventListener('pointerleave',()=>{tip.hidden=true;});
+  point.addEventListener('focus',()=>show(point));
+  point.addEventListener('blur',()=>{tip.hidden=true;});
+  point.addEventListener('keydown',e=>{if(e.key==='Escape')tip.hidden=true;});
+ }
+}
