@@ -79,7 +79,7 @@ function draw(){
   points.forEach((p,i)=>{
    if(p.value===null)return;
    const previous=points[i-1];
-   if(previous?.value!==null&&previous?.value!==undefined)svg+=`<path d="M${x(i-1)},${y(previous.value)} L${x(i)},${y(p.value)}" fill="none" stroke="${color(p)}" stroke-width="3"/>`;
+   if(previous?.value!==null&&previous?.value!==undefined)svg+=`<path d="M${x(i-1)},${y(previous.value)} L${x(i)},${y(p.value)}" fill="none" stroke="${color(p)}" stroke-width="2"/>`;
    const baselinePoint=policy.events.some(e=>['initial','improved'].includes(e.type)&&e.date>=p.date&&e.date<=periodEnd(p));
    if(baselinePoint)svg+=`<circle cx="${x(i)}" cy="${y(p.value)}" r="11" fill="${color(p)}" opacity="0.09"/><circle cx="${x(i)}" cy="${y(p.value)}" r="7" fill="white" stroke="${color(p)}" stroke-width="1.2"/>`;
    svg+=`<g class="trend-selection" data-point="${i}" pointer-events="none" opacity="0"><circle cx="${x(i)}" cy="${y(p.value)}" r="11" fill="${color(p)}" opacity="0.09"/><circle cx="${x(i)}" cy="${y(p.value)}" r="7" fill="none" stroke="${color(p)}" stroke-width="1.2"/></g>`;
