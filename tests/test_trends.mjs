@@ -57,9 +57,9 @@ test('task failure is retained separately from measured performance and excludes
 });
 
 import {trendScale} from '../kanban/static/trends.mjs';
-test('ROM starts at zero and tiny changes do not exaggerate the axis',()=>{
+test('ROM uses a baseline-centered range that exposes five-percent changes',()=>{
  const s=trendScale([281.49,281.50],'rom',281.49);
- assert.equal(s.min,0);assert.ok(s.max>=300);assert.ok(s.ticks.length<=7);
+ assert.ok(s.min>0 && s.min<=281.49*.9);assert.ok(s.max>=281.49*1.1);assert.ok(s.max-s.min>=281.49*.2);assert.ok(s.ticks.length<=7);
  const speed=trendScale([35.1,35.2],'decode',35.1);
  assert.ok(speed.max-speed.min>=7.02);
  const regression=trendScale([35,20],'decode',35);

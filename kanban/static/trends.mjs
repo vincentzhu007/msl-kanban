@@ -99,14 +99,18 @@ export function trendTaskStates(runs,jobs,key){
 }
 
 
-// Do not magnify measurement noise. Storage uses an absolute zero origin.
+// Keep a meaningful baseline-centered range; five-percent changes remain visible.
 export function trendScale(values, metric, reference){
  const finite=values.filter(v=>Number.isFinite(v)&&v>=0);
  if(!finite.length)return {min:0,max:1,step:0.25,ticks:[0,0.25,0.5,0.75,1]};
  const low=Math.min(...finite),high=Math.max(...finite);
  const center=Number.isFinite(reference)&&reference>0?reference:(low+high)/2;
  let min,max;
- if(metric==='rom'){min=0;max=Math.max(high*1.1,64);}
+ if(metric==='rom'){
+  const span=Math.max(center*.2,1);
+  min=Math.max(0,Math.min(center-span/2,low-span*.05));
+  max=Math.max(center+span/2,high+span*.05);
+ }
  else{
   const span=Math.max(high-low,center*.2,metric==='ram'?64:1);
   min=Math.max(0,Math.min(low-span*.1,center-span/2));
