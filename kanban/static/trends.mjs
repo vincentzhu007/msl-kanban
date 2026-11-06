@@ -45,7 +45,7 @@ export function trendPoints(runs,jobs,key,end,grain='day',windowDays=30,metric='
 export function improvement(base,value,higher){return base>0 && Number.isFinite(value)?(value/base-1)*100*(higher?1:-1):null;}
 
 // Causal policy: a confirmed baseline takes effect on confirmation day, never retroactively.
-export function automaticBaseline(daily, higher, {threshold=5, required=3, maxSpan=7}={}) {
+export function automaticBaseline(daily, higher, {threshold=3, required=3, maxSpan=7}={}) {
  const states=new Map(), stages=[], events=[];
  let seed=[], candidate=[], direction=0, baseline=null, initial=null;
  const median=points=>{const a=points.map(p=>p.value).sort((a,b)=>a-b);return a[Math.floor(a.length/2)];};

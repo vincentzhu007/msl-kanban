@@ -65,3 +65,9 @@ test('ROM uses a baseline-centered range that exposes five-percent changes',()=>
  const regression=trendScale([35,20],'decode',35);
  assert.ok(regression.min<=20&&regression.max>=35);
 });
+
+test('default automatic baseline confirms sustained four-percent improvement',()=>{
+ const result=automaticBaseline(days([100,100,100,104,104,104]),true);
+ assert.equal(result.stages.length,2);assert.equal(result.stages[1].value,104);
+ assert.equal(automaticBaseline(days([100,100,100,102,102,102]),true).stages.length,1);
+});

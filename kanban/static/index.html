@@ -8,7 +8,7 @@
 <div class="toolbar"><div><div class="eyebrow">PERFORMANCE OVER TIME</div><h2 id="trend-title">性能优化趋势</h2></div><strong id="trend-change" aria-live="polite"></strong></div>
 <div class="trend-controls"><label>模型<select id="trend-model"></select></label><label>芯片<select id="trend-chip"></select></label><label>框架 / 后端配置<select id="trend-series"></select></label><label>性能指标<select id="trend-metric"></select></label><label>时间粒度<select id="trend-grain"><option value="day">按天</option><option value="week">按周</option></select></label><label>时间范围<select id="trend-range"><option value="14" selected>近 14 天</option><option value="30">近 30 天</option><option value="90">近 90 天</option></select></label></div>
 <p id="trend-baseline" class="note" aria-live="polite"></p><p id="trend-note" class="note"></p><div id="trend-events" aria-live="polite"></div><div id="trend-chart" aria-live="polite"></div>
-<details class="trend-rules"><summary>自动基线规则</summary><p class="note">按完整历史的前 3 个有效日中位数建立初始基线。连续 3 个有效日同向变化超过 5%，且首尾在 7 个自然日内，确认提升或劣化；提升更新阶段基线，劣化保留阶段基线。图中橙色水平虚线始终表示初始基线，阶段更新见标签和表格。失败和缺测不参与性能计算。未锁温、锁频，变化标记仅供观测。</p></details>
+<details class="trend-rules"><summary>自动基线规则</summary><p class="note">按完整历史的前 3 个有效日中位数建立初始基线。连续 3 个有效日同向变化超过 3%，且首尾在 7 个自然日内，确认提升或劣化；提升更新阶段基线，劣化保留阶段基线。图中橙色水平虚线始终表示初始基线，阶段更新见标签和表格。失败和缺测不参与性能计算。未锁温、锁频，变化标记仅供观测。</p></details>
 <details><summary>查看周期数据与原始评测</summary><div class="tablewrap"><table><thead><tr><th>周期</th><th>指标值</th><th>阶段基线 / 确认日期</th><th id="trend-baseline-heading">较当日阶段基线</th><th>较初始基线累计变化</th><th>有效日 / 范围内天数</th><th>评测详情</th></tr></thead><tbody id="trend-history"></tbody></table></div></details>
 </section>
 <section class="panel"><h2>统一测试规格</h2><div id="summary-protocol" class="note" aria-live="polite">正在加载实际测试规格…</div></section>
