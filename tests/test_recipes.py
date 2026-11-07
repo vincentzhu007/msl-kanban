@@ -43,6 +43,23 @@ class RecipeTests(unittest.TestCase):
         changed['model']['variant'] = 'instruct'
         self.assertNotEqual(comparison_key(recipe), comparison_key(changed))
 
+    def test_msl_lock_declares_baseline_and_reads_back(self):
+        from recipe_ci.results import require_declared_baseline
+        env = json.loads((ROOT / 'config/dog-kirin9030.example.json').read_text())
+        lock = resolve(load(RECIPE), env, verify_files=False)
+        self.assertEqual(lock['ram_baseline'], 'pre-model-create-pss-v1')
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'resolved-recipe.json'
+            write_new(path, lock)
+            self.assertEqual(load_lock(path), lock)
+        with self.assertRaisesRegex(Exception, 'missing from probe log'):
+            require_declared_baseline(lock, {})
+        old = resolve(load(RECIPE), env, verify_files=False, ram_baseline='none')
+        self.assertEqual(old['ram_baseline'], 'none')
+        require_declared_baseline(old, {})
+        with self.assertRaises(RecipeError):
+            resolve(load(RECIPE), env, verify_files=False, ram_baseline='bogus')
+
     def test_preview_cannot_execute_and_tampering_is_detected(self):
         env = json.loads((ROOT / 'config/dog-kirin9030.example.json').read_text())
         lock = resolve(load(RECIPE), env, verify_files=False)

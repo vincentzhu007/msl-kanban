@@ -99,7 +99,8 @@ class BaselinePssTests(unittest.TestCase):
     def samples(self):
         return [dict(stable_decode=i>=3, fully_in_inference=i>=3,
                      graph_kib=0 if i<3 else 50, total_pss_kib=v,
-                     start_epoch_ms=i*1000, baseline_sample=i<3, pid=12)
+                     start_epoch_ms=i*1000, baseline_sample=i<3, pid=12,
+                     baseline_scope='before_model_create')
                 for i,v in enumerate([100,102,98,200,220])]
 
     def test_subtracts_median_and_preserves_raw(self):
@@ -119,3 +120,79 @@ class BaselinePssTests(unittest.TestCase):
         for s in samples[3:]:s['total_pss_kib']=90
         with self.assertRaisesRegex(ValueError,'Negative'):
             summarize([dict(ttft_ms=1,decode_ms=1,total_ms=2,decode_tps=1)],samples)
+
+    def test_baseline_scope_describes_model_create(self):
+        _, stats=summarize([dict(ttft_ms=1,decode_ms=1,total_ms=2,decode_tps=1)],self.samples())
+        self.assertIn('MSLLMCreateModel', stats['baseline_pss_kib']['scope'])
+        self.assertNotIn('dlopen', stats['baseline_pss_kib']['scope'])
+
+    def test_reads_before_model_create_baseline_from_log(self):
+        wall = 1700000000000.0
+        log = (
+            f"WALL_MS {wall} MONOTONIC_MS 0\n"
+            "MEMORY_BASELINE scope=before_model_create pid=42\n"
+            "PHASE baseline_start monotonic_ms=0\n"
+            "PHASE baseline_end monotonic_ms=20000\n"
+            "PHASE inference run=1 monotonic_ms=21000\n"
+            "PHASE end run=1 monotonic_ms=22000\n"
+            "PHASE inference run=2 monotonic_ms=23000\n"
+            "PHASE end run=2 monotonic_ms=25000\n"
+        )
+        rows = [dict(run=1, ttft_ms=100), dict(run=2, ttft_ms=200)]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            # three baseline samples inside (start+2s, end] = (2000, 20000] wall-aligned
+            for i, (start, total) in enumerate([(3000, 100), (8000, 102), (15000, 98)]):
+                (root / f'memory-{i:04d}.txt').write_text(
+                    f"PID 42\n{int((wall+start)*1e6)}\n  Total  {total}\n{int((wall+start+10)*1e6)}\n")
+            # one stable decode sample in run 2 decode window: start>=23000+200 and end<=25000
+            (root / 'memory-0003.txt').write_text(
+                f"PID 42\n{int((wall+23250)*1e6)}\n  Graph  50\n  Total  210\n{int((wall+23260)*1e6)}\n")
+            memory = read_memory(root, log, rows)
+            self.assertTrue(any(s.get('baseline_sample') for s in memory))
+            self.assertEqual(sum(1 for s in memory if s.get('baseline_sample')), 3)
+
+    def write_log(self, root, scope):
+        wall = 1700000000000.0
+        log = (f"WALL_MS {wall} MONOTONIC_MS 0\n"
+               f"MEMORY_BASELINE scope={scope} pid=42\n"
+               "PHASE baseline_start monotonic_ms=0\nPHASE baseline_end monotonic_ms=20000\n"
+               "PHASE inference run=1 monotonic_ms=21000\nPHASE end run=1 monotonic_ms=22000\n"
+               "PHASE inference run=2 monotonic_ms=23000\nPHASE end run=2 monotonic_ms=25000\n")
+        for i, (start, total) in enumerate([(3000, 100), (8000, 102), (15000, 98)]):
+            (root / f'memory-{i:04d}.txt').write_text(
+                f"PID 42\n{int((wall+start)*1e6)}\n  Total  {total}\n{int((wall+start+10)*1e6)}\n")
+        (root / 'memory-0003.txt').write_text(
+            f"PID 42\n{int((wall+21100)*1e6)}\n  Graph  50\n  Total  200\n{int((wall+21200)*1e6)}\n")
+        (root / 'memory-0004.txt').write_text(
+            f"PID 42\n{int((wall+23250)*1e6)}\n  Graph  50\n  Total  210\n{int((wall+23260)*1e6)}\n")
+        return log
+
+    def stats_for(self, scope):
+        rows = [dict(run=1, ttft_ms=100, decode_ms=1, total_ms=2, decode_tps=1),
+                dict(run=2, ttft_ms=200, decode_ms=1, total_ms=2, decode_tps=1)]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            return summarize(rows, read_memory(root, self.write_log(root, scope), rows))[1]
+
+    def test_methods_are_versioned_per_scope(self):
+        new = self.stats_for('before_model_create')
+        old = self.stats_for('before_runtime_load')
+        self.assertEqual(new['ram_method'], 'pre-model-create-pss-v1')
+        # Legacy logs keep their baseline under the old method id.
+        self.assertEqual(old['ram_method'], 'pre-runtime-pss-v1')
+        self.assertEqual(old['net_pss_kib']['stable_median'], 110)
+        self.assertIn('dlopen', old['baseline_pss_kib']['scope'])
+
+    def test_declared_baseline_is_enforced_without_marker(self):
+        from recipe_ci.results import require_declared_baseline
+        lock = {'ram_baseline': 'pre-model-create-pss-v1', 'environment': {'artifacts': {}}}
+        with self.assertRaisesRegex(Exception, 'missing from probe log'):
+            require_declared_baseline(lock, {})
+        with self.assertRaisesRegex(Exception, 'method mismatch'):
+            require_declared_baseline(lock, {'net_pss_kib': {}, 'ram_method': 'pre-runtime-pss-v1'})
+        require_declared_baseline(lock, self.stats_for('before_model_create'))
+        legacy = {'environment': {'artifacts': {'runtime_so': {}}}}
+        with self.assertRaisesRegex(Exception, 'missing from probe log'):
+            require_declared_baseline(legacy, {})
+        require_declared_baseline({'environment': {'artifacts': {}}}, {})

@@ -10,14 +10,16 @@ export const metrics = {
  init: {label:'模型初始化',unit:'ms',get:r=>r.initialization?.model_init_ms}
 };
 const canonical = x => x && typeof x==='object' ? Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])) : x;
+// RAM baseline methods are not comparable: keep each method in its own series.
+export const ramMethod = r => r.memory?.ram_method ?? null;
 export function seriesKey(r) {
  const s=r.spec || {};
  // Trend identity follows the visible deployment and workload, not archive metadata or sample count.
- return JSON.stringify(canonical({model:s.model,soc:s.soc,framework:r.framework,quant:quantizationLabel(r),context:s.context,input:s.input_tokens,output:s.output_tokens}));
+ return JSON.stringify(canonical({model:s.model,soc:s.soc,framework:r.framework,quant:quantizationLabel(r),context:s.context,input:s.input_tokens,output:s.output_tokens,ram_method:ramMethod(r)}));
 }
 export function trendGroups(runs) {
  const groups=new Map();
- for(const r of runs){const key=seriesKey(r);if(!groups.has(key)) groups.set(key,{key,run:r,label:`${r.spec?.model} / ${r.spec?.soc} / ${r.framework} / ${quantizationLabel(r)}`});}
+ for(const r of runs){const key=seriesKey(r);if(!groups.has(key)) groups.set(key,{key,run:r,label:`${r.spec?.model} / ${r.spec?.soc} / ${r.framework} / ${quantizationLabel(r)}${ramMethod(r)?' · '+ramMethod(r):''}`});}
  const result=[...groups.values()];
  const counts=new Map(); for(const g of result) counts.set(g.label,(counts.get(g.label)||0)+1);
  for(const g of result) if(counts.get(g.label)>1) g.label+=` · 配置 ${result.indexOf(g)+1}`;

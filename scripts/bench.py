@@ -20,6 +20,8 @@ def main(argv=None):
     plan.add_argument('--environment', required=True, type=Path)
     plan.add_argument('--output', required=True, type=Path)
     plan.add_argument('--preview', action='store_true', help='Do not hash host files; lock cannot execute')
+    plan.add_argument('--ram-baseline', choices=['none', 'pre-runtime-pss-v1', 'pre-model-create-pss-v1'],
+                      help='MSL probe RAM baseline protocol (default pre-model-create-pss-v1; none for old probes)')
     run = commands.add_parser('run', help='Verify pre-deployed model/probe and collect measurements')
     run.add_argument('--lock', required=True, type=Path)
     summary = commands.add_parser('summarize', help='Generate one kanban result for any recipe')
@@ -45,7 +47,8 @@ def main(argv=None):
             print(f"VALID {recipe['id']}")
         elif args.command == 'resolve':
             environment = json.loads(args.environment.read_text())
-            write_new(args.output, resolve(recipe, environment, verify_files=not args.preview))
+            write_new(args.output, resolve(recipe, environment, verify_files=not args.preview,
+                                              ram_baseline=args.ram_baseline))
             print(args.output)
         else:
             result = summarize_recipe(recipe, args.results, legacy=args.legacy, log_name=args.log,

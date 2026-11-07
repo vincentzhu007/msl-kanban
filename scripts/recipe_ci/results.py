@@ -17,6 +17,15 @@ def validate_spec(log, workload, options):
         require(actual.get(field) == value, f'Probe option mismatch: {field}')
 
 
+def require_declared_baseline(lock, stats):
+    """Enforce the RAM baseline declared by the lock, never inferred from the log under test."""
+    declared = lock.get('ram_baseline') or (
+        'pre-runtime-pss-v1' if 'runtime_so' in lock.get('environment', {}).get('artifacts', {}) else None)
+    if declared and declared != 'none':
+        require('net_pss_kib' in stats, f'Declared RAM baseline {declared} missing from probe log')
+        require(stats.get('ram_method') == declared, f'RAM baseline method mismatch: expected {declared}')
+
+
 def summarize_recipe(recipe, directory, *, legacy=False, log_name='inference.log',
                      samples_name='samples.json', memory_pattern='memory-*.txt', run_id=None):
     directory = Path(directory)
@@ -29,9 +38,9 @@ def summarize_recipe(recipe, directory, *, legacy=False, log_name='inference.log
         validate_spec(log, work, recipe['backend']['options'])
     memory = read_memory(directory, log, rows, memory_pattern, skip_invalid=False)
     timing, stats = summarize(rows, memory)
-    baseline_lock = directory / 'resolved-recipe.json'
-    if not legacy and baseline_lock.exists() and 'runtime_so' in json.loads(baseline_lock.read_text()).get('environment', {}).get('artifacts', {}):
-        require('net_pss_kib' in stats, 'Pre-runtime baseline missing from dynamically loaded MSL probe')
+    lock_path = directory / 'resolved-recipe.json'
+    if not legacy and lock_path.exists():
+        require_declared_baseline(json.loads(lock_path.read_text()), stats)
     stats.update(stable_definition='Complete samples within decode runs 2..N; device clock aligned',
                  peak_scope='Observed samples only; short peaks may be missed',
                  measurement_version=recipe['measurement']['version'])

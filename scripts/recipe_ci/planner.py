@@ -4,7 +4,12 @@ from pathlib import Path
 from .recipe import require, keys, digest, sha256_file, comparison_key, validate
 
 
-def resolve(recipe, environment, *, verify_files=True):
+# Probe RAM-baseline protocol declared in the lock; 'none' is an explicit opt-out for old probes.
+MSL_RAM_BASELINE = 'pre-model-create-pss-v1'
+RAM_BASELINES = {'none', 'pre-runtime-pss-v1', MSL_RAM_BASELINE}
+
+
+def resolve(recipe, environment, *, verify_files=True, ram_baseline=None):
     keys(environment, ['schema_version', 'host', 'device', 'binrunner', 'output_root', 'artifacts'])
     require(environment['schema_version'] == 1, 'Unsupported environment version')
     device = environment['device']
@@ -49,6 +54,12 @@ def resolve(recipe, environment, *, verify_files=True):
               'device_comparison_key': digest({'recipe': comparison_key(recipe), 'device': device}),
               'host_artifacts_verified': verify_files, 'device_artifacts_verified': False,
               'command_template': arguments, 'probe_protocol': 1}
+    if backend == 'msl':
+        baseline = ram_baseline or MSL_RAM_BASELINE
+        require(baseline in RAM_BASELINES, f'Unknown RAM baseline: {baseline}')
+        result['ram_baseline'] = baseline
+    else:
+        require(ram_baseline in (None, 'none'), 'RAM baseline only applies to MSL probes')
     result['lock_sha256'] = digest(result)
     return result
 

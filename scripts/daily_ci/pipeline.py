@@ -153,7 +153,7 @@ def public_result(result, run_id, build, code_commit, device_alias, task_url):
     result['protocol_note'] = (source_note + '与本次重编译探针；' + model_note + '。上下文2048、输入1024、输出128，'
                                f"同进程连续{spec.get('consecutive_runs', len(result.get('samples', [])))}次，无预热；总PSS包含Graph。温度/频率未锁定，不自动批准性能基线。")
     if result.get('memory', {}).get('net_pss_kib'):
-        result['protocol_note'] += ' RAM已扣除同PID加载Lite LLM动态库前的PSS中位数；原始总PSS保留。初始化包含动态库加载。'
+        result['protocol_note'] += ' RAM已扣除同PID创建模型前的PSS中位数；原始总PSS保留。初始化包含模型创建。'
     return result
 
 
@@ -168,7 +168,7 @@ def prepare_msl(repo, config, build, task, cache):
     archive = download(build, cache)
     package_dir = task / 'package'
     safe_extract(archive, package_dir)
-    libraries = list(package_dir.glob('*/lib/libmindspore-lite-llm.so'))
+    libraries = list(package_dir.glob('*/lib/libmindspore-lite-llm.a'))
     require(len(libraries) == 1, 'Expected exactly one MSL runtime library')
     runtime = libraries[0].parent.parent
     native = Path(config['native'])
@@ -176,9 +176,9 @@ def prepare_msl(repo, config, build, task, cache):
     command = [str(native / 'llvm/bin/clang++'), '--target=aarch64-linux-ohos',
                '--sysroot=' + str(native / 'sysroot'), '-std=c++17', '-O2', '-static-libstdc++',
                '-I', str(runtime / 'include'), str(repo / 'scripts/edge_slm_bench/bench_recipe.cc'),
+               '-Wl,--whole-archive', str(libraries[0]), '-Wl,--no-whole-archive',
                '-ldl', '-pthread', '-o', str(probe)]
     run_command(command, task / 'compile.log')
-    shutil.copyfile(libraries[0], task / 'libmindspore-lite-llm.so')
     return archive, probe
 
 
@@ -290,9 +290,6 @@ def run(repo, recipe_path, config, day, force=False):
             env['output_root'] = str(root / 'runs')
             env['artifacts']['probe'] = {'host_path': str(probe), 'device_path': '@/bin/' + probe.name, 'sha256': sha256_file(probe)}
             env['artifacts']['runtime'] = {'host_path': str(archive), 'sha256': build['sha256']}
-            if backend == 'msl':
-                runtime_so = task / 'libmindspore-lite-llm.so'
-                env['artifacts']['runtime_so'] = {'host_path': str(runtime_so), 'device_path': '@/bin/' + runtime_so.name, 'sha256': sha256_file(runtime_so)}
             lock = resolve(recipe, env)
             write_new(task / 'resolved-recipe.json', lock)
             write_json(task / 'environment.json', env)
@@ -305,8 +302,6 @@ def run(repo, recipe_path, config, day, force=False):
             ensure_forward(env, config.get('binrunner_device_port', 8888))
             with awake_device(env['device']['serial']):
                 run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
-                if backend == 'msl':
-                    run_command(prefix + ['push', str(runtime_so)], task / 'push-runtime.log', cwd=env['binrunner'], timeout=300)
                 if regenerated:
                     # BinRunner push defaults to basename; match the locked device path exactly.
                     deployed = task / Path(env['artifacts']['model']['device_path']).name

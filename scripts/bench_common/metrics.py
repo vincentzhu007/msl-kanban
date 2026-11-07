@@ -38,19 +38,27 @@ def initialization(log):
             'scope': 'Backend/model/context/sampler or generation config ready; excludes process startup; filesystem cache uncontrolled'}
 
 
+# Log scope -> (ram_method, description). Methods are not comparable with each other.
+BASELINE_METHODS = {
+    'before_runtime_load': ('pre-runtime-pss-v1', 'same PID before Lite LLM runtime dlopen; first 2 seconds excluded'),
+    'before_model_create': ('pre-model-create-pss-v1', 'same PID before MSLLMCreateModel; first 2 seconds excluded'),
+}
+
+
 def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False):
     clock = re.search(r"WALL_MS ([\d.]+) MONOTONIC_MS ([\d.]+)", log)
     if not clock:
         raise ValueError("Missing device wall/monotonic clock alignment")
     wall, monotonic = map(float, clock.groups())
     offset = wall - monotonic
-    baseline = re.search(r"MEMORY_BASELINE scope=before_runtime_load pid=(\d+)", log)
+    # before_runtime_load: legacy dynamic-loading probe (5f242f2); before_model_create: static probe.
+    baseline = re.search(r"MEMORY_BASELINE scope=(before_model_create|before_runtime_load) pid=(\d+)", log)
     bounds = None
     if baseline:
         begin = re.findall(r"PHASE baseline_start monotonic_ms=([\d.]+)", log)
         finish = re.findall(r"PHASE baseline_end monotonic_ms=([\d.]+)", log)
         if len(begin) != 1 or len(finish) != 1 or float(finish[0]) <= float(begin[0]) + 2000:
-            raise ValueError("Missing or invalid pre-runtime baseline phase")
+            raise ValueError("Missing or invalid PSS baseline phase")
         bounds = (float(begin[0]) + offset + 2000, float(finish[0]) + offset)
 
     starts = {int(n): float(t) + offset for n, t in re.findall(
@@ -76,7 +84,7 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
                 and int(timestamps[0]) / 1e6 >= ends[len(rows)]):
             warnings.warn(f"Worker exited after final inference; excluded terminal sample: {file}")
             continue
-        if baseline and (not pid or pid[1] != baseline[1]):
+        if baseline and (not pid or pid[1] != baseline[2]):
             raise ValueError("Baseline and inference samples must belong to the same PID")
         # Graph can be absent before loading the NPU runtime; Total PSS is still mandatory.
         if len(timestamps) != 2 or not values['Total'] or (not baseline and not values['Graph']):
@@ -97,6 +105,7 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
         if baseline:
             memory[-1]['baseline_sample'] = start >= bounds[0] and end <= bounds[1]
             memory[-1]['pid'] = int(pid[1])
+            memory[-1]['baseline_scope'] = baseline[1]
     return memory
 
 
@@ -129,21 +138,22 @@ def summarize(rows, memory):
                       b["start_epoch_ms"] - a["start_epoch_ms"] for a, b in zip(memory, memory[1:])]),
                   total_includes_graph=True)
     if any('baseline_sample' in sample for sample in memory):
+        scope = next((s['baseline_scope'] for s in memory if 'baseline_scope' in s), 'before_model_create')
         floor = [sample['total_pss_kib'] for sample in memory if sample['baseline_sample']]
         if len(floor) < 3:
-            raise ValueError("At least three complete pre-runtime PSS baseline samples required")
+            raise ValueError("At least three complete PSS baseline samples required")
         baseline = statistics.median(floor)
         if max(floor) - min(floor) > max(2048, baseline * .1):
-            raise ValueError("Pre-runtime PSS baseline is unstable")
+            raise ValueError("PSS baseline is unstable")
         total = result['total_pss_kib']
         keys = ('sampled_peak', 'inference_sampled_peak', 'stable_median', 'stable_min', 'stable_max')
         net = {key: total[key] - baseline for key in keys}
         if any(value < 0 for value in net.values()):
             raise ValueError("Negative baseline-subtracted PSS; measurement cannot be accepted")
         result['baseline_pss_kib'] = {'median': baseline, 'min': min(floor), 'max': max(floor),
-                                      'samples': len(floor), 'scope': 'same PID before runtime dlopen; first 2 seconds excluded'}
+                                      'samples': len(floor), 'scope': BASELINE_METHODS[scope][1]}
         result['net_pss_kib'] = net
-        result['ram_method'] = 'pre-runtime-pss-v1'
+        result['ram_method'] = BASELINE_METHODS[scope][0]
     return timing, result
 
 
