@@ -1,5 +1,6 @@
+import {baselineLabel} from './ram-method.mjs';
 import {quantizationLabel} from './summary-model.mjs';
-import {metrics,trendGroups,trendPoints,improvement,baselineHistory,trendTaskStates,trendScale,isBugRegression} from './trends.mjs';
+import {metrics,trendRamMethod,trendGroups,trendPoints,improvement,baselineHistory,trendTaskStates,trendScale,isBugRegression} from './trends.mjs';
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>v==null?'—':v.toFixed(2);
@@ -47,7 +48,7 @@ function draw(){
  const magnitude=absoluteChange===null?'':`${absoluteChange>=0?'+':''}${absoluteChange.toFixed(2)} ${m.unit}`;
  $('trend-change').textContent=change===null?'等待自动基线':Math.abs(change)<=5?`基本持平 · ${magnitude}（${Math.abs(change).toFixed(2)}%）`:`${isBugRegression(change)?'BUG · ':''}累计${change>0?'提升':'劣化'} ${Math.abs(change).toFixed(1)}% · 较初始基线${grain==='week'?'（最新周中位数）':''}`;
  $('trend-change').className=change===null||Math.abs(change)<=5?'muted':change>0?'trend-good':'trend-bad';
- $('trend-note').innerHTML=`<span class="trend-key"><i class="key-line"></i> 实测性能</span><span class="trend-key"><i class="key-base"></i> 初始基线</span><span class="trend-key trend-good">● 改善 &gt;5%</span><span class="trend-key trend-bad">● 劣化 &gt;5%</span><span class="trend-key trend-bad"><b>BUG</b> 劣化 ≥10%</span><span class="trend-key trend-bad">× 运行失败（非性能值）</span><span class="trend-key">○ 缺测 / 无有效指标</span><span class="trend-key">◇ 阻塞 / 运行中 / 复用</span><br>${m.unit}，越${m.higher?'高':'低'}越好 · 缺测处断线 · 周视图为有效日中位数 · ±5% 内按基本持平展示（关注阈值，非统计显著性结论）。颜色相对当时阶段基线，累计幅度相对初始基线。${metric==='rom'?'ROM 纵轴围绕初始基线至少 ±10%；浅色带为 ±5% 关注区间，超出时自动扩展。':'纵轴至少覆盖基线约 ±10%，避免放大小波动。'}`;
+ $('trend-note').innerHTML=`<span class="trend-key"><i class="key-line"></i> 实测性能</span><span class="trend-key"><i class="key-base"></i> 初始基线</span><span class="trend-key trend-good">● 改善 &gt;5%</span><span class="trend-key trend-bad">● 劣化 &gt;5%</span><span class="trend-key trend-bad"><b>BUG</b> 劣化 ≥10%</span><span class="trend-key trend-bad">× 运行失败（非性能值）</span><span class="trend-key">○ 缺测 / 无有效指标</span><span class="trend-key">◇ 阻塞 / 运行中 / 复用</span><br>${metric==='ram'?esc(baselineLabel(trendRamMethod(records,tasks,$('trend-series').value,end)))+' · 仅展示当前口径；不同口径的历史值不连线、不参与基线。<br>':''}${m.unit}，越${m.higher?'高':'低'}越好 · 缺测处断线 · 周视图为有效日中位数 · ±5% 内按基本持平展示（关注阈值，非统计显著性结论）。颜色相对当时阶段基线，累计幅度相对初始基线。${metric==='rom'?'ROM 纵轴围绕初始基线至少 ±10%；浅色带为 ±5% 关注区间，超出时自动扩展。':'纵轴至少覆盖基线约 ±10%，避免放大小波动。'}`;
  const eventNames={initial:'基线',improved:'提升确认',regressed:'劣化确认'};
  const visibleEvents=policy.events.filter(e=>e.date>=daily[0]?.date);
  $('trend-events').innerHTML=visibleEvents.map(e=>{

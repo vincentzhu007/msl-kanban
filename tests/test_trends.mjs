@@ -80,11 +80,14 @@ test('bug marking includes ten-percent degradation, never improvement or missing
  for(const v of [-9.9,10,null,undefined,NaN])assert.equal(isBugRegression(v),false);
 });
 
-test('RAM baseline methods stay in separate trend series',()=>{
+test('RAM methods share deployment identity while memory comparisons stay isolated',()=>{
  const old=run('o',10), neu=run('n',10);
  old.memory={ram_method:'pre-runtime-pss-v1',net_pss_kib:{stable_median:102400}};
  neu.memory={ram_method:'pre-model-create-pss-v1',net_pss_kib:{stable_median:66560}};
- assert.notEqual(seriesKey(old),seriesKey(neu));
+ assert.equal(seriesKey(old),seriesKey(neu));
  const jobs=[job('2026-11-05','o'),job('2026-11-06','n')];
+ assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-06','day',2,'decode').map(p=>p.value),[10,10]);
+ assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-05','day',1,'ram').map(p=>p.value),[100]);
+ assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-06','week',2,'ram').map(p=>p.value),[65]);
  assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-06','day',2,'ram').map(p=>p.value),[null,65]);
 });

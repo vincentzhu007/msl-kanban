@@ -10,16 +10,16 @@ export const metrics = {
  init: {label:'模型初始化',unit:'ms',get:r=>r.initialization?.model_init_ms}
 };
 const canonical = x => x && typeof x==='object' ? Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])) : x;
-// RAM baseline methods are not comparable: keep each method in its own series.
+// RAM methodology affects memory comparability, not deployment identity.
 export const ramMethod = r => r.memory?.ram_method ?? null;
 export function seriesKey(r) {
  const s=r.spec || {};
  // Trend identity follows the visible deployment and workload, not archive metadata or sample count.
- return JSON.stringify(canonical({model:s.model,soc:s.soc,framework:r.framework,quant:quantizationLabel(r),context:s.context,input:s.input_tokens,output:s.output_tokens,ram_method:ramMethod(r)}));
+ return JSON.stringify(canonical({model:s.model,soc:s.soc,framework:r.framework,quant:quantizationLabel(r),context:s.context,input:s.input_tokens,output:s.output_tokens}));
 }
 export function trendGroups(runs) {
  const groups=new Map();
- for(const r of runs){const key=seriesKey(r);if(!groups.has(key)) groups.set(key,{key,run:r,label:`${r.spec?.model} / ${r.spec?.soc} / ${r.framework} / ${quantizationLabel(r)}${ramMethod(r)?' · '+ramMethod(r):''}`});}
+ for(const r of runs){const key=seriesKey(r);if(!groups.has(key)) groups.set(key,{key,run:r,label:`${r.spec?.model} / ${r.spec?.soc} / ${r.framework} / ${quantizationLabel(r)}`});}
  const result=[...groups.values()];
  const counts=new Map(); for(const g of result) counts.set(g.label,(counts.get(g.label)||0)+1);
  for(const g of result) if(counts.get(g.label)>1) g.label+=` · 配置 ${result.indexOf(g)+1}`;
@@ -27,6 +27,13 @@ export function trendGroups(runs) {
 }
 const shift = (day,n) => new Date(Date.parse(day+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);
 export function weekStart(day){const d=new Date(day+'T00:00:00Z');return shift(day,-((d.getUTCDay()+6)%7));}
+// Select the latest successful RAM methodology as of the selected date, independent of window size.
+export function trendRamMethod(runs,jobs,key,end) {
+ const byId=new Map(runs.map(r=>[r.id,r]));
+ const latest=[...jobs].filter(j=>j.status==='SUCCEEDED' && dailyDate(j)<=end && byId.has(j.result_id) && seriesKey(byId.get(j.result_id))===key)
+  .sort((a,b)=>dailyDate(b).localeCompare(dailyDate(a)) || Date.parse(b.started_at)-Date.parse(a.started_at))[0];
+ return latest?ramMethod(byId.get(latest.result_id)):null;
+}
 export function trendPoints(runs,jobs,key,end,grain='day',windowDays=30,metric='decode') {
  if(!end || !metrics[metric]) return [];
  const start=shift(end,1-windowDays), byId=new Map(runs.map(r=>[r.id,r])), daily=new Map();
@@ -35,12 +42,13 @@ export function trendPoints(runs,jobs,key,end,grain='day',windowDays=30,metric='
   const date=dailyDate(j),r=byId.get(j.result_id);
   if(j.status==='SUCCEEDED' && r && seriesKey(r)===key && date>=start && date<=end) daily.set(date,r);
  }
+ const method=metric==='ram'?trendRamMethod(runs,jobs,key,end):null;
  const buckets=new Map();
  for(let day=start;day<=end;day=shift(day,1)){
   const period=grain==='week'?weekStart(day):day;
   if(!buckets.has(period)) buckets.set(period,{date:period,days:0,runs:[],values:[]});
   const b=buckets.get(period); b.days++;
-  const r=daily.get(day), value=r?metrics[metric].get(r):null;
+  const r=daily.get(day), value=r && (metric!=='ram' || ramMethod(r)===method)?metrics[metric].get(r):null;
   if(typeof value==='number' && Number.isFinite(value) && value>=0){b.values.push(value);b.runs.push({date:day,run:r});}
  }
  return [...buckets.values()].map(b=>{const v=b.values.sort((a,b)=>a-b),n=v.length;return {...b,value:n?(v[Math.floor((n-1)/2)]+v[Math.floor(n/2)])/2:null};});
