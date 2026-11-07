@@ -40,12 +40,11 @@ let js = await readFile(join(source, 'app.js'), 'utf8');
 js = replaceRequired(js, "fetch('/api/runs')", "fetch('/runs.json', {cache:'no-store'})");
 js = replaceRequired(js, "fetch('/api/jobs')", "fetch('/jobs.json', {cache:'no-store'})");
 await Promise.all([
-  ...['trends.js', 'trends.mjs', 'iteration.html', 'iteration.js', 'iteration-config.js', 'iteration.css', 'mindspore-logo.svg'].map(name => copyFile(join(source, name), join(output, name))),
+  ...['trends.js', 'iteration.html', 'iteration.js', 'iteration-config.js', 'iteration.css', 'mindspore-logo.svg'].map(name => copyFile(join(source, name), join(output, name))),
   writeFile(join(output, 'jobs.json'), JSON.stringify(jobs, null, 2) + '\n'),
   writeFile(join(output, 'detail.html'), html),
   copyFile(join(source, 'index.html'), join(output, 'index.html')),
-  copyFile(join(source, 'detail-filters.mjs'), join(output, 'detail-filters.mjs')),
-  copyFile(join(source, 'summary-model.mjs'), join(output, 'summary-model.mjs')),
+  ...(await readdir(source)).filter(name => name.endsWith('.mjs')).map(name => copyFile(join(source, name), join(output, name))),
   writeFile(join(output, 'summary.js'), (await readFile(join(source, 'summary.js'), 'utf8')).replace("fetch('/api/runs')", "fetch('/runs.json', {cache:'no-store'})").replace("fetch('/api/jobs')", "fetch('/jobs.json', {cache:'no-store'})")),
   writeFile(join(output, 'app.js'), js),
   writeFile(join(output, 'runs.json'), JSON.stringify(results, null, 2) + '\n'),
