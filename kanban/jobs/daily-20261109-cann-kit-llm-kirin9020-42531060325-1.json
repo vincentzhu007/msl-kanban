@@ -1,0 +1,12 @@
+{
+  "id": "daily-20261109-cann-kit-llm-kirin9020-42531060325-1",
+  "date": "20261109",
+  "recipe_id": "cann-kit-llm-kirin9020",
+  "status": "BLOCKED",
+  "stage": "PREREQUISITES",
+  "reason": "缺少鸿蒙原生 CANN Kit LLM SDK、配套 2K 模型包及运行配置；当前仅有预检工具。见 docs/CANN_KIT_LLM.md。",
+  "started_at": "2026-11-09T07:32:27.038881+08:00",
+  "finished_at": "2026-11-09T07:32:27.038881+08:00",
+  "code_commit": "03e400dce3b8d6679d2b322c0b79bdd6a49e462f",
+  "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/42531060325"
+}
