@@ -14,6 +14,7 @@ on:
         options:
           - all
           - qwen25-05b-msl-w4a16-kirin9020
+          - qwen25-05b-msl-q30-kirin9020
           - qwen3-4b-msl-s16s4-kirin9030
           - qwen3-06b-msl-s16s4-kirin9030
           - qwen25-05b-llama-q40-kirin9020
@@ -41,6 +42,7 @@ jobs:
       matrix:
         task:
           - qwen25-05b-msl-w4a16-kirin9020
+          - qwen25-05b-msl-q30-kirin9020
           - qwen3-4b-msl-s16s4-kirin9030
           - qwen3-06b-msl-s16s4-kirin9030
           - qwen25-05b-llama-q40-kirin9020

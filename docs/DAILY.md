@@ -5,10 +5,13 @@
 | 任务 | 设备 | 版本策略 |
 | --- | --- | --- |
 | Qwen2.5-0.5B MSL W4A16 | Kirin9020 | 当天 MSL daily + 固定模型 |
+| Qwen2.5-0.5B MSL Q3_0 | Kirin9020 | 当天 MSL daily 导出工具与算子重新生成模型 |
 | Qwen3-4B MSL S16S4 | Kirin9030 | 当天 MSL daily + PR1362/PR62 归档模型 |
 | Qwen3-0.6B MSL S16S4 | Kirin9030 | 当天 MSL daily + PR1362/PR62 归档模型 |
 | Qwen2.5-0.5B llama.cpp Q4_0 CPU | Kirin9020 | 固定 07822bdd 源码每日重编译；4线程、batch64 |
 | CANN Kit LLM | Kirin9020 | 依赖阻塞，仅发布 BLOCKED 状态 |
+
+Q3_0 是 Kirin9020 上 Q4_0 之外的例外量化方式，导出配置名为 `q3_0`（decoder 为 Q3_0，embedding 与 head 仍按运行时契约保持 Q4_0）。该任务每天用当天 master daily 的导出工具和算子重新生成模型，导出能力随 mindspore-lite !1211 于 2026-11-10 合入 master，首个包含该能力的 master daily 发布件为 2026-11-11 构建；更早日期手动补跑会因导出工具不支持 `q3_0` 而失败。
 
 CANN Kit 尚无可用鸿蒙原生 LLM SDK、配套模型和运行配置。阻塞任务不触碰设备、不生成性能结果；工作流该项通过仅表示阻塞状态发布成功，不能解读为评测通过。
 

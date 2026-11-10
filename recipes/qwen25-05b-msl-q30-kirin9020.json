@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "id": "qwen25-05b-msl-q30-kirin9020",
+  "description": "Qwen2.5-0.5B Q3_0 on Kirin9020; model regenerated every day by the master daily exporter and operators.",
+  "model": {
+    "name": "Qwen2.5-0.5B-Instruct",
+    "variant": "instruct",
+    "sha256": "c5d2f27aa4c71648850a97b1525c53fd3f90149f6c460e6b6a32b25f9b56b2d6",
+    "bytes": 250419712,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "q3_0",
+      "group_size": 32,
+      "embedding_format": "W4A16"
+    },
+    "provenance": {
+      "source": "/assets/source-models/Qwen2.5-0.5B-Instruct",
+      "generation": "master_daily",
+      "export_quant_type": "q3_0",
+      "export_target": "kirin9020",
+      "decoder_quant": "Q3_0; embedding and head stay Q4_0 per the runtime contract",
+      "export_feature_pr": "mindspore-lite!1211@a504d6fb",
+      "operator_pr": "mslite_internal!66@d76338840472592f005d2d4bae8fe145f856e6b1",
+      "note": "model.sha256/bytes are the MslTest local rehearsal export of 2026-11-10; every daily run overwrites them with that day's generated model."
+    }
+  },
+  "backend": {
+    "name": "msl",
+    "target": "npu",
+    "options": {}
+  },
+  "build": {
+    "commit": "9e142746adc55e432f3227751c93407890a2af82"
+  },
+  "device_pool": "Kirin9020",
+  "preparation": "frozen_model",
+  "workload": {
+    "context_tokens": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "repetitions": 10,
+    "warmup_runs": 0,
+    "generation": "greedy",
+    "prompt": "hello-repeat-v1",
+    "input_verification": {
+      "model_sha256": "c5d2f27aa4c71648850a97b1525c53fd3f90149f6c460e6b6a32b25f9b56b2d6",
+      "tokens": 1024,
+      "evidence": "2026-11-10 MslTest local rehearsal export: AutoTokenizer on the same local source encodes hello-repeat-v1 as 1024 tokens, single token id 23811; tokenizer.json SHA256 c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539. Each daily run regenerates the model and replaces this verification with that run’s exporter evidence."
+    }
+  },
+  "measurement": {
+    "version": 1,
+    "collector": "hidumper",
+    "stable_runs": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ]
+  }
+}
