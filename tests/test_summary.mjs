@@ -55,3 +55,12 @@ test('date selection isolates failures from other dates and preserves historical
  assert.equal(selectDaily(runs,jobs,'missing').date,'2026-10-29');
  assert.deepEqual(selectDaily([],[]),{dates:[],date:'',jobs:[],items:[]});
 });
+
+import {quantizationLabel} from '../kanban/static/summary-model.mjs';
+test('quantization label recognizes Q3_0 and existing formats', () => {
+  assert.equal(quantizationLabel({model:{quantization:{format:'q3_0'}}}), 'Q3_0');
+  assert.equal(quantizationLabel({spec:{quantization:'{"format": "q3_0"}'}}), 'Q3_0');
+  assert.equal(quantizationLabel({model:{quantization:{format:'q4_0'}}}), 'Q4_0');
+  assert.equal(quantizationLabel({model:{quantization:{format:'s16s4'}}}), 'S16S4');
+  assert.equal(quantizationLabel({}), '—');
+});

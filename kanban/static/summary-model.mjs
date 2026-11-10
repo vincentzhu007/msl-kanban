@@ -44,7 +44,7 @@ export function quantizationLabel(run) {
     try { value = JSON.parse(value); } catch {}
   }
   if (value && typeof value === 'object') value = value.format;
-  const match = String(value ?? '').match(/S16S4|W4A16|Q4_K_M|Q4_0/i);
+  const match = String(value ?? '').match(/S16S4|W4A16|Q4_K_M|Q4_0|Q3_0/i);
   return match ? match[0].toUpperCase() : '—';
 }
 
