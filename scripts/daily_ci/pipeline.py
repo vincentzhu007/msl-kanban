@@ -3,6 +3,7 @@ import copy
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -94,6 +95,65 @@ def run_command(command, log, *, cwd=None, timeout=180):
         stream.write(json.dumps(command) + '\n')
         stream.flush()
         subprocess.run(command, cwd=cwd, check=True, stdout=stream, stderr=subprocess.STDOUT, timeout=timeout)
+
+
+# Model-push budget measured on 2026-11-12 (Asia/Shanghai) against BinRunner
+# 1.4.1 on dog's Kirin9030 path: about 3.07 MiB/s. A 1999.315 MiB Qwen3-4B
+# .msl package was at 92% (1841.5 MiB) when the old 600s cap killed the
+# subprocess; about 51s more would have finished. A 281.5 MiB w4a16 push
+# succeeded at ~3.1 MiB/s. Budget at a conservative 2.0 MiB/s times 1.3,
+# with a 600s floor: 1999.315 MiB lands at 1300s and 2285402624 bytes
+# (about 2.13 GiB) lands at 1417s.
+PUSH_TIMEOUT_FLOOR_SECONDS = 600
+PUSH_TIMEOUT_RATE_BYTES_PER_SECOND = 2 * 1024 * 1024
+PUSH_TIMEOUT_MARGIN = 1.3
+PUSH_TIMEOUT_RETRIES = 1  # one extra br push after a host-side timeout
+
+
+def push_timeout_seconds(size_bytes):
+    require(isinstance(size_bytes, int) and not isinstance(size_bytes, bool) and size_bytes >= 0,
+            'Model size must be a non-negative int')
+    estimated = math.ceil(size_bytes / PUSH_TIMEOUT_RATE_BYTES_PER_SECOND * PUSH_TIMEOUT_MARGIN)
+    return max(PUSH_TIMEOUT_FLOOR_SECONDS, int(estimated))
+
+
+def push_with_resume(command, log, *, cwd, size_bytes):
+    """Push a large model and retry once after a host-side timeout.
+
+    BinRunner 1.4.1 ``br push FILE`` has no resume CLI flag. ``push_file()``
+    always calls ``_open_and_send(..., resume=True)``, so a second invocation
+    of the same command renegotiates the device offset from the existing
+    ``.part`` file (v2 header + 64KiB probe). Internal ``RESUME_MAX_ATTEMPTS``
+    (5) only covers mid-transfer OSError inside one process, not this
+    process-level timeout.
+    """
+    timeout = push_timeout_seconds(size_bytes)
+    attempts = 1 + PUSH_TIMEOUT_RETRIES
+    for attempt in range(1, attempts + 1):
+        mode = 'w' if attempt == 1 else 'a'
+        with log.open(mode) as stream:
+            if attempt == 1:
+                stream.write(json.dumps(command) + '\n')
+            stream.write(json.dumps({
+                'push_attempt': attempt, 'push_attempts': attempts,
+                'timeout_seconds': timeout, 'size_bytes': size_bytes,
+            }) + '\n')
+            stream.flush()
+            try:
+                subprocess.run(command, cwd=cwd, check=True, stdout=stream,
+                               stderr=subprocess.STDOUT, timeout=timeout)
+                return
+            except subprocess.TimeoutExpired:
+                stream.write(
+                    f'\nDaily model push timed out after {timeout}s '
+                    f'(attempt {attempt}/{attempts})\n')
+                stream.flush()
+                if attempt == attempts:
+                    raise
+                stream.write(
+                    'Retrying the same BinRunner push command; resume is the '
+                    'default in 1.4.1 and needs no extra flag.\n')
+                stream.flush()
 
 
 class DeviceOfflineError(RuntimeError):
@@ -306,7 +366,9 @@ def run(repo, recipe_path, config, day, force=False):
                     # BinRunner push defaults to basename; match the locked device path exactly.
                     deployed = task / Path(env['artifacts']['model']['device_path']).name
                     os.link(env['artifacts']['model']['host_path'], deployed)
-                    run_command(prefix + ['push', str(deployed)], task / 'push-model.log', cwd=env['binrunner'], timeout=600)
+                    push_with_resume(prefix + ['push', str(deployed)], task / 'push-model.log',
+                                     cwd=env['binrunner'],
+                                     size_bytes=Path(env['artifacts']['model']['host_path']).stat().st_size)
             update(stage='MEASURE')
             output = execute(lock)
             update(stage='VALIDATE')
