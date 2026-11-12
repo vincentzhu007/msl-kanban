@@ -1,5 +1,5 @@
 import {updateTrends} from './trends.js';
-import {selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
+import {dailyTaskSummary, selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, scale=1, digits=2) => typeof v === 'number' && Number.isFinite(v) ? (v/scale).toFixed(digits) : '—';
@@ -21,6 +21,13 @@ let selectedDate = new URL(location.href).searchParams.get('date') || '';
 function render() {
     const {dates,date,jobs,items} = selectDaily(records,tasks,selectedDate);
     selectedDate = date;
+    const summary = dailyTaskSummary(jobs);
+    const cards = [['total','用例总数',''],['SUCCEEDED','成功','success'],['FAILED','失败','failure'],['BLOCKED','阻塞','blocked'],['RUNNING','运行中','running']];
+    $('daily-status-cards').innerHTML = cards.map(([key,label,tone]) => `<div class="daily-status-card ${tone}"><span>${label}</span><strong>${key==='total'?summary.total:summary.counts[key]}</strong></div>`).join('');
+    const extra = [['SKIPPED','复用结果'],['NO_BUILD','暂无发布件'],['CANCELLED','已取消'],['OTHER','其他状态']].filter(([key])=>summary.counts[key]).map(([key,label])=>`${label} ${summary.counts[key]} 项`);
+    $('daily-status-extra').textContent = extra.join(' · ');
+    $('daily-status-note').textContent = `${date || '暂无日期'} · ${summary.total} 个用例，累计 ${summary.attempts} 次任务记录。每个用例按当天最新一次状态统计；重跑不重复计数，复用结果不计为成功。`;
+
     updateTrends(records,tasks,date);
     $('summary-date').innerHTML = dates.length ? dates.map(d => `<option value="${d}">${d}${d === dates[0] ? ' · 最新' : ''}</option>`).join('') : '<option value="">暂无 Daily 记录</option>';
     $('summary-date').value = date;

@@ -76,3 +76,14 @@ export function selectDaily(runs, jobs, requestedDate) {
   const selectedJobs = jobs.filter(job => dailyDate(job) === date);
   return {dates, date, jobs:selectedJobs, items:overview(runs, selectedJobs)};
 }
+
+// Count each recipe once using the same latest attempt as the overview table.
+export function dailyTaskSummary(jobs) {
+  const counts = {SUCCEEDED:0, FAILED:0, BLOCKED:0, RUNNING:0, SKIPPED:0, NO_BUILD:0, CANCELLED:0, OTHER:0};
+  const items = overview([], jobs);
+  for (const {latest} of items) {
+    const key = Object.hasOwn(counts, latest.status) ? latest.status : 'OTHER';
+    counts[key]++;
+  }
+  return {total:items.length, attempts:jobs.length, counts};
+}

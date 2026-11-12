@@ -17,3 +17,9 @@
 .trend-hit{transition:fill .15s,stroke .15s,stroke-width .15s}.trend-hit.is-selected,.trend-hit:focus{fill:transparent;stroke:none;filter:none}.trend-selection{transition:opacity .15s}
 
 .trend-controls{grid-template-columns:2fr 1fr 2fr}.trend-controls label:first-child{grid-column:auto}@media(max-width:800px){.trend-controls{grid-template-columns:1fr 1fr}.trend-controls label:first-child{grid-column:1/-1}}@media(max-width:480px){.trend-controls{grid-template-columns:1fr}.trend-controls label:first-child{grid-column:auto}}
+
+.daily-status-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
+.daily-status-card{background:#f3f7f9;border:1px solid #e1eaee;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;color:#405b68}
+.daily-status-card strong{font-size:30px;line-height:1.2;font-variant-numeric:tabular-nums}
+.daily-status-card.success{color:#087c61;background:#edf8f4}.daily-status-card.failure{color:#b63f39;background:#fff2f0}.daily-status-card.blocked{color:#966019;background:#fff8ec}.daily-status-card.running{color:#276a9b;background:#eef6fc}
+#daily-status-extra:empty{display:none}@media(max-width:640px){.daily-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.daily-status-card:first-child{grid-column:1/-1}}
