@@ -10,3 +10,13 @@ test('summary counts latest attempt per recipe, all statuses and selected archiv
  assert.equal(dailyTaskSummary([]).total,0);
  assert.equal(Object.values(dailyTaskSummary([]).counts).reduce((a,b)=>a+b),0);
 });
+
+test('PC-only CANN Kit archives do not enter mobile counts or date selection',async()=>{
+ const {mobileKanbanRecords}=await import('../kanban/static/summary-model.mjs');
+ const jobs=[{id:'daily-cann-kit-llm-kirin9020',recipe_id:'cann-kit-llm-kirin9020',date:'20261113',status:'BLOCKED'}, {recipe_id:'qwen3-4b',date:'20261112',status:'SUCCEEDED'}];
+ const state=selectDaily([],mobileKanbanRecords(jobs));
+ assert.equal(state.date,'2026-11-12');
+ assert.equal(dailyTaskSummary(state.jobs).total,1);
+ assert.equal(dailyTaskSummary(state.jobs).counts.BLOCKED,0);
+ assert.equal(mobileKanbanRecords([{id:'daily-cann-kit-test'}]).length,0);
+});

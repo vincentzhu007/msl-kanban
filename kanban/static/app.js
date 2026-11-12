@@ -1,4 +1,4 @@
-import {prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
+import {mobileKanbanRecords, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 import {selectRecords} from './detail-filters.mjs';
 import {baselineLabel, ramComparable, RAM_MISMATCH} from './ram-method.mjs';
 const $=id=>document.getElementById(id),esc=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let runs=[],current,local=[];try{local=JSON.parse(localStorage.getItem('edge-imports')||'[]')}catch{}
@@ -46,7 +46,7 @@ async function refresh(selectedId) {
     const response = await fetch('/api/runs');
     if (!response.ok) throw Error('服务暂不可用');
     const keep = typeof selectedId === 'string' ? selectedId : current?.id || new URLSearchParams(location.search).get('run');
-    const remote = await response.json();
+    const remote = mobileKanbanRecords(await response.json());
     runs = [...remote, ...local].sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.id).localeCompare(String(a.id)));
     updateFilters(keep);
     $('status').textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')} · 每 60 秒自动刷新`;
@@ -59,7 +59,7 @@ async function refreshJobs(){
   try {
     const response=await fetch('/api/jobs');
     if(!response.ok)throw Error('任务记录不可用');
-    const jobs=await response.json();
+    const jobs=mobileKanbanRecords(await response.json());
     const names={SUCCEEDED:'评测成功',FAILED:'失败',SKIPPED:'已有有效结果',NO_BUILD:'暂无发布件',CANCELLED:'已取消',RUNNING:'运行中',BLOCKED:'依赖阻塞'};
     $('jobs').innerHTML=jobs.sort((a,b)=>String(b.started_at).localeCompare(String(a.started_at))).slice(0,30).map(j=>{
       const safe=/^https:\/\/github\.com\/vincentzhu007\/msl-kanban\/actions\/runs\/[0-9]+$/.test(j.task_url||'');

@@ -1,5 +1,5 @@
 import {updateTrends} from './trends.js';
-import {dailyTaskSummary, selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
+import {mobileKanbanRecords, dailyTaskSummary, selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, scale=1, digits=2) => typeof v === 'number' && Number.isFinite(v) ? (v/scale).toFixed(digits) : '—';
@@ -9,7 +9,7 @@ const badge = j => `<span class="task-state ${j.status === 'SUCCEEDED' ? 'succes
 function row(item) {
   const {run:r,latest:j,measured} = item;
   const status = `${badge(j)}<small>任务 ${esc(time(j.started_at))}</small>`;
-  if (!r) return `<tr><td>—</td><td>${item.id.includes('cann-kit') ? 'Kirin9020' : '—'}</td><td class="config-cell">${esc(item.id.includes('cann-kit') ? 'CANN Kit LLM' : item.id)}</td><td colspan="7">${esc(j.reason || '暂无有效实测记录')}</td><td>${status}</td><td>—</td></tr>`;
+  if (!r) return `<tr><td>—</td><td>—</td><td class="config-cell">${esc(item.id)}</td><td colspan="7">${esc(j.reason || '暂无有效实测记录')}</td><td>${status}</td><td>—</td></tr>`;
   const quant = quantizationLabel(r);
   const options = r.backend?.options || {};
   const backendConfig = Object.entries(options).map(([k,v]) => `${k}: ${v}`).join(' · ');
@@ -59,7 +59,7 @@ async function refresh() {
   try {
     const [a,b] = await Promise.all([fetch('/api/runs'),fetch('/api/jobs')]);
     if (!a.ok || !b.ok) throw Error('数据暂不可用');
-    [records,tasks] = await Promise.all([a.json(),b.json()]);
+    [records,tasks] = (await Promise.all([a.json(),b.json()])).map(mobileKanbanRecords);
     render();
     $('summary-error').textContent = '';
   } catch (e) { $('summary-error').textContent = `加载失败：${e.message}。已有表格可能过期，请刷新重试。`; }

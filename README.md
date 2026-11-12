@@ -36,7 +36,7 @@ docker compose -f kanban/compose.yaml up -d --build
 - 看板第四个指标及框架对比使用总 PSS 稳定中位数；Graph 代表 NPU 内存。
 - PR 验证为 daily 运行库 + !1362 导出适配 + !62 分支重编译算子，默认 `decode_layout=0`。
 - 手机执行脚本保留已验证的 dog 路径、设备及模型名。运行前核对这些配置；它们不是开箱即用的跨环境 CI。
-- Daily 已提供 GitHub Actions 手动/定时入口，覆盖 Qwen2.5-0.5B、Qwen3-4B、Qwen3-0.6B 的 MSL 评测及固定版本 llama.cpp CPU 每日对照；CANN Kit 单独记录依赖阻塞；部署与运行方式见 [Daily 说明](docs/DAILY.md)。weekly 竞品和回退告警尚未接入。
+- Daily 已提供 GitHub Actions 手动/定时入口，覆盖 Qwen2.5-0.5B、Qwen3-4B、Qwen3-0.6B 的 MSL 评测及固定版本 llama.cpp CPU 每日对照；CANN Kit 仅支持 PC，已暂停端侧每日评测并从看板隐藏；部署与运行方式见 [Daily 说明](docs/DAILY.md)。weekly 竞品和回退告警尚未接入。
 
 模型、GGUF、SDK、DDK、daily 包和编译产物不入 Git，完整复现资产在 dog 归档。量化精度、温度锁定和 PR 新性能路径 A/B 不在已有验证范围内。
 

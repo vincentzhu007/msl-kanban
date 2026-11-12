@@ -87,3 +87,6 @@ export function dailyTaskSummary(jobs) {
   }
   return {total:items.length, attempts:jobs.length, counts};
 }
+
+// Archived PC-only CANN Kit tasks are retained, but excluded from the mobile kanban.
+export const mobileKanbanRecords = records => records.filter(r => !String(r.recipe_id || r.task_id || r.id || '').includes('cann-kit'));

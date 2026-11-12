@@ -18,7 +18,6 @@ on:
           - qwen3-4b-msl-s16s4-kirin9030
           - qwen3-06b-msl-s16s4-kirin9030
           - qwen25-05b-llama-q40-kirin9020
-          - cann-kit-llm-kirin9020
       force:
         description: 'Re-evaluate an already archived build'
         default: false
@@ -46,7 +45,6 @@ jobs:
           - qwen3-4b-msl-s16s4-kirin9030
           - qwen3-06b-msl-s16s4-kirin9030
           - qwen25-05b-llama-q40-kirin9020
-          - cann-kit-llm-kirin9020
     name: ${{ matrix.task }}
     runs-on: [self-hosted, dog, msl-kanban, container]
     timeout-minutes: 150
