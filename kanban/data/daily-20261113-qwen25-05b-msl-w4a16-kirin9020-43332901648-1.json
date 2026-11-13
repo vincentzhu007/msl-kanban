@@ -1,0 +1,496 @@
+{
+  "schema_version": 1,
+  "id": "daily-20261113-qwen25-05b-msl-w4a16-kirin9020-43332901648-1",
+  "date": "2026-11-13",
+  "recipe_id": "qwen25-05b-msl-w4a16-kirin9020",
+  "recipe_sha256": "2e2503d67ef5696907ad44f1610b30d6d3ce77fc3d6d574551f42abcfe1e5a09",
+  "comparison_key": "a61986dd34748b7a9ad75f7a770afa2c74d3f61e2b107a7c99494fc2c6b3de63",
+  "framework": "MSL-LLM NPU",
+  "build_commit": "c089e2e80004adf7633ba6e961da0c05bad3ca24",
+  "backend": {
+    "name": "msl",
+    "target": "npu",
+    "options": {}
+  },
+  "spec": {
+    "model": "Qwen2.5-0.5B-Instruct",
+    "quantization": "{\"format\": \"q4_0\"}",
+    "soc": "Kirin9020",
+    "context": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "consecutive_runs": 10,
+    "between_runs_wait_seconds": 0,
+    "warmup_in_this_process": 0
+  },
+  "model": {
+    "name": "Qwen2.5-0.5B-Instruct",
+    "variant": "instruct",
+    "sha256": "565ef90048e385e30c455f78b5c36a6da4ec7992638c75c09d4af12b52188518",
+    "bytes": 295156224,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "q4_0"
+    }
+  },
+  "timing": {
+    "ttft_ms": {
+      "p90": 977.643438,
+      "median": 964.638281,
+      "min": 904.434687,
+      "max": 981.149375
+    },
+    "decode_ms": {
+      "p90": 2887.106406,
+      "median": 2878.781797,
+      "min": 2870.806406,
+      "max": 2900.013281
+    },
+    "total_ms": {
+      "p90": 3857.409219,
+      "median": 3844.6405465,
+      "min": 3781.74125,
+      "max": 3881.240781
+    },
+    "decode_tps": {
+      "p90": 44.159161,
+      "median": 44.115887,
+      "min": 43.792903,
+      "max": 44.238441
+    },
+    "prefill_total_ms": {
+      "p90": 977.643438,
+      "median": 964.638281,
+      "min": 904.434687,
+      "max": 981.149375
+    }
+  },
+  "memory": {
+    "graph_kib": {
+      "sampled_peak": 309476,
+      "inference_sampled_peak": 309476,
+      "stable_median": 309476.0,
+      "stable_min": 309476,
+      "stable_max": 309476
+    },
+    "total_pss_kib": {
+      "sampled_peak": 402083,
+      "inference_sampled_peak": 402083,
+      "stable_median": 401854.0,
+      "stable_min": 401324,
+      "stable_max": 401862
+    },
+    "samples": 16,
+    "stable_samples": 8,
+    "sample_interval_median_ms": 3541.851318359375,
+    "total_includes_graph": true,
+    "baseline_pss_kib": {
+      "median": 31042,
+      "min": 30818,
+      "max": 31102,
+      "samples": 5,
+      "scope": "same PID before MSLLMCreateModel; first 2 seconds excluded"
+    },
+    "net_pss_kib": {
+      "sampled_peak": 371041,
+      "inference_sampled_peak": 371041,
+      "stable_median": 370812.0,
+      "stable_min": 370282,
+      "stable_max": 370820
+    },
+    "ram_method": "pre-model-create-pss-v1",
+    "stable_definition": "Complete samples within decode runs 2..N; device clock aligned",
+    "peak_scope": "Observed samples only; short peaks may be missed",
+    "measurement_version": 1
+  },
+  "samples": [
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 1,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 904.434687,
+      "decode_ms": 2877.253281,
+      "decode_tps": 44.139319,
+      "total_ms": 3781.74125,
+      "rss_after_kib": 204940,
+      "process_hwm_kib": 204940
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 2,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 958.18375,
+      "decode_ms": 2876.36875,
+      "decode_tps": 44.152892,
+      "total_ms": 3834.63625,
+      "rss_after_kib": 204956,
+      "process_hwm_kib": 204956
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 3,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 981.149375,
+      "decode_ms": 2900.013281,
+      "decode_tps": 43.792903,
+      "total_ms": 3881.240781,
+      "rss_after_kib": 204964,
+      "process_hwm_kib": 204964
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 4,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 972.945156,
+      "decode_ms": 2882.381407,
+      "decode_tps": 44.060789,
+      "total_ms": 3855.3975,
+      "rss_after_kib": 204980,
+      "process_hwm_kib": 204980
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 5,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 968.78125,
+      "decode_ms": 2877.869063,
+      "decode_tps": 44.129874,
+      "total_ms": 3846.722188,
+      "rss_after_kib": 204984,
+      "process_hwm_kib": 204984
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 6,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 977.643438,
+      "decode_ms": 2879.694531,
+      "decode_tps": 44.1019,
+      "total_ms": 3857.409219,
+      "rss_after_kib": 204984,
+      "process_hwm_kib": 204984
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 7,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 952.840937,
+      "decode_ms": 2881.124375,
+      "decode_tps": 44.080013,
+      "total_ms": 3834.037969,
+      "rss_after_kib": 204984,
+      "process_hwm_kib": 204984
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 8,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 960.495312,
+      "decode_ms": 2875.960469,
+      "decode_tps": 44.159161,
+      "total_ms": 3836.528125,
+      "rss_after_kib": 204984,
+      "process_hwm_kib": 204984
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 9,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 974.871562,
+      "decode_ms": 2870.806406,
+      "decode_tps": 44.238441,
+      "total_ms": 3845.746093,
+      "rss_after_kib": 204984,
+      "process_hwm_kib": 204984
+    },
+    {
+      "hello_repetitions": 1024,
+      "prompt_bytes": 6144,
+      "run": 10,
+      "warmup": false,
+      "status": 0,
+      "finish_reason": 3,
+      "output_callbacks": 128,
+      "ttft_ms": 956.365156,
+      "decode_ms": 2887.106406,
+      "decode_tps": 43.98868,
+      "total_ms": 3843.535,
+      "rss_after_kib": 204992,
+      "process_hwm_kib": 204992
+    }
+  ],
+  "memory_samples": [
+    {
+      "file": "memory-0000.txt",
+      "start_epoch_ms": 1794528079322.5078,
+      "end_epoch_ms": 1794528079951.4421,
+      "graph_kib": 0,
+      "total_pss_kib": 30818,
+      "stable_decode": false,
+      "fully_in_inference": false,
+      "baseline_sample": true,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0001.txt",
+      "start_epoch_ms": 1794528083032.775,
+      "end_epoch_ms": 1794528083449.1729,
+      "graph_kib": 0,
+      "total_pss_kib": 30942,
+      "stable_decode": false,
+      "fully_in_inference": false,
+      "baseline_sample": true,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0002.txt",
+      "start_epoch_ms": 1794528086534.3184,
+      "end_epoch_ms": 1794528086943.0747,
+      "graph_kib": 0,
+      "total_pss_kib": 31042,
+      "stable_decode": false,
+      "fully_in_inference": false,
+      "baseline_sample": true,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0003.txt",
+      "start_epoch_ms": 1794528090091.6455,
+      "end_epoch_ms": 1794528090504.823,
+      "graph_kib": 0,
+      "total_pss_kib": 31046,
+      "stable_decode": false,
+      "fully_in_inference": false,
+      "baseline_sample": true,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0004.txt",
+      "start_epoch_ms": 1794528093606.2964,
+      "end_epoch_ms": 1794528094008.865,
+      "graph_kib": 0,
+      "total_pss_kib": 31102,
+      "stable_decode": false,
+      "fully_in_inference": false,
+      "baseline_sample": true,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0005.txt",
+      "start_epoch_ms": 1794528097102.1533,
+      "end_epoch_ms": 1794528097557.492,
+      "graph_kib": 309476,
+      "total_pss_kib": 391778,
+      "stable_decode": false,
+      "fully_in_inference": false,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0006.txt",
+      "start_epoch_ms": 1794528100669.4302,
+      "end_epoch_ms": 1794528101117.456,
+      "graph_kib": 309476,
+      "total_pss_kib": 401300,
+      "stable_decode": false,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0007.txt",
+      "start_epoch_ms": 1794528104287.762,
+      "end_epoch_ms": 1794528104741.8916,
+      "graph_kib": 309476,
+      "total_pss_kib": 401324,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0008.txt",
+      "start_epoch_ms": 1794528107830.2683,
+      "end_epoch_ms": 1794528108295.7869,
+      "graph_kib": 309476,
+      "total_pss_kib": 401822,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0009.txt",
+      "start_epoch_ms": 1794528111363.1265,
+      "end_epoch_ms": 1794528111842.0728,
+      "graph_kib": 309476,
+      "total_pss_kib": 401830,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0010.txt",
+      "start_epoch_ms": 1794528114914.3684,
+      "end_epoch_ms": 1794528115378.117,
+      "graph_kib": 309476,
+      "total_pss_kib": 401846,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0011.txt",
+      "start_epoch_ms": 1794528118456.2197,
+      "end_epoch_ms": 1794528118934.7803,
+      "graph_kib": 309476,
+      "total_pss_kib": 401862,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0012.txt",
+      "start_epoch_ms": 1794528121996.0825,
+      "end_epoch_ms": 1794528122462.7578,
+      "graph_kib": 309476,
+      "total_pss_kib": 401862,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0013.txt",
+      "start_epoch_ms": 1794528125530.3398,
+      "end_epoch_ms": 1794528126004.5525,
+      "graph_kib": 309476,
+      "total_pss_kib": 401862,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0014.txt",
+      "start_epoch_ms": 1794528129086.7107,
+      "end_epoch_ms": 1794528129544.295,
+      "graph_kib": 309476,
+      "total_pss_kib": 401862,
+      "stable_decode": true,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    },
+    {
+      "file": "memory-0015.txt",
+      "start_epoch_ms": 1794528132616.3423,
+      "end_epoch_ms": 1794528133091.453,
+      "graph_kib": 309476,
+      "total_pss_kib": 402083,
+      "stable_decode": false,
+      "fully_in_inference": true,
+      "baseline_sample": false,
+      "pid": 11217,
+      "baseline_scope": "before_model_create"
+    }
+  ],
+  "latency_p90_method": "nearest-rank; max for n=5",
+  "input_tokens_source": "recipe-verification-evidence",
+  "source": "daily 真机评测 · GitHub Actions",
+  "baseline_eligible": false,
+  "verification": {
+    "probe_spec": true,
+    "artifact_identity": true,
+    "environment_qualified": false
+  },
+  "protocol_note": "Daily MSL 运行库与本次重编译探针；当天 master daily 导出工具及算子重新生成模型。上下文2048、输入1024、输出128，同进程连续10次，无预热；总PSS包含Graph。温度/频率未锁定，不自动批准性能基线。 RAM已扣除同PID创建模型前的PSS中位数；原始总PSS保留。初始化包含模型创建。",
+  "initialization": {
+    "model_init_ms": 709.402344,
+    "samples": 1,
+    "scope": "Backend/model/context/sampler or generation config ready; excludes process startup; filesystem cache uncontrolled"
+  },
+  "timing_scope": {
+    "ttft": "Generate request to first token; excludes model initialization",
+    "prefill": "unavailable: runtime stage timing not exposed",
+    "prefill_total": "Tokenizer + input evaluation + first-token sampling/callback overhead; identical to TTFT; excludes initialization"
+  },
+  "device_comparison_key": "547643fae0074c1ba4b8278a07519501acddac8b0dfa1f35c88c441815cf239f",
+  "device": "dog-kirin9020",
+  "daily": {
+    "commit": "c089e2e80004adf7633ba6e961da0c05bad3ca24",
+    "source_url": "https://repo.mindspore.cn/mindspore/mindspore-lite/version/202611/20261113/master_20261113010014_c089e2e80004adf7633ba6e961da0c05bad3ca24_newest/lite/ohos_aarch64/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+    "sha256": "2ca328b358c0f57c815aaeecc728079efaa66a2dda8e6fece3c2602d43e6fbfa",
+    "model_generation": "master_daily",
+    "daily_components": {
+      "exporter": {
+        "filename": "mslite_llm-0.2.0-py3-none-any.whl",
+        "sha256": "7d6c89b85f0414f9a317a658c03da6db9b42e1c516ae559c0feb720a6c4ca228"
+      },
+      "operator_plugin": {
+        "filename": "mslite_llm_ops-0.1.0-py3-none-any.whl",
+        "sha256": "812a21da4b3f87a47806b711d9cb789c653345db0b53ecb17800732ff5ef3ee7"
+      },
+      "operators": {
+        "filename": "mslite_llm_ops_kirin_ubuntu_x86_64.run",
+        "sha256": "4f6f95e411c928a2e569b9310f8e1168413da0db2ffbc8d1871e3d9c1d08707a"
+      }
+    },
+    "code_commit": "7bd2eb8ebfff94c41570024aa414cef6be591212",
+    "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/43332901648"
+  }
+}
