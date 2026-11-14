@@ -1,0 +1,14 @@
+{
+  "id": "daily-20261114-qwen25-05b-llama-q40-kirin9020-43531560234-1",
+  "date": "20261114",
+  "recipe_id": "qwen25-05b-llama-q40-kirin9020",
+  "code_commit": "d5eb9718a90935fe789727d88f349b4836ba6153",
+  "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/43531560234",
+  "status": "SUCCEEDED",
+  "stage": "ARCHIVED",
+  "started_at": "2026-11-14T09:06:38.093517+08:00",
+  "build_commit": "07822bddf80d73f1168e592c52e69caaff820f9c",
+  "build_sha256": "a16f066998e9242fd477f8176e8f3a23dcd9b61bcc30846e8521968fd197a6a8",
+  "result_id": "daily-20261114-qwen25-05b-llama-q40-kirin9020-43531560234-1",
+  "finished_at": "2026-11-14T09:11:42.009456+08:00"
+}
