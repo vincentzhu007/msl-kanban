@@ -86,3 +86,11 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 - `DDK_PACKAGES_DIR` → `/assets/ddk-packages`（官方 DDK-tools 及两种芯片 plugin zip）。
 
 配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟；导出前检查至少12GiB可用空间，不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
+
+## Qwen2.5-1.5B Kirin9020
+
+两个任务共用 HF 源 `/assets/source-models/Qwen2.5-1.5B-Instruct`，`model_generation.mode` 都是 `master_daily`。`qwen25-15b-msl-w4a16-kirin9020` 的 `quant_type` 与 recipe `format` 是 `q4_0`。`qwen25-15b-msl-q30-kirin9020` 的 `quant_type` 与 recipe `format` 是 `q3_0`。导出产物和结果曲线按 format 分开。模型清单里 Kirin 9020 的 Q4_0 仍是未支持。
+
+规格都是上下文 2048、输入 1024、输出 128、连续 10 次，抄自 0.5B。1.5B 尚无正式包在该规格下的实测。测量沿用现有 Total PSS 与 Graph，并记录 TTFT 与 decode。不发布 ION、DMA 与普通内存拆分。
+
+两个配置都有 `blocked`，两个任务 id 都不在手动选项和矩阵里，定时仍是现有五项。source-models 挂载清单仍是已有三项。两项都等人工确认同一个正式 master 包包含 !1404 的 merge commit 后，用该包分别重导。其后的 master 提交同样有效。代码不按祖先关系拦截。PR 历史包不能当作这次首跑。设备与环境留在运行配置中。

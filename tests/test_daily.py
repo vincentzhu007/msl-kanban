@@ -10,6 +10,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from daily_ci.pipeline import DeviceOfflineError, device_output, select_build, safe_extract, download, public_result, run, ensure_forward, record_blocked, prepare_llama
+from recipe_ci.recipe import comparison_key, load
 
 
 class DailyTests(unittest.TestCase):
@@ -143,6 +144,103 @@ class DeviceOutputTests(unittest.TestCase):
                    return_value=self.completed('OpenHarmony-6.1.1.120\n')):
             self.assertEqual(device_output(self.ENV, ['param', 'get', 'const.ohos.fullname']),
                              'OpenHarmony-6.1.1.120')
+
+
+class Qwen2515BDailyTests(unittest.TestCase):
+    TASKS = {
+        'qwen25-15b-msl-w4a16-kirin9020': {
+            'quant': 'q4_0',
+            'source': '/assets/source-models/Qwen2.5-1.5B-Instruct',
+            'mode': 'master_daily',
+            'reference': 'qwen25-05b-msl-w4a16-kirin9020',
+        },
+        'qwen25-15b-msl-q30-kirin9020': {
+            'quant': 'q3_0',
+            'source': '/assets/source-models/Qwen2.5-1.5B-Instruct',
+            'mode': 'master_daily',
+            'reference': 'qwen25-05b-msl-q30-kirin9020',
+        },
+    }
+    SENTINEL_SHA = '0' * 64
+    SENTINEL_COMMIT = '0' * 40
+
+    def test_recipes_keep_separate_quant_and_source(self):
+        loaded = {}
+        for task_id, expect in self.TASKS.items():
+            recipe = load(ROOT / 'recipes' / (task_id + '.json'))
+            reference = load(ROOT / 'recipes' / (expect['reference'] + '.json'))
+            task = json.loads((ROOT / 'config/daily' / (task_id + '.json')).read_text())
+            self.assertEqual(recipe['model']['quantization'], reference['model']['quantization'])
+            self.assertEqual(recipe['model']['quantization']['format'], expect['quant'])
+            self.assertEqual(task['model_generation']['quant_type'], expect['quant'])
+            self.assertEqual(task['model_generation']['mode'], expect['mode'])
+            self.assertEqual(task['model_generation']['source_model'], expect['source'])
+            work = recipe['workload']
+            self.assertEqual((work['context_tokens'], work['input_tokens'], work['output_tokens'], work['repetitions']),
+                             (2048, 1024, 128, 10))
+            self.assertEqual(recipe['model']['sha256'], self.SENTINEL_SHA)
+            self.assertEqual(recipe['build']['commit'], self.SENTINEL_COMMIT)
+            loaded[task_id] = (recipe, task)
+        w4, q3 = loaded['qwen25-15b-msl-w4a16-kirin9020'], loaded['qwen25-15b-msl-q30-kirin9020']
+        self.assertNotEqual(w4[0]['model']['quantization']['format'], q3[0]['model']['quantization']['format'])
+        self.assertNotEqual(comparison_key(w4[0]), comparison_key(q3[0]))
+        self.assertEqual(w4[1]['model_generation']['source_model'], q3[1]['model_generation']['source_model'])
+        self.assertEqual(w4[1]['model_generation']['mode'], 'master_daily')
+        self.assertEqual(q3[1]['model_generation']['mode'], 'master_daily')
+        self.assertNotEqual(w4[1]['model_generation']['quant_type'], q3[1]['model_generation']['quant_type'])
+
+    def listed_tasks(self, workflow, header):
+        lines = workflow.splitlines()
+        start = lines.index(header)
+        items = []
+        for line in lines[start + 1:]:
+            if line.startswith('          - '):
+                items.append(line[12:])
+            elif line.strip():
+                break
+        return items
+
+    def test_schedule_matches_blocked_or_enabled_contract(self):
+        workflow = (ROOT / '.github/workflows/daily-qwen25-9020.yml').read_text()
+        options = self.listed_tasks(workflow, '        options:')
+        matrix = self.listed_tasks(workflow, '        task:')
+        states = []
+        public = []
+        for task_id, expect in self.TASKS.items():
+            task = json.loads((ROOT / 'config/daily' / (task_id + '.json')).read_text())
+            listed = task_id in options and task_id in matrix
+            withheld = task_id not in options and task_id not in matrix
+            prepared = 'blocked' in task and bool(task['blocked']) and withheld
+            enabled = 'blocked' not in task and listed
+            self.assertTrue(prepared or enabled)
+            self.assertEqual(task_id in options, task_id in matrix)
+            self.assertEqual(task['model_generation']['quant_type'], expect['quant'])
+            self.assertEqual(task['model_generation']['source_model'], expect['source'])
+            for absent in ('activation', 'device_alias', 'environment', 'required_build_commit'):
+                self.assertNotIn(absent, task)
+            states.append(prepared)
+            public.append((ROOT / 'config/daily' / (task_id + '.json')).read_text())
+            public.append((ROOT / 'recipes' / (task_id + '.json')).read_text())
+        self.assertEqual(len(set(states)), 1)
+        blob = '\n'.join(public)
+        self.assertNotRegex(blob, r'(?i)dog|/home/|\d{1,3}(?:\.\d{1,3}){3}')
+        for forbidden in ('external_gguf', 'e4a9c657', '711013248', 'e464a610'):
+            self.assertNotIn(forbidden, blob)
+
+    def test_synthetic_blocked_config_records_status_without_performance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / 'repo'
+            repo.mkdir()
+            config = {'archive_root': str(Path(tmp) / 'archive'),
+                      'task_id': 'synthetic-blocked-task',
+                      'blocked': 'synthetic prerequisite'}
+            with patch('daily_ci.pipeline.subprocess.check_output', return_value='c' * 40):
+                self.assertEqual(record_blocked(repo, config, '20261116'), 0)
+            status = json.loads(next((repo / 'kanban/jobs').glob('*.json')).read_text())
+            self.assertEqual(status['status'], 'BLOCKED')
+            self.assertEqual(status['recipe_id'], 'synthetic-blocked-task')
+            self.assertEqual(status['reason'], 'synthetic prerequisite')
+            self.assertFalse((repo / 'kanban/data').exists())
 
 
 if __name__ == '__main__': unittest.main()

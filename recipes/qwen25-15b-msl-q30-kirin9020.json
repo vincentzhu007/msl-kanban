@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "id": "qwen25-15b-msl-q30-kirin9020",
+  "description": "Qwen2.5-1.5B-Instruct Q3_0 on Kirin9020. Export quant_type q3_0 matches qwen25-05b-msl-q30-kirin9020. Not scheduled. Workload 2048/1024/128 is copied from that task and is not evidence from an official 1.5B package. Uses the same HF source directory as qwen25-15b-msl-w4a16-kirin9020. model.sha256, model.bytes, and build.commit are unset sentinels. Stays blocked until a maintainer confirms an official master package contains the mindspore-lite !1404 merge commit.",
+  "model": {
+    "name": "Qwen2.5-1.5B-Instruct",
+    "variant": "instruct",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "bytes": 1,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "q3_0",
+      "group_size": 32,
+      "embedding_format": "W4A16"
+    },
+    "provenance": {
+      "generation": "master_daily",
+      "export_quant_type": "q3_0",
+      "export_target": "kirin9020",
+      "decoder_quant": "Q3_0; embedding and head stay Q4_0 per the runtime contract",
+      "source_model": "/assets/source-models/Qwen2.5-1.5B-Instruct",
+      "identity": "unset",
+      "note": "Same HF directory as the 1.5B W4A16 task. model.sha256 and model.bytes are sentinels. The daily exporter replaces them."
+    }
+  },
+  "backend": {
+    "name": "msl",
+    "target": "npu",
+    "options": {}
+  },
+  "build": {
+    "commit": "0000000000000000000000000000000000000000"
+  },
+  "device_pool": "Kirin9020",
+  "preparation": "frozen_model",
+  "workload": {
+    "context_tokens": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "repetitions": 10,
+    "warmup_runs": 0,
+    "generation": "greedy",
+    "prompt": "hello-repeat-v1",
+    "input_verification": {
+      "model_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tokens": 1024,
+      "evidence": "Tokenizer count is not recorded for this model. An armed daily run must replace this evidence with that run's exporter tokenizer check. This string is not a measurement."
+    }
+  },
+  "measurement": {
+    "version": 1,
+    "collector": "hidumper",
+    "stable_runs": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+  }
+}

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {seriesKey,trendPoints,weekStart,improvement} from '../kanban/static/trends.mjs';
+import {quantizationLabel} from '../kanban/static/summary-model.mjs';
 const run=(id,value,n=10)=>({id,recipe_id:'m',spec:{model:'q',soc:'k',consecutive_runs:n},timing:{decode_tps:{p90:value}}});
 const job=(date,id,status='SUCCEEDED',hour='03')=>({date,started_at:`${date}T${hour}:00:00+08:00`,result_id:id,status});
 test('daily takes latest successful retry, excludes reused and failed runs, leaves gaps',()=>{
@@ -90,4 +91,13 @@ test('RAM methods share deployment identity while memory comparisons stay isolat
  assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-05','day',1,'ram').map(p=>p.value),[100]);
  assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-06','week',2,'ram').map(p=>p.value),[65]);
  assert.deepEqual(trendPoints([old,neu],jobs,seriesKey(neu),'2026-11-06','day',2,'ram').map(p=>p.value),[null,65]);
+});
+
+test('q4_0 and q3_0 stay on separate trend series', () => {
+ const base = {spec:{model:'Qwen2.5-1.5B-Instruct', soc:'Kirin9020', context:2048, input_tokens:1024, output_tokens:128}, framework:'MSL-LLM NPU'};
+ const w4 = {...base, model:{quantization:{format:'q4_0'}}};
+ const q3 = {...base, model:{quantization:{format:'q3_0'}}};
+ assert.equal(quantizationLabel(w4), 'Q4_0');
+ assert.equal(quantizationLabel(q3), 'Q3_0');
+ assert.notEqual(seriesKey(w4), seriesKey(q3));
 });

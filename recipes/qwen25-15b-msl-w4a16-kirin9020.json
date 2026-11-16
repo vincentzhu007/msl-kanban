@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "qwen25-15b-msl-w4a16-kirin9020",
+  "description": "Qwen2.5-1.5B-Instruct on Kirin9020. Task name W4A16 uses export quant_type q4_0, same as qwen25-05b-msl-w4a16-kirin9020. Not scheduled. Workload 2048/1024/128 is copied from that task and is not evidence from an official 1.5B package. model.sha256, model.bytes, and build.commit are unset sentinels. Stays blocked until a maintainer confirms an official master package contains the mindspore-lite !1404 merge commit.",
+  "model": {
+    "name": "Qwen2.5-1.5B-Instruct",
+    "variant": "instruct",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "bytes": 1,
+    "context_tokens": 2048,
+    "quantization": {
+      "format": "q4_0",
+      "group_size": 32,
+      "mixed_tensor_types": false
+    },
+    "provenance": {
+      "generation": "master_daily",
+      "export_quant_type": "q4_0",
+      "task_label": "W4A16",
+      "identity": "unset",
+      "source_model_dir": "unverified",
+      "note": "sha256 and bytes are sentinels. They are not a model checksum or a file size. The daily exporter overwrites both before publication."
+    }
+  },
+  "backend": {
+    "name": "msl",
+    "target": "npu",
+    "options": {}
+  },
+  "build": {
+    "commit": "0000000000000000000000000000000000000000"
+  },
+  "device_pool": "Kirin9020",
+  "preparation": "frozen_model",
+  "workload": {
+    "context_tokens": 2048,
+    "input_tokens": 1024,
+    "output_tokens": 128,
+    "repetitions": 10,
+    "warmup_runs": 0,
+    "generation": "greedy",
+    "prompt": "hello-repeat-v1",
+    "input_verification": {
+      "model_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "tokens": 1024,
+      "evidence": "Tokenizer count is not recorded for this model. An armed daily run must replace this evidence with that run's exporter tokenizer check. This string is not a measurement."
+    }
+  },
+  "measurement": {
+    "version": 1,
+    "collector": "hidumper",
+    "stable_runs": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+  }
+}
