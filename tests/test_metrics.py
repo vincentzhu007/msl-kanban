@@ -196,3 +196,102 @@ class BaselinePssTests(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'missing from probe log'):
             require_declared_baseline(legacy, {})
         require_declared_baseline({'environment': {'artifacts': {}}}, {})
+
+    def rows(self):
+        return [dict(ttft_ms=1, decode_ms=1, total_ms=2, decode_tps=1)]
+
+    def floor_memory(self, floor, stable_total=500000):
+        samples = [dict(stable_decode=False, fully_in_inference=False, graph_kib=0,
+                        total_pss_kib=value, start_epoch_ms=i * 1000, baseline_sample=True,
+                        pid=12, baseline_scope='before_model_create')
+                   for i, value in enumerate(floor)]
+        for extra in (1, 2):
+            samples.append(dict(stable_decode=True, fully_in_inference=True, graph_kib=50,
+                                total_pss_kib=stable_total, start_epoch_ms=(len(floor) + extra) * 1000,
+                                baseline_sample=False, pid=12, baseline_scope='before_model_create'))
+        return samples
+
+    def test_complete_but_unstable_baseline_warns_and_keeps_samples(self):
+        # Published totals from the 2026-11-19 report. Not a hidumper reparse.
+        floor = [76680, 85528, 89836, 89838, 89902]
+        with self.assertWarnsRegex(UserWarning, 'PSS baseline is unstable'):
+            _, stats = summarize(self.rows(), self.floor_memory(floor, stable_total=500000))
+        warning = stats['quality']['warnings'][0]
+        self.assertEqual(warning['code'], 'pss_baseline_unstable')
+        self.assertEqual(warning['derived'], ['net_pss_kib'])
+        self.assertEqual(warning['derived_kind'], 'unstable_baseline_estimate')
+        self.assertEqual(warning['sample_kib'], floor)
+        self.assertEqual(warning['range_kib'], max(floor) - min(floor))
+        limit = max(2048, stats['baseline_pss_kib']['median'] * .1)
+        self.assertEqual(warning['stability_limit_kib'], limit)
+        self.assertGreater(warning['range_kib'], limit)
+        self.assertEqual(stats['baseline_pss_kib']['median'], 89836)
+        self.assertEqual(stats['baseline_pss_kib']['sample_kib'], floor)
+        self.assertEqual(stats['total_pss_kib']['stable_median'], 500000)
+        self.assertEqual(stats['net_pss_kib']['stable_median'], 500000 - 89836)
+        self.assertNotEqual(stats['net_pss_kib']['stable_median'], 0)
+        self.assertNotIn(0, warning['sample_kib'])
+        encoded = json.dumps(stats, allow_nan=False)
+        self.assertEqual(json.loads(encoded)['quality']['warnings'][0]['code'], 'pss_baseline_unstable')
+
+    def test_stable_baseline_adds_no_warning(self):
+        import warnings
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            _, stats = summarize(self.rows(), self.samples())
+        self.assertFalse(any('unstable' in str(item.message) for item in caught))
+        self.assertNotIn('quality', stats)
+        self.assertNotIn('sample_kib', stats['baseline_pss_kib'])
+        _, equal = summarize(self.rows(), self.floor_memory([28500, 30000, 31500]))
+        self.assertNotIn('quality', equal)
+        self.assertEqual(max(equal['baseline_pss_kib']['max'] - equal['baseline_pss_kib']['min'], 0),
+                         max(2048, equal['baseline_pss_kib']['median'] * .1))
+
+    def test_invalid_baseline_inputs_still_fail(self):
+        short = self.floor_memory([100, 102, 98])
+        short[0]['baseline_sample'] = False
+        short[1]['baseline_sample'] = False
+        with self.assertRaisesRegex(ValueError, 'three complete'):
+            summarize(self.rows(), short)
+        negative = self.floor_memory([76680, 85528, 89836, 89838, 89902], stable_total=100)
+        with self.assertRaisesRegex(ValueError, 'Negative'):
+            summarize(self.rows(), negative)
+        missing = self.samples()
+        del missing[0]['total_pss_kib']
+        with self.assertRaises(KeyError):
+            summarize(self.rows(), missing)
+        non_finite = self.floor_memory([100, 102, float('nan')])
+        with self.assertRaisesRegex(ValueError, 'not finite'):
+            summarize(self.rows(), non_finite)
+        idle = self.floor_memory([100, 102, 98])
+        for sample in idle:
+            sample['stable_decode'] = False
+            sample['fully_in_inference'] = False
+        with self.assertRaisesRegex(ValueError, 'Insufficient memory samples'):
+            summarize(self.rows(), idle)
+        bare = [dict(stable_decode=True, fully_in_inference=True, graph_kib=10,
+                     total_pss_kib=20, start_epoch_ms=i) for i in (1, 2)]
+        _, stats = summarize(self.rows(), bare)
+        self.assertNotIn('net_pss_kib', stats)
+        self.assertNotIn('baseline_pss_kib', stats)
+        self.assertNotIn('quality', stats)
+
+    def test_unstable_quality_survives_public_result(self):
+        from daily_ci.pipeline import public_result
+        floor = [76680, 85528, 89836, 89838, 89902]
+        with self.assertWarnsRegex(UserWarning, 'PSS baseline is unstable'):
+            _, stats = summarize(self.rows(), self.floor_memory(floor))
+        result = {'model': {'name': 'Qwen'}, 'spec': {'consecutive_runs': 10}, 'samples': [],
+                  'memory': stats, 'framework': 'MSL-LLM NPU'}
+        public = public_result(result, 'run', {}, 'c' * 40, 'device', None)
+        raw = json.loads(json.dumps(public, allow_nan=False))
+        self.assertEqual(raw['memory']['quality']['warnings'][0]['code'], 'pss_baseline_unstable')
+        self.assertEqual(raw['memory']['quality']['warnings'][0]['sample_kib'], floor)
+        self.assertIn('不稳定基线估计', raw['protocol_note'])
+        self.assertNotIn('RAM已扣除同PID创建模型前的PSS中位数', raw['protocol_note'])
+        self.assertEqual(raw['memory']['total_pss_kib']['stable_median'], 500000)
+        stable = public_result({'model': {}, 'spec': {}, 'memory': summarize(self.rows(), self.samples())[1]},
+                               'run', {}, 'c' * 40, 'device', None)
+        self.assertIn('RAM已扣除同PID创建模型前的PSS中位数；原始总PSS保留。初始化包含模型创建。',
+                      stable['protocol_note'])
+        self.assertNotIn('quality', stable['memory'])
