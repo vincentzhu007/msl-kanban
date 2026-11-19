@@ -42,7 +42,7 @@ for(const file of jobFiles.filter(f=>f.endsWith('.json')).sort()){
 await mkdir(output, { recursive: true });
 let html = await readFile(join(source, 'detail.html'), 'utf8');
 html = replaceRequired(html, 'DOG · Docker 部署', '性能数据看板');
-html = replaceRequired(html, '服务端结果每 60 秒刷新；新增 daily / weekly 结果可写入服务器数据目录。Daily 任务状态见下方记录。', '结果随网站发布更新；导入数据保存在当前浏览器。Daily 任务状态见下方记录。');
+html = replaceRequired(html, '服务端结果在页面可见时每 15 分钟刷新；新增 daily / weekly 结果可写入服务器数据目录。Daily 任务状态见下方记录。', '页面可见时每 15 分钟检查更新。Daily 任务状态见下方记录。');
 let js = await readFile(join(source, 'app.js'), 'utf8');
 js = replaceRequired(js, "fetch('/api/runs')", "fetch('/runs.json', {cache:'no-store'})");
 js = replaceRequired(js, "fetch('/api/jobs')", "fetch('/jobs.json', {cache:'no-store'})");
