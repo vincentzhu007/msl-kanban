@@ -23,7 +23,7 @@ MindSpore Lite 端侧 LLM 开发者看板。看板内容包括：LLM模型评测
 docker compose -f kanban/compose.yaml up -d --build
 ```
 
-也可以直接运行 `python3 kanban/server.py --host 127.0.0.1`。默认 Docker 镜像为 `python:3.11-slim`；dog 已有镜像可用 `KANBAN_BASE_IMAGE=mini-lite-llm:latest`。数据只读挂载，新增结果 JSON 放入 `kanban/data/`，页面每 60 秒刷新。网页手动导入仅存于当前浏览器；持久发布需要将 JSON 写入该目录。
+也可以直接运行 `python3 kanban/server.py --host 127.0.0.1`。默认 Docker 镜像为 `python:3.11-slim`；dog 已有镜像可用 `KANBAN_BASE_IMAGE=mini-lite-llm:latest`。数据只读挂载，新增结果 JSON 放入 `kanban/data/`，性能结果在页面可见时每 15 分钟刷新，Daily 任务记录不自动轮询。网页手动导入仅存于当前浏览器；持久发布需要将 JSON 写入该目录。
 
 公开静态看板：[msl-kanban.vercel.app](https://msl-kanban.vercel.app/)，由 GitHub 仓库 `vincentzhu007/msl-kanban` 的 `main` 分支更新，详见 [Vercel 部署说明](docs/VERCEL.md)。
 

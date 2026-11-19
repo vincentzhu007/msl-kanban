@@ -2,6 +2,7 @@ import {updateTrends} from './trends.js';
 import {netPssKind} from './ram-method.mjs';
 import {visibleAuditText} from './audit-view.mjs';
 import {mobileKanbanRecords, dailyTaskSummary, selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
+import {autoRefreshTargets, bindAutoRefresh} from './visible-refresh.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = (v, scale=1, digits=2) => typeof v === 'number' && Number.isFinite(v) ? (v/scale).toFixed(digits) : '—';
@@ -68,18 +69,32 @@ function render() {
 function auditBlock(record) {
   return `<article class="note">${visibleAuditText(record).map(esc).join('<br>')}</article>`;
 }
-async function refresh() {
+async function refresh(scope) {
+  const runsOnly = scope === 'runs';
   $('summary-refresh').disabled = true;
   try {
-    const [a,b,c] = await Promise.all([fetch('/api/runs'),fetch('/api/jobs'),fetch('/api/audits')]);
-    if (!a.ok || !b.ok) throw Error('数据暂不可用');
-    [records,tasks] = (await Promise.all([a.json(),b.json()])).map(mobileKanbanRecords);
-    audits = c.ok ? await c.json() : [];
+    const responses = await Promise.all([
+      fetch('/api/runs'),
+      ...(runsOnly ? [] : [fetch('/api/jobs'), fetch('/api/audits')]),
+    ]);
+    if (!responses[0].ok || (!runsOnly && !responses[1].ok)) throw Error('数据暂不可用');
+    const runs = mobileKanbanRecords(await responses[0].json());
+    if (runsOnly) {
+      records = runs;
+    } else {
+      const jobs = mobileKanbanRecords(await responses[1].json());
+      const auditRows = responses[2].ok ? await responses[2].json() : [];
+      records = runs;
+      tasks = jobs;
+      audits = auditRows;
+    }
     render();
     $('summary-error').textContent = '';
   } catch (e) { $('summary-error').textContent = `加载失败：${e.message}。已有表格可能过期，请刷新重试。`; }
   finally { $('summary-refresh').disabled = false; }
 }
 $('summary-date').onchange = () => { selectedDate = $('summary-date').value; render(); };
-$('summary-refresh').onclick = refresh;
-refresh(); setInterval(refresh,60000);
+$('summary-refresh').onclick = () => refresh();
+const refreshPolicy = autoRefreshTargets();
+refresh();
+bindAutoRefresh(() => refresh('runs'), refreshPolicy.runs);

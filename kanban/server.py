@@ -73,7 +73,7 @@ class Handler(SimpleHTTPRequestHandler):
             directory = self.data_dir.parent / 'audits'
             rows = [json.loads(p.read_text()) for p in sorted(directory.glob('*.record.json'))] if directory.is_dir() else []
             self.send_payload(json.dumps(rows, ensure_ascii=False).encode(), 'application/json; charset=utf-8')
-        elif path in ('/', '/index.html', '/detail.html', '/summary.js', '/summary-model.mjs', '/detail-filters.mjs', '/app.js', '/style.css', '/iteration.html', '/iteration.js', '/iteration-config.js', '/iteration.css', '/mindspore-logo.svg'):
+        elif path in ('/', '/index.html', '/detail.html', '/summary.js', '/summary-model.mjs', '/detail-filters.mjs', '/visible-refresh.mjs', '/app.js', '/style.css', '/iteration.html', '/iteration.js', '/iteration-config.js', '/iteration.css', '/mindspore-logo.svg'):
             if self.command == 'HEAD':
                 super().do_HEAD()
             else:

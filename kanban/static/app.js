@@ -1,6 +1,8 @@
 import {mobileKanbanRecords, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 import {selectRecords} from './detail-filters.mjs';
 import {baselineLabel, compareRamLines, netPssKind, ramComparable, RAM_MISMATCH} from './ram-method.mjs';
+import {autoRefreshTargets, bindAutoRefresh} from './visible-refresh.mjs';
+const refreshPolicy = autoRefreshTargets();
 const $=id=>document.getElementById(id),esc=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let runs=[],current,local=[];try{local=JSON.parse(localStorage.getItem('edge-imports')||'[]')}catch{}
 const n=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toFixed(d):'—';const mib=v=>n(v/1024);const stat=(r,key)=>r.timing?.[key]||{};
 function chart(series,labels){let w=580,h=220,p=42,max=Math.max(1,...series.flatMap(s=>s.values))*1.15;let len=Math.max(1,labels.length-1);let out='';for(let i=0;i<=4;i++){let y=h-p-(h-2*p)*i/4;out+=`<line x1="${p}" x2="${w-12}" y1="${y}" y2="${y}" stroke="#e9eff2"/><text x="${p-7}" y="${y+4}" text-anchor="end" fill="#81939d" font-size="10">${Math.round(max*i/4)}</text>`}series.forEach(s=>{out+=`<polyline fill="none" stroke="${s.color}" stroke-width="2.5" points="${s.values.map((v,i)=>`${p+i*(w-p-12)/len},${h-p-v/max*(h-2*p)}`).join(' ')}"/>`;s.values.forEach((v,i)=>out+=`<circle cx="${p+i*(w-p-12)/len}" cy="${h-p-v/max*(h-2*p)}" r="3" fill="${s.color}"><title>${esc(labels[i])}: ${n(v)}</title></circle>`)});labels.forEach((l,i)=>{if(i%Math.max(1,Math.ceil(labels.length/7))===0||i===labels.length-1)out+=`<text x="${p+i*(w-p-12)/len}" y="${h-15}" fill="#81939d" font-size="10" text-anchor="middle">${esc(l)}</text>`});return `<svg viewBox="0 0 ${w} ${h}" class="chart" role="img" aria-label="指标曲线">${out}</svg>`}
@@ -49,11 +51,11 @@ async function refresh(selectedId) {
     const remote = mobileKanbanRecords(await response.json());
     runs = [...remote, ...local].sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.id).localeCompare(String(a.id)));
     updateFilters(keep);
-    $('status').textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')} · 每 60 秒自动刷新`;
+    $('status').textContent = `更新于 ${new Date().toLocaleTimeString('zh-CN')} · 页面可见时每 15 分钟自动刷新`;
     $('error').textContent = keep && !runs.some(r=>r.id===keep) ? '原记录已不可用，已显示当前可用结果。' : '';
   } catch(e) {$('error').textContent = '加载失败：'+e.message;}
 }
-$('run').onchange=showRecord;$('refresh').onclick=refresh;$('export').onclick=()=>{if(!current)return;let a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(current,null,2)],{type:'application/json'}));a.href=url;a.download='edge-slm-result.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};$('clear').onclick=()=>{local=[];localStorage.removeItem('edge-imports');refresh()};$('import').onchange=async e=>{try{let f=e.target.files[0];if(!f)return;if(f.size>5e6)throw Error('文件不得超过 5 MB');let r=JSON.parse(await f.text());if(!r.spec||!r.timing||!Array.isArray(r.samples)||!r.samples.length)throw Error('需要 spec、timing 和非空 samples 字段，请参考导出格式');for(let k of ['total_ms','ttft_ms','decode_tps'])if(!Number.isFinite(r.timing[k]?.p90)||!Number.isFinite(r.timing[k]?.median))throw Error('缺少数值指标 '+k);r.id='import-'+Date.now();r.source=r.source||'手动导入 · 未验证';local.push(r);localStorage.setItem('edge-imports',JSON.stringify(local));await refresh(r.id)}catch(e){$('error').textContent='导入失败：'+e.message}finally{e.target.value=''}};refresh();setInterval(refresh,60000);
+$('run').onchange=showRecord;$('refresh').onclick=refresh;$('export').onclick=()=>{if(!current)return;let a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(current,null,2)],{type:'application/json'}));a.href=url;a.download='edge-slm-result.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};$('clear').onclick=()=>{local=[];localStorage.removeItem('edge-imports');refresh()};$('import').onchange=async e=>{try{let f=e.target.files[0];if(!f)return;if(f.size>5e6)throw Error('文件不得超过 5 MB');let r=JSON.parse(await f.text());if(!r.spec||!r.timing||!Array.isArray(r.samples)||!r.samples.length)throw Error('需要 spec、timing 和非空 samples 字段，请参考导出格式');for(let k of ['total_ms','ttft_ms','decode_tps'])if(!Number.isFinite(r.timing[k]?.p90)||!Number.isFinite(r.timing[k]?.median))throw Error('缺少数值指标 '+k);r.id='import-'+Date.now();r.source=r.source||'手动导入 · 未验证';local.push(r);localStorage.setItem('edge-imports',JSON.stringify(local));await refresh(r.id)}catch(e){$('error').textContent='导入失败：'+e.message}finally{e.target.value=''}};refresh();bindAutoRefresh(refresh, refreshPolicy.runs);
 
 async function refreshJobs(){
   try {
@@ -71,4 +73,4 @@ function renderTrend(){
   const group=current?.device_comparison_key?runs.filter(r=>r.device_comparison_key===current.device_comparison_key).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.id).localeCompare(String(b.id))):[];
   $('trend').innerHTML=group.length?chart([{color:'#1ca78d',values:group.map(r=>r.timing.total_ms.p90)}],group.map(r=>r.date+' / '+r.build_commit.slice(0,7))):'<p class="note">当前结果尚无完整设备比较指纹。</p>';
 }
-refreshJobs();setInterval(refreshJobs,60000);
+refreshJobs();bindAutoRefresh(refreshJobs, refreshPolicy.jobs);
