@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {seriesKey,trendPoints,weekStart,improvement} from '../kanban/static/trends.mjs';
+import {metrics,seriesKey,trendPoints,weekStart,improvement} from '../kanban/static/trends.mjs';
 import {quantizationLabel} from '../kanban/static/summary-model.mjs';
 const run=(id,value,n=10)=>({id,recipe_id:'m',spec:{model:'q',soc:'k',consecutive_runs:n},timing:{decode_tps:{p90:value}}});
 const job=(date,id,status='SUCCEEDED',hour='03')=>({date,started_at:`${date}T${hour}:00:00+08:00`,result_id:id,status});
@@ -100,4 +100,17 @@ test('q4_0 and q3_0 stay on separate trend series', () => {
  assert.equal(quantizationLabel(w4), 'Q4_0');
  assert.equal(quantizationLabel(q3), 'Q3_0');
  assert.notEqual(seriesKey(w4), seriesKey(q3));
+});
+
+test('unstable baseline net is omitted from the trusted RAM trend and raw PSS stays', () => {
+ const memory = {
+  ram_method:'pre-model-create-pss-v1',
+  total_pss_kib:{stable_median:2048},
+  net_pss_kib:{stable_median:1024},
+  quality:{warnings:[{code:'pss_baseline_unstable',derived:['net_pss_kib'],derived_kind:'unstable_baseline_estimate'}]},
+ };
+ assert.equal(metrics.ram.get({memory}), null);
+ assert.equal(metrics.ram_raw.get({memory}), 2);
+ const trusted = {memory:{ram_method:'pre-model-create-pss-v1',net_pss_kib:{stable_median:1024},total_pss_kib:{stable_median:2048}}};
+ assert.equal(metrics.ram.get(trusted), 1);
 });

@@ -109,6 +109,10 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
     return memory
 
 
+def _finite_kib(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
 def summarize(rows, memory):
     stable = [sample for sample in memory if sample["stable_decode"]]
     inference = [sample for sample in memory if sample["fully_in_inference"]]
@@ -142,18 +146,42 @@ def summarize(rows, memory):
         floor = [sample['total_pss_kib'] for sample in memory if sample['baseline_sample']]
         if len(floor) < 3:
             raise ValueError("At least three complete PSS baseline samples required")
+        if any(not _finite_kib(value) for value in floor):
+            raise ValueError("PSS baseline sample is not finite")
         baseline = statistics.median(floor)
-        if max(floor) - min(floor) > max(2048, baseline * .1):
-            raise ValueError("PSS baseline is unstable")
+        spread = max(floor) - min(floor)
+        limit = max(2048, baseline * .1)
+        unstable = spread > limit
         total = result['total_pss_kib']
         keys = ('sampled_peak', 'inference_sampled_peak', 'stable_median', 'stable_min', 'stable_max')
+        if any(not _finite_kib(total[key]) for key in keys):
+            raise ValueError("PSS observation is not finite")
         net = {key: total[key] - baseline for key in keys}
         if any(value < 0 for value in net.values()):
             raise ValueError("Negative baseline-subtracted PSS; measurement cannot be accepted")
         result['baseline_pss_kib'] = {'median': baseline, 'min': min(floor), 'max': max(floor),
                                       'samples': len(floor), 'scope': BASELINE_METHODS[scope][1]}
-        result['net_pss_kib'] = net
-        result['ram_method'] = BASELINE_METHODS[scope][0]
+        if not unstable:
+            result['net_pss_kib'] = net
+            result['ram_method'] = BASELINE_METHODS[scope][0]
+        else:
+            warnings.warn("PSS baseline is unstable")
+            observed = list(floor)
+            result['baseline_pss_kib'].update(sample_kib=observed, range_kib=spread,
+                                              stability_limit_kib=limit, accepted=False)
+            result['quality'] = {'warnings': [{
+                'code': 'pss_baseline_unstable',
+                'message': 'PSS baseline is unstable',
+                'sample_kib': observed,
+                'median_kib': baseline,
+                'min_kib': min(floor),
+                'max_kib': max(floor),
+                'samples': len(floor),
+                'range_kib': spread,
+                'stability_limit_kib': limit,
+                'observed_method': BASELINE_METHODS[scope][0],
+                'net_pss_kib': 'not_calculated',
+            }]}
     return timing, result
 
 

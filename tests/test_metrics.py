@@ -218,21 +218,27 @@ class BaselinePssTests(unittest.TestCase):
             _, stats = summarize(self.rows(), self.floor_memory(floor, stable_total=500000))
         warning = stats['quality']['warnings'][0]
         self.assertEqual(warning['code'], 'pss_baseline_unstable')
-        self.assertEqual(warning['derived'], ['net_pss_kib'])
-        self.assertEqual(warning['derived_kind'], 'unstable_baseline_estimate')
+        self.assertEqual(warning['net_pss_kib'], 'not_calculated')
+        self.assertEqual(warning['observed_method'], 'pre-model-create-pss-v1')
         self.assertEqual(warning['sample_kib'], floor)
+        self.assertEqual(warning['samples'], 5)
         self.assertEqual(warning['range_kib'], max(floor) - min(floor))
         limit = max(2048, stats['baseline_pss_kib']['median'] * .1)
         self.assertEqual(warning['stability_limit_kib'], limit)
         self.assertGreater(warning['range_kib'], limit)
         self.assertEqual(stats['baseline_pss_kib']['median'], 89836)
-        self.assertEqual(stats['baseline_pss_kib']['sample_kib'], floor)
+        self.assertEqual(stats['baseline_pss_kib']['min'], 76680)
+        self.assertEqual(stats['baseline_pss_kib']['max'], 89902)
+        self.assertEqual(stats['baseline_pss_kib']['samples'], 5)
+        self.assertIs(stats['baseline_pss_kib']['accepted'], False)
         self.assertEqual(stats['total_pss_kib']['stable_median'], 500000)
-        self.assertEqual(stats['net_pss_kib']['stable_median'], 500000 - 89836)
-        self.assertNotEqual(stats['net_pss_kib']['stable_median'], 0)
+        self.assertNotIn('net_pss_kib', stats)
+        self.assertNotIn('ram_method', stats)
         self.assertNotIn(0, warning['sample_kib'])
         encoded = json.dumps(stats, allow_nan=False)
-        self.assertEqual(json.loads(encoded)['quality']['warnings'][0]['code'], 'pss_baseline_unstable')
+        self.assertEqual(json.loads(encoded)['quality']['warnings'][0]['net_pss_kib'], 'not_calculated')
+        self.assertNotIn('"net_pss_kib": 0', encoded)
+        self.assertNotIn('"net_pss_kib": {', encoded)
 
     def test_stable_baseline_adds_no_warning(self):
         import warnings
@@ -244,8 +250,11 @@ class BaselinePssTests(unittest.TestCase):
         self.assertNotIn('sample_kib', stats['baseline_pss_kib'])
         _, equal = summarize(self.rows(), self.floor_memory([28500, 30000, 31500]))
         self.assertNotIn('quality', equal)
-        self.assertEqual(max(equal['baseline_pss_kib']['max'] - equal['baseline_pss_kib']['min'], 0),
+        self.assertEqual(equal['baseline_pss_kib']['max'] - equal['baseline_pss_kib']['min'],
                          max(2048, equal['baseline_pss_kib']['median'] * .1))
+        _, at_floor = summarize(self.rows(), self.floor_memory([100, 100, 2148]))
+        self.assertNotIn('quality', at_floor)
+        self.assertEqual(at_floor['baseline_pss_kib']['max'] - at_floor['baseline_pss_kib']['min'], 2048)
 
     def test_invalid_baseline_inputs_still_fail(self):
         short = self.floor_memory([100, 102, 98])
@@ -287,11 +296,33 @@ class BaselinePssTests(unittest.TestCase):
         raw = json.loads(json.dumps(public, allow_nan=False))
         self.assertEqual(raw['memory']['quality']['warnings'][0]['code'], 'pss_baseline_unstable')
         self.assertEqual(raw['memory']['quality']['warnings'][0]['sample_kib'], floor)
-        self.assertIn('不稳定基线估计', raw['protocol_note'])
-        self.assertNotIn('RAM已扣除同PID创建模型前的PSS中位数', raw['protocol_note'])
+        self.assertIn('净 PSS 未计算', raw['protocol_note'])
+        self.assertNotIn('RAM已扣除', raw['protocol_note'])
+        self.assertNotIn('net_pss_kib', raw['memory'])
+        self.assertNotIn('ram_method', raw['memory'])
         self.assertEqual(raw['memory']['total_pss_kib']['stable_median'], 500000)
+        self.assertEqual(raw['memory']['baseline_pss_kib']['samples'], 5)
         stable = public_result({'model': {}, 'spec': {}, 'memory': summarize(self.rows(), self.samples())[1]},
                                'run', {}, 'c' * 40, 'device', None)
         self.assertIn('RAM已扣除同PID创建模型前的PSS中位数；原始总PSS保留。初始化包含模型创建。',
                       stable['protocol_note'])
         self.assertNotIn('quality', stable['memory'])
+
+    def test_declared_baseline_exception_is_only_this_warning(self):
+        from recipe_ci.results import require_declared_baseline
+        floor = [76680, 85528, 89836, 89838, 89902]
+        with self.assertWarnsRegex(UserWarning, 'PSS baseline is unstable'):
+            _, stats = summarize(self.rows(), self.floor_memory(floor))
+        lock = {'ram_baseline': 'pre-model-create-pss-v1'}
+        require_declared_baseline(lock, stats)
+        with self.assertRaisesRegex(Exception, 'missing from probe log'):
+            require_declared_baseline(lock, {'baseline_pss_kib': {'median': 1}})
+        forged = json.loads(json.dumps(stats))
+        forged['net_pss_kib'] = {key: 0 for key in
+                                 ('sampled_peak', 'inference_sampled_peak', 'stable_median', 'stable_min', 'stable_max')}
+        with self.assertRaisesRegex(Exception, 'must not publish net PSS'):
+            require_declared_baseline(lock, forged)
+        mismatched = json.loads(json.dumps(stats))
+        mismatched['quality']['warnings'][0]['observed_method'] = 'pre-runtime-pss-v1'
+        with self.assertRaisesRegex(Exception, 'method mismatch'):
+            require_declared_baseline(lock, mismatched)

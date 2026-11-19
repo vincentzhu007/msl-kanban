@@ -20,7 +20,7 @@ from recipe_ci.execution import device_lease, execute
 from recipe_ci.device_ready import awake_device
 from recipe_ci.planner import resolve, write_new
 from recipe_ci.recipe import load, digest, sha256_file, require
-from recipe_ci.results import summarize_recipe
+from recipe_ci.results import summarize_recipe, unstable_baseline_warning
 from .model_export import export_model, source_manifest
 
 BASE_URL = 'https://repo.mindspore.cn/mindspore/mindspore-lite/version/'
@@ -212,7 +212,10 @@ def public_result(result, run_id, build, code_commit, device_alias, task_url):
     model_note = '当天 master daily 导出工具及算子重新生成模型' if build.get('model_generation') == 'master_daily' else '固定已归档模型'
     result['protocol_note'] = (source_note + '与本次重编译探针；' + model_note + '。上下文2048、输入1024、输出128，'
                                f"同进程连续{spec.get('consecutive_runs', len(result.get('samples', [])))}次，无预热；总PSS包含Graph。温度/频率未锁定，不自动批准性能基线。")
-    if result.get('memory', {}).get('net_pss_kib'):
+    if unstable_baseline_warning(result.get('memory') or {}):
+        result['protocol_note'] += (' 基线 PSS 极差超过稳定阈值，净 PSS 未计算，未扣除底噪。'
+                                    '原始总 PSS 与基线 min/median/max 保留。初始化包含模型创建。')
+    elif result.get('memory', {}).get('net_pss_kib'):
         result['protocol_note'] += ' RAM已扣除同PID创建模型前的PSS中位数；原始总PSS保留。初始化包含模型创建。'
     return result
 

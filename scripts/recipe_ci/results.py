@@ -17,11 +17,29 @@ def validate_spec(log, workload, options):
         require(actual.get(field) == value, f'Probe option mismatch: {field}')
 
 
+def unstable_baseline_warning(stats):
+    """The one accepted warning. Any other missing net stays a hard failure."""
+    found = [item for item in (stats.get('quality') or {}).get('warnings') or []
+             if isinstance(item, dict) and item.get('code') == 'pss_baseline_unstable']
+    return found[0] if len(found) == 1 else None
+
+
 def require_declared_baseline(lock, stats):
     """Enforce the RAM baseline declared by the lock, never inferred from the log under test."""
     declared = lock.get('ram_baseline') or (
         'pre-runtime-pss-v1' if 'runtime_so' in lock.get('environment', {}).get('artifacts', {}) else None)
     if declared and declared != 'none':
+        warning = unstable_baseline_warning(stats)
+        if warning is not None:
+            require(warning.get('net_pss_kib') == 'not_calculated',
+                    'Unstable PSS baseline must record net PSS as not calculated')
+            require('net_pss_kib' not in stats, 'Unstable PSS baseline must not publish net PSS')
+            require(not stats.get('ram_method'), 'Unstable PSS baseline must not publish a RAM method')
+            require(stats.get('baseline_pss_kib', {}).get('accepted') is False,
+                    'Unstable PSS baseline must not be marked accepted')
+            require(warning.get('observed_method') == declared,
+                    f'RAM baseline method mismatch: expected {declared}')
+            return
         require('net_pss_kib' in stats, f'Declared RAM baseline {declared} missing from probe log')
         require(stats.get('ram_method') == declared, f'RAM baseline method mismatch: expected {declared}')
 
