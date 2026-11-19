@@ -1,0 +1,44 @@
+{
+  "record_kind": "independent_offline_revalidation",
+  "source": "独立离线复核 · 非新真机 run",
+  "published": false,
+  "new_device_run": false,
+  "decision_at": "2026-11-19T12:57:00+08:00",
+  "decision_source": "Maintainer 2026-11-19 12:57 转述：内存底躁不做拦截，放行。不是复核执行时间。",
+  "revalidated_at": "2026-11-19T13:17:32.049495+08:00",
+  "revalidated_at_source": "Reviewer r1 offline-review-record.json sha256 5059c806cb738e1553aae470e00cee1373589262e651f44730e1d3a2aa981ad0",
+  "outcome": "valid_with_quality_warning",
+  "evidence_run_id": "44432299518",
+  "evidence_job_id": "135252445246",
+  "evidence_actions_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/44432299518",
+  "evidence_job_file": "kanban/jobs/daily-20261119-qwen25-05b-msl-q30-kirin9020-44432299518-1.json",
+  "original_failure": {
+    "status_in_archive": "FAILED",
+    "stage_in_archive": "VALIDATE",
+    "error": "ValueError: PSS baseline is unstable"
+  },
+  "measurement_code": "257a548a28968ee2251d3e7ffcec58c8abbba391",
+  "recompute_code": "ecfe2ec575f16167da502a6113642ea066eb951a",
+  "original_candidate_sha256": "582dab695ed014f866bb1762783bd401227429b1e32b2571e61221d3b0c726f5",
+  "result_copy": "kanban/audits/offline-review-20261119-q30-result.json",
+  "result_copy_sha256": "77115e48a848055aa327ae5a655a6ead12d76f0f242b7111f0745985bebc26e3",
+  "observation": {
+    "warning_code": "pss_baseline_unstable",
+    "net_pss_kib": "not_calculated",
+    "baseline_sample_kib": [
+      76680,
+      85528,
+      89836,
+      89838,
+      89902
+    ],
+    "baseline_median_kib": 89836,
+    "range_kib": 13222,
+    "stability_limit_kib": 8983.6,
+    "total_pss_stable_median_kib": 417415.5,
+    "total_pss_sampled_peak_kib": 417842,
+    "graph_stable_median_kib": 265796.0,
+    "ram_method_present": false,
+    "net_object_present": false
+  }
+}

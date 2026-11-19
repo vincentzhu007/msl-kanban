@@ -1,5 +1,6 @@
 import {updateTrends} from './trends.js';
 import {netPssKind} from './ram-method.mjs';
+import {visibleAuditText} from './audit-view.mjs';
 import {mobileKanbanRecords, dailyTaskSummary, selectDaily, tpotP90, prefillSpeed, quantizationLabel, buildVersionLink} from './summary-model.mjs';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -24,7 +25,7 @@ function row(item) {
   const ramWarn = kind === 'not_calculated' ? '<small class="warning">PSS 基线不稳定，净 PSS 未计算</small>' : '';
   return `<tr><td><a href="detail.html?run=${encodeURIComponent(r.id)}">${esc(r.spec.model)}</a></td><td>${esc(r.spec.soc)}</td><td class="config-cell"><strong>${esc(r.framework)}</strong>${backendConfig ? `<small>${esc(backendConfig)}</small>` : ''}<small>${esc(quant)}</small></td><td>${num(r.model?.bytes,1048576)}</td><td>${num(r.memory?.net_pss_kib?.stable_median,1024)} / ${num(r.memory?.net_pss_kib?.sampled_peak,1024)}${ramNote}<small>稳定采样 ${esc(r.memory?.stable_samples)} 个</small></td><td>${num(r.initialization?.model_init_ms,1000,3)}</td><td>${num(r.timing?.ttft_ms?.p90,1000,3)}</td><td>${num(tpotP90(r))}</td><td>${num(prefillSpeed(r))}<small>按 TTFT P90 换算</small></td><td>${num(r.timing?.decode_tps?.p90)}</td><td>${status}${stale}${ramWarn}<small>实测 ${esc(r.date)}<br>版本 ${buildVersionLink(r)}</small></td><td><a href="detail.html?run=${encodeURIComponent(r.id)}" target="_blank" rel="noopener noreferrer" title="在新标签页查看评测详情">查看评测详情 ↗</a></td></tr>`;
 }
-let records = [], tasks = [];
+let records = [], tasks = [], audits = [];
 let selectedDate = new URL(location.href).searchParams.get('date') || '';
 function render() {
     const {dates,date,jobs,items} = selectDaily(records,tasks,selectedDate);
@@ -61,13 +62,19 @@ function render() {
     $('competitor-summary').innerHTML = competitors.map(row).join('') || empty;
     $('summary-status').textContent = `${date || '暂无日期'} · ${items.length} 项任务 · ${items.filter(x=>x.run).length} 项有实测 · 更新于 ${time(new Date().toISOString())}`;
     $('summary-jobs').innerHTML = [...jobs].sort((a,b)=>Date.parse(b.started_at)-Date.parse(a.started_at)).slice(0,30).map(j=>`<tr><td>${esc(time(j.started_at))}</td><td>${esc(j.recipe_id)}</td><td>${badge(j)}</td><td>${esc(j.stage)}<small>${esc(j.reason || '')}</small></td><td>${/^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+$/.test(j.task_url || '') ? `<a href="${esc(j.task_url)}" target="_blank" rel="noopener">查看日志</a>` : '—'}</td></tr>`).join('');
+    const host = $('offline-audits');
+    if (host) host.innerHTML = audits.map(auditBlock).join('') || '<p class="note">暂无离线复核记录</p>';
+}
+function auditBlock(record) {
+  return `<article class="note">${visibleAuditText(record).map(esc).join('<br>')}</article>`;
 }
 async function refresh() {
   $('summary-refresh').disabled = true;
   try {
-    const [a,b] = await Promise.all([fetch('/api/runs'),fetch('/api/jobs')]);
+    const [a,b,c] = await Promise.all([fetch('/api/runs'),fetch('/api/jobs'),fetch('/api/audits')]);
     if (!a.ok || !b.ok) throw Error('数据暂不可用');
     [records,tasks] = (await Promise.all([a.json(),b.json()])).map(mobileKanbanRecords);
+    audits = c.ok ? await c.json() : [];
     render();
     $('summary-error').textContent = '';
   } catch (e) { $('summary-error').textContent = `加载失败：${e.message}。已有表格可能过期，请刷新重试。`; }

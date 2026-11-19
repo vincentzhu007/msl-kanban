@@ -17,6 +17,12 @@ export function baselineLabel(method) {
  if (!method) return '未采集底噪';
  return RAM_METHODS[method] ? `扣除${RAM_METHODS[method]}底噪` : `底噪口径未知（${method}）`;
 }
+export function compareRamLines(memory) {
+ const value = memory?.net_pss_kib?.stable_median;
+ const head = (typeof value === 'number' && Number.isFinite(value) ? (value / 1024).toFixed(2) : '—') + ' MiB';
+ if (netPssKind(memory) === 'not_calculated') return [head, '已采集但不稳定', '净 PSS 未计算'];
+ return [head, baselineLabel(memory?.ram_method)];
+}
 export function ramComparable(a, b) {
  const x = a?.memory?.ram_method ?? null, y = b?.memory?.ram_method ?? null;
  return x === y;
