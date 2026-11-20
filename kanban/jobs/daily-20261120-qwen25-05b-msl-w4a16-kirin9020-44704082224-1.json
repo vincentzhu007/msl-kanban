@@ -1,0 +1,14 @@
+{
+  "id": "daily-20261120-qwen25-05b-msl-w4a16-kirin9020-44704082224-1",
+  "date": "20261120",
+  "recipe_id": "qwen25-05b-msl-w4a16-kirin9020",
+  "code_commit": "19ce8eb6ac32553c06b6c0a6246ee18a6b319408",
+  "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/44704082224",
+  "status": "SUCCEEDED",
+  "stage": "ARCHIVED",
+  "started_at": "2026-11-20T16:38:52.711289+08:00",
+  "build_commit": "0fa3d72bf71480b2f39c034da40870231c89f82d",
+  "build_sha256": "9ae86247fa4daaea3b0296d0c702c717520172e661269ca0545812e9df956343",
+  "result_id": "daily-20261120-qwen25-05b-msl-w4a16-kirin9020-44704082224-1",
+  "finished_at": "2026-11-20T16:46:00.899536+08:00"
+}
