@@ -242,7 +242,7 @@ class SafeSession:
     def _remove_if_exact(self, ours):
         current = self._listing()
         if ours not in current:
-            return current
+            return False
         others = [row for row in current if row != ours]
         self._closing = True
         try:
@@ -255,7 +255,7 @@ class SafeSession:
         missing = [row for row in others if row not in after]
         if missing:
             raise SafeTransportError('another forward disappeared while removing ours')
-        return after
+        return True
 
     def close(self):
         """Drop only our tuple. This does not observe or stop a device worker.
@@ -281,11 +281,12 @@ class SafeSession:
             self._write_note('own-tuple-not-listed')
             return
         try:
-            self._remove_if_exact(ours)
+            removed = self._remove_if_exact(ours)
         except SafeTransportError:
             self._write_note('listing-failed-not-removed')
             return
-        self._write_note('removed-own-fport')
+        # removed-own-fport means an rm was sent and the following list no longer has this tuple.
+        self._write_note('removed-own-fport' if removed else 'own-tuple-not-listed')
 
     def _write_note(self, state):
         if self.task_dir is None:
@@ -423,6 +424,12 @@ class SafeSession:
 _PROC_TCP = ('/proc/net/tcp', '/proc/net/tcp6')
 _PROC_TCP_HEADER = ('sl', 'local_address', 'rem_address', 'st')
 _TCP_LISTEN = '0A'
+# /proc/net/tcp address is 8 hex digits; tcp6 is 32. Port is 4 hex digits, state is 2.
+_IPV4_ADDR_HEX = 8
+_IPV6_ADDR_HEX = 32
+_PORT_HEX = 4
+_STATE_HEX = 2
+_PORT_MAX = 65535
 
 
 def parse_proc_net_tcp(text, *, ipv6):
@@ -439,7 +446,7 @@ def parse_proc_net_tcp(text, *, ipv6):
     if (len(header) < 4 or tuple(header[:2]) != _PROC_TCP_HEADER[:2]
             or header[2] not in ('rem_address', 'remote_address') or header[3] != _PROC_TCP_HEADER[3]):
         raise SafeTransportError('proc net tcp header is not recognized; not creating a forward')
-    address_length = 32 if ipv6 else 8
+    address_length = _IPV6_ADDR_HEX if ipv6 else _IPV4_ADDR_HEX
     ports = set()
     for line in lines[1:]:
         if not line.strip():
@@ -451,7 +458,7 @@ def parse_proc_net_tcp(text, *, ipv6):
         if local.count(':') != 1:
             raise SafeTransportError('proc net tcp local address is malformed; not creating a forward')
         address, port_hex = local.split(':')
-        if len(address) != address_length or len(port_hex) != 4 or len(state) != 2:
+        if len(address) != address_length or len(port_hex) != _PORT_HEX or len(state) != _STATE_HEX:
             raise SafeTransportError('proc net tcp field width is unexpected; not creating a forward')
         try:
             int(address, 16)
@@ -459,7 +466,7 @@ def parse_proc_net_tcp(text, *, ipv6):
             int(state, 16)
         except ValueError as error:
             raise SafeTransportError('proc net tcp field is not hex; not creating a forward') from error
-        if port > 65535:
+        if port > _PORT_MAX:
             raise SafeTransportError('proc net tcp port is out of range; not creating a forward')
         if state.upper() == _TCP_LISTEN:
             ports.add(port)

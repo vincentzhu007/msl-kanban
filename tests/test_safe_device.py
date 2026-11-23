@@ -194,6 +194,41 @@ class PortPolicyTests(unittest.TestCase):
         self.assertEqual(hdc.created, [['fport', 'tcp:19147', 'tcp:8888']])
         self.assertEqual(hdc.removed, [['fport', 'rm', 'tcp:19147', 'tcp:8888']])
 
+    def test_note_does_not_claim_removal_when_tuple_vanishes_before_rm(self):
+        class Scripted:
+            def __init__(self, listings):
+                self.listings = list(listings)
+                self.created = []
+                self.removed = []
+
+            def __call__(self, serial, args, timeout):
+                if args == ['fport', 'ls']:
+                    text = self.listings.pop(0)
+                    return subprocess.CompletedProcess(args, 0, text, '')
+                if args[:1] == ['fport'] and 'rm' not in args and 'ls' not in args:
+                    self.created.append(list(args))
+                    return subprocess.CompletedProcess(args, 0, 'OK\n', '')
+                if args[:2] == ['fport', 'rm']:
+                    self.removed.append(list(args))
+                    return subprocess.CompletedProcess(args, 0, 'OK\n', '')
+                raise AssertionError(args)
+
+        base = f'{SERIAL} tcp:19005 tcp:8888 [Forward]\n'
+        ours = f'{SERIAL} tcp:19147 tcp:8888 [Forward]\n'
+        # Create succeeds. Close's first list still has the tuple; the next list does not.
+        hdc = Scripted([base, base, base + ours, base + ours, base])
+        with tempfile.TemporaryDirectory() as tmp:
+            with open_safe_session(
+                    {'device': {'serial': SERIAL}},
+                    config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
+                    Path(tmp), 19147, hdc=hdc):
+                pass
+            note = json.loads((Path(tmp) / 'safe-transport.json').read_text())
+        self.assertEqual(hdc.created, [['fport', 'tcp:19147', 'tcp:8888']])
+        self.assertEqual(hdc.removed, [])
+        self.assertEqual(note['state'], 'own-tuple-not-listed')
+        self.assertNotEqual(note['state'], 'removed-own-fport')
+
     def test_failed_listing_after_create_does_not_remove_other_rows(self):
         class EmptyThenFail:
             def __init__(self):

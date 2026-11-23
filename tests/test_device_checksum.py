@@ -12,14 +12,27 @@ ROOT = Path(__file__).resolve().parents[1]
 class ChecksumTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        compiler = shutil.which('c++')
-        if not compiler:
-            raise unittest.SkipTest('C++ compiler unavailable')
+        # Prefer g++. On this image `c++` is clang and does not see libstdc++ unless
+        # CPLUS_INCLUDE_PATH and LIBRARY_PATH are set. The compile line is the baseline.
         cls.directory = tempfile.TemporaryDirectory()
         cls.addClassCleanup(cls.directory.cleanup)
         cls.binary = Path(cls.directory.name) / 'checksum'
-        subprocess.run([compiler, '-std=c++17', '-O2', '-Wall', '-Wextra', '-Werror',
-                        str(ROOT / 'scripts/device_tools/sha256sum.cc'), '-o', str(cls.binary)], check=True)
+        source = str(ROOT / 'scripts/device_tools/sha256sum.cc')
+        flags = ['-std=c++17', '-O2', '-Wall', '-Wextra', '-Werror', source, '-o', str(cls.binary)]
+        errors = []
+        for name in ('g++', 'c++'):
+            compiler = shutil.which(name)
+            if not compiler:
+                errors.append(name + ' not on PATH')
+                continue
+            completed = subprocess.run([compiler, *flags], capture_output=True, text=True)
+            if completed.returncode == 0:
+                cls.compiler = compiler
+                return
+            errors.append(compiler + '\n' + (completed.stderr or completed.stdout))
+        raise unittest.SkipTest(
+            'sha256sum.cc did not compile. Baseline: g++ -std=c++17 -O2 -Wall -Wextra -Werror. '
+            + ' '.join(errors))
 
     def test_vectors_padding_and_stream_boundaries(self):
         for data in [b'', b'abc', b'a' * 1000000] + [bytes(i % 251 for i in range(n)) for n in [55, 56, 63, 64, 65, 65535, 65536, 65537]]:
