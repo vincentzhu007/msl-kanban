@@ -1,0 +1,1172 @@
+{
+  "system": "OpenHarmony 6.0.2.130",
+  "platform": "kirin9030",
+  "mode": "EXTREME",
+  "operator": "MsMatmulS8S8",
+  "id": "s8s8-9030-20261120-fixpipe",
+  "date": "2026-11-20",
+  "commit": "7d924549dfda3be18af7e9c8c17896405c0ee0dc",
+  "cases": [
+    {
+      "id": "vit",
+      "group": "ViT",
+      "label": "Q / K / V 与输出投影",
+      "golden": "e2c3dc4401587d924dd525123d112acc43f5647c56e8fc65241f8e4db85186fb",
+      "omc": "cdf3fb46757f7db5a0b06b99dac5acb7d74dfcca8fcc5ec73225d4d56121bedb",
+      "accuracy": {
+        "elements": 786432,
+        "different": 220712,
+        "max_ulp": 1,
+        "max_abs": 1.0,
+        "over": 0,
+        "actual_sha256": "43996723e67472bf96cb6ac2bf7be0930b0a0eb63a2147422e2a3afba801eee0",
+        "golden_sha256": "e2c3dc4401587d924dd525123d112acc43f5647c56e8fc65241f8e4db85186fb"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:18:18.325401",
+              322,
+              547.031
+            ],
+            [
+              "17:18:18.325402",
+              320,
+              541.094
+            ],
+            [
+              "17:18:18.325403",
+              317,
+              622.812
+            ],
+            [
+              "17:18:18.325403",
+              319,
+              592.343
+            ],
+            [
+              "17:18:18.325404",
+              318,
+              543.75
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:18:27.296376",
+              330,
+              563.75
+            ],
+            [
+              "17:18:27.296376",
+              330,
+              570.782
+            ],
+            [
+              "17:18:27.296377",
+              332,
+              591.719
+            ],
+            [
+              "17:18:27.296378",
+              327,
+              588.593
+            ],
+            [
+              "17:18:27.296379",
+              329,
+              591.875
+            ]
+          ]
+        },
+        {
+          "round": 3,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:18:35.546456",
+              326,
+              576.25
+            ],
+            [
+              "17:18:35.546456",
+              323,
+              570.782
+            ],
+            [
+              "17:18:35.546457",
+              325,
+              590.469
+            ],
+            [
+              "17:18:35.546457",
+              322,
+              588.437
+            ],
+            [
+              "17:18:35.546458",
+              321,
+              583.906
+            ]
+          ]
+        }
+      ],
+      "trace": {
+        "date": "2026-11-20",
+        "scope": "full",
+        "cycles": 565173,
+        "source": "从本次实机 OMC 提取 Kernel 与 tiling，使用同一输入仿真；与实机有 49 个输出舍入差异",
+        "golden": false,
+        "accuracy": {
+          "max_ulp": 1,
+          "elements": 786432,
+          "different": 220711,
+          "sha256": "a9eeb854eae71339d0d26c35f5c4e9dd76602f7601eb470e8e68f9881081d571",
+          "device_different": 49
+        },
+        "file": "traces/ee02384f6688559d0d1cb1a4e866fda08ca3f618b84c78649e422e249f8ba816.json.gz",
+        "lifecycle": {
+          "file": "traces/f8f294c3224b75ab09535f18f0a28464596eb7f5777128279e41060e80b024ae.json.gz",
+          "firstCycle": 325,
+          "counts": {
+            "SCALAR pop": 7189,
+            "SCALAR retire": 7300,
+            "MTE2 pop": 601,
+            "MTE2 retire": 877,
+            "MTE1 pop": 582,
+            "MTE1 retire": 1158,
+            "MTE3 pop": 102,
+            "MTE3 retire": 98,
+            "FIXP pop": 198,
+            "FIXP retire": 198,
+            "CUBE pop": 576,
+            "CUBE retire": 576
+          },
+          "examples": [
+            {
+              "unit": "CUBE",
+              "core": "cubecore0",
+              "instructionId": 567,
+              "pop": 3692,
+              "retire": 3970
+            },
+            {
+              "unit": "MTE2",
+              "core": "cubecore0",
+              "instructionId": 160,
+              "pop": 1379,
+              "retire": 1724
+            },
+            {
+              "unit": "MTE1",
+              "core": "cubecore0",
+              "instructionId": 215,
+              "pop": 1727,
+              "retire": 1757
+            },
+            {
+              "unit": "FIXP",
+              "core": "cubecore0",
+              "instructionId": 316,
+              "pop": 2181,
+              "retire": 2230
+            },
+            {
+              "unit": "MTE3",
+              "core": "cubecore0",
+              "instructionId": 207,
+              "pop": 2148,
+              "retire": 2179
+            },
+            {
+              "unit": "SCALAR",
+              "core": "cubecore0",
+              "instructionId": 1,
+              "pop": 325,
+              "retire": 327
+            }
+          ],
+          "sha256": "f8f294c3224b75ab09535f18f0a28464596eb7f5777128279e41060e80b024ae"
+        },
+        "lanes": {
+          "SCALAR": [
+            33532,
+            2257
+          ],
+          "VEC": [
+            828,
+            5
+          ],
+          "MTE1": [
+            85039,
+            1164
+          ],
+          "MTE2": [
+            562129,
+            2
+          ],
+          "MTE3": [
+            69831,
+            98
+          ],
+          "CUBE": [
+            160128,
+            576
+          ],
+          "FIXP": [
+            17587,
+            97
+          ]
+        },
+        "platform": "kirin9030",
+        "sha256": "ee02384f6688559d0d1cb1a4e866fda08ca3f618b84c78649e422e249f8ba816"
+      },
+      "pipeline": {
+        "cycles": 565173,
+        "utilization_percent": 99.46140385333341,
+        "mte2_idle_percent": 0.5385961466665959,
+        "mte2_long_gaps": 0,
+        "mte2_longest_gap": 66,
+        "cube_overlap_percent": 99.82638888888889
+      },
+      "spec": {
+        "dimensions": {
+          "M": 1024,
+          "K": 768,
+          "N": 768
+        }
+      }
+    },
+    {
+      "id": "dit_patch",
+      "group": "BooguImage",
+      "label": "图像输入投影",
+      "golden": "be4a8881b829a624fdc19ca28093b12e05e9830814e82d7d29cb7fc8abae61d7",
+      "omc": "5574f8d1a6fe11b3f3c85bee3319d7be0aee4fad4d2a211394aaf4ecb92c778a",
+      "accuracy": {
+        "elements": 13762560,
+        "different": 3467082,
+        "max_ulp": 1,
+        "max_abs": 0.015625,
+        "over": 0,
+        "actual_sha256": "4c852086edc9554954a10eb36c9be147ea7f66923f4871b8ab3da01827ed6cfe",
+        "golden_sha256": "be4a8881b829a624fdc19ca28093b12e05e9830814e82d7d29cb7fc8abae61d7"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:18:59.236508",
+              2225,
+              2458.75
+            ],
+            [
+              "17:18:59.236509",
+              2224,
+              2456.719
+            ],
+            [
+              "17:18:59.246592",
+              2205,
+              2785.937
+            ],
+            [
+              "17:18:59.246595",
+              2212,
+              2619.219
+            ],
+            [
+              "17:18:59.246596",
+              2216,
+              2486.094
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:19:14.62838",
+              2225,
+              2439.687
+            ],
+            [
+              "17:19:14.62839",
+              2236,
+              2467.031
+            ],
+            [
+              "17:19:14.72895",
+              2213,
+              2442.343
+            ],
+            [
+              "17:19:14.72896",
+              2237,
+              2590.0
+            ],
+            [
+              "17:19:14.72897",
+              2225,
+              2502.031
+            ]
+          ]
+        },
+        {
+          "round": 3,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:19:22.393970",
+              2251,
+              2459.219
+            ],
+            [
+              "17:19:22.393972",
+              2249,
+              2487.5
+            ],
+            [
+              "17:19:22.393973",
+              2275,
+              2527.813
+            ],
+            [
+              "17:19:22.393974",
+              2247,
+              2491.719
+            ],
+            [
+              "17:19:22.404037",
+              2250,
+              2533.125
+            ]
+          ]
+        }
+      ],
+      "trace": {
+        "date": "2026-11-20",
+        "scope": "prefix",
+        "cycles": 160000,
+        "source": "从本次实机 OMC 提取 Kernel 与 tiling，使用同一输入仿真",
+        "golden": false,
+        "accuracy": null,
+        "file": "traces/e3add3474fd347aaf14cb31bb802901e08308489f23e44b0824468deafcfff20.json.gz",
+        "lifecycle": {
+          "file": "traces/83f8d28fb136ac9f42e7c8d3011fba0a7652b13cfee243939d8994b5c2103fad.json.gz",
+          "firstCycle": 325,
+          "counts": {
+            "SCALAR pop": 3907,
+            "SCALAR retire": 4070,
+            "MTE2 pop": 175,
+            "MTE2 retire": 314,
+            "MTE1 pop": 158,
+            "MTE1 retire": 312,
+            "MTE3 pop": 158,
+            "MTE3 retire": 154,
+            "FIXP pop": 311,
+            "FIXP retire": 311,
+            "CUBE pop": 154,
+            "CUBE retire": 154
+          },
+          "examples": [
+            {
+              "unit": "CUBE",
+              "core": "cubecore0",
+              "instructionId": 567,
+              "pop": 3060,
+              "retire": 3210
+            },
+            {
+              "unit": "MTE2",
+              "core": "cubecore0",
+              "instructionId": 160,
+              "pop": 1379,
+              "retire": 1724
+            },
+            {
+              "unit": "MTE1",
+              "core": "cubecore0",
+              "instructionId": 215,
+              "pop": 1727,
+              "retire": 1757
+            },
+            {
+              "unit": "FIXP",
+              "core": "cubecore0",
+              "instructionId": 316,
+              "pop": 2181,
+              "retire": 2230
+            },
+            {
+              "unit": "MTE3",
+              "core": "cubecore0",
+              "instructionId": 207,
+              "pop": 2148,
+              "retire": 2179
+            },
+            {
+              "unit": "SCALAR",
+              "core": "cubecore0",
+              "instructionId": 1,
+              "pop": 325,
+              "retire": 327
+            }
+          ],
+          "sha256": "83f8d28fb136ac9f42e7c8d3011fba0a7652b13cfee243939d8994b5c2103fad"
+        },
+        "lanes": {
+          "SCALAR": [
+            22056,
+            1577
+          ],
+          "VEC": [
+            656,
+            3
+          ],
+          "MTE1": [
+            12694,
+            316
+          ],
+          "MTE2": [
+            158555,
+            2
+          ],
+          "MTE3": [
+            100871,
+            79
+          ],
+          "CUBE": [
+            23100,
+            154
+          ],
+          "FIXP": [
+            27860,
+            155
+          ]
+        },
+        "platform": "kirin9030",
+        "sha256": "e3add3474fd347aaf14cb31bb802901e08308489f23e44b0824468deafcfff20"
+      },
+      "pipeline": {
+        "cycles": 160000,
+        "utilization_percent": 99.096875,
+        "mte2_idle_percent": 0.903125,
+        "mte2_long_gaps": 0,
+        "mte2_longest_gap": 66,
+        "cube_overlap_percent": 100.0
+      },
+      "spec": {
+        "dimensions": {
+          "M": 4096,
+          "K": 64,
+          "N": 3360
+        }
+      }
+    },
+    {
+      "id": "dit_q",
+      "group": "BooguImage",
+      "label": "图像 Q 投影",
+      "golden": "c6a0c362901cdbd37ac8d1587788bd84b6b87cdd46a1ac7cfb9dd668dab298b7",
+      "omc": "80d2fb22860b55e949ce0860b4da79197a0a80fe02aa8fc7eb4e9178bac4c472",
+      "accuracy": {
+        "elements": 3440640,
+        "different": 863994,
+        "max_ulp": 1,
+        "max_abs": 0.125,
+        "over": 0,
+        "actual_sha256": "fba04f2af8e1a2dbc4287ad80de7cd1311c1269e1f384c15f019a9f59558b853",
+        "golden_sha256": "c6a0c362901cdbd37ac8d1587788bd84b6b87cdd46a1ac7cfb9dd668dab298b7"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:19:48.67481",
+              6263,
+              6891.875
+            ],
+            [
+              "17:19:48.77542",
+              6320,
+              6728.437
+            ],
+            [
+              "17:19:48.87612",
+              6262,
+              6680.313
+            ],
+            [
+              "17:19:48.87613",
+              6300,
+              6710.0
+            ],
+            [
+              "17:19:48.97693",
+              6290,
+              7833.281
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:19:58.626638",
+              6372,
+              6877.031
+            ],
+            [
+              "17:19:58.636745",
+              6298,
+              7273.594
+            ],
+            [
+              "17:19:58.636747",
+              6282,
+              7940.156
+            ],
+            [
+              "17:19:58.646909",
+              6272,
+              6770.157
+            ],
+            [
+              "17:19:58.657107",
+              6325,
+              6824.531
+            ]
+          ]
+        },
+        {
+          "round": 3,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:20:06.930676",
+              6260,
+              6746.407
+            ],
+            [
+              "17:20:06.941109",
+              6299,
+              7739.687
+            ],
+            [
+              "17:20:06.941112",
+              6237,
+              6761.875
+            ],
+            [
+              "17:20:06.951528",
+              6230,
+              7307.032
+            ],
+            [
+              "17:20:06.961597",
+              6270,
+              6801.094
+            ]
+          ]
+        }
+      ],
+      "trace": {
+        "date": "2026-11-20",
+        "scope": "prefix",
+        "cycles": 160000,
+        "source": "从本次实机 OMC 提取 Kernel 与 tiling，使用同一输入仿真",
+        "golden": false,
+        "accuracy": null,
+        "file": "traces/98e80b94c66bda0888ae26a8592a20af949f7eceb2aaa63a4b44c6196ea56f9a.json.gz",
+        "lifecycle": {
+          "file": "traces/388e9fd983fd5d184fa589fb219d75a8b1b5b42d2fef115c492ea4c3042ce303.json.gz",
+          "firstCycle": 325,
+          "counts": {
+            "SCALAR pop": 1957,
+            "SCALAR retire": 1979,
+            "MTE2 pop": 189,
+            "MTE2 retire": 275,
+            "MTE1 pop": 180,
+            "MTE1 retire": 358,
+            "MTE3 pop": 8,
+            "MTE3 retire": 8,
+            "FIXP pop": 13,
+            "FIXP retire": 13,
+            "CUBE pop": 178,
+            "CUBE retire": 178
+          },
+          "examples": [
+            {
+              "unit": "CUBE",
+              "core": "cubecore0",
+              "instructionId": 567,
+              "pop": 3765,
+              "retire": 4043
+            },
+            {
+              "unit": "MTE2",
+              "core": "cubecore0",
+              "instructionId": 160,
+              "pop": 1379,
+              "retire": 1724
+            },
+            {
+              "unit": "MTE1",
+              "core": "cubecore0",
+              "instructionId": 215,
+              "pop": 1727,
+              "retire": 1757
+            },
+            {
+              "unit": "FIXP",
+              "core": "cubecore0",
+              "instructionId": 316,
+              "pop": 2181,
+              "retire": 2230
+            },
+            {
+              "unit": "MTE3",
+              "core": "cubecore0",
+              "instructionId": 207,
+              "pop": 2148,
+              "retire": 2179
+            },
+            {
+              "unit": "SCALAR",
+              "core": "cubecore0",
+              "instructionId": 1,
+              "pop": 325,
+              "retire": 327
+            }
+          ],
+          "sha256": "388e9fd983fd5d184fa589fb219d75a8b1b5b42d2fef115c492ea4c3042ce303"
+        },
+        "lanes": {
+          "SCALAR": [
+            8927,
+            581
+          ],
+          "VEC": [
+            484,
+            1
+          ],
+          "MTE1": [
+            24726,
+            360
+          ],
+          "MTE2": [
+            158555,
+            2
+          ],
+          "MTE3": [
+            4444,
+            8
+          ],
+          "CUBE": [
+            48200,
+            172
+          ],
+          "FIXP": [
+            1131,
+            7
+          ]
+        },
+        "platform": "kirin9030",
+        "sha256": "98e80b94c66bda0888ae26a8592a20af949f7eceb2aaa63a4b44c6196ea56f9a"
+      },
+      "pipeline": {
+        "cycles": 160000,
+        "utilization_percent": 99.096875,
+        "mte2_idle_percent": 0.903125,
+        "mte2_long_gaps": 0,
+        "mte2_longest_gap": 66,
+        "cube_overlap_percent": 100.0
+      },
+      "spec": {
+        "dimensions": {
+          "M": 1024,
+          "K": 3360,
+          "N": 3360
+        }
+      }
+    },
+    {
+      "id": "dit_ff",
+      "group": "BooguImage",
+      "label": "FFN 上投影",
+      "golden": "881fe2a5078101fe7786dd797f54ff8a83ee0bc19f95f3f72b0d13ade7c6b569",
+      "omc": "e66d6bba30e692c284de921e1fcbdba948b4ff18f48ae9d7bf2434b6ef274c35",
+      "accuracy": {
+        "elements": 13893632,
+        "different": 3579205,
+        "max_ulp": 1,
+        "max_abs": 0.125,
+        "over": 0,
+        "actual_sha256": "45c783c04f89f160d77002b1c5c4676e56c89f85fba19a8053a9557f6b795f12",
+        "golden_sha256": "881fe2a5078101fe7786dd797f54ff8a83ee0bc19f95f3f72b0d13ade7c6b569"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:20:38.873901",
+              24804,
+              26251.875
+            ],
+            [
+              "17:20:38.895647",
+              24734,
+              25396.719
+            ],
+            [
+              "17:20:38.918192",
+              24740,
+              25315.156
+            ],
+            [
+              "17:20:38.950709",
+              24905,
+              25500.156
+            ],
+            [
+              "17:20:38.970860",
+              24716,
+              25267.968
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:20:53.858028",
+              24878,
+              26282.343
+            ],
+            [
+              "17:20:53.880463",
+              24435,
+              25050.469
+            ],
+            [
+              "17:20:53.902612",
+              24459,
+              25094.219
+            ],
+            [
+              "17:20:53.934000",
+              24756,
+              25321.25
+            ],
+            [
+              "17:20:53.955210",
+              24651,
+              25225.0
+            ]
+          ]
+        },
+        {
+          "round": 3,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:21:02.261724",
+              25164,
+              25974.219
+            ],
+            [
+              "17:21:02.283108",
+              25151,
+              25732.969
+            ],
+            [
+              "17:21:02.316582",
+              25275,
+              25963.125
+            ],
+            [
+              "17:21:02.337754",
+              24912,
+              25483.593
+            ],
+            [
+              "17:21:02.359622",
+              25190,
+              25735.312
+            ]
+          ]
+        }
+      ],
+      "trace": {
+        "date": "2026-11-20",
+        "scope": "prefix",
+        "cycles": 160000,
+        "source": "从本次实机 OMC 提取 Kernel 与 tiling，使用同一输入仿真",
+        "golden": false,
+        "accuracy": null,
+        "file": "traces/2439d753241334b7d3b6a3bf9ee49d163b176ded9dd19fe5b161216cd4cf0f4a.json.gz",
+        "lifecycle": {
+          "file": "traces/e5db754840a47c27eefe7507ecb3765d9dd87e2a10c5a0728d5b1d1e8ef8c9f9.json.gz",
+          "firstCycle": 325,
+          "counts": {
+            "SCALAR pop": 1957,
+            "SCALAR retire": 1979,
+            "MTE2 pop": 189,
+            "MTE2 retire": 275,
+            "MTE1 pop": 180,
+            "MTE1 retire": 358,
+            "MTE3 pop": 8,
+            "MTE3 retire": 8,
+            "FIXP pop": 13,
+            "FIXP retire": 13,
+            "CUBE pop": 178,
+            "CUBE retire": 178
+          },
+          "examples": [
+            {
+              "unit": "CUBE",
+              "core": "cubecore0",
+              "instructionId": 567,
+              "pop": 3765,
+              "retire": 4043
+            },
+            {
+              "unit": "MTE2",
+              "core": "cubecore0",
+              "instructionId": 160,
+              "pop": 1379,
+              "retire": 1724
+            },
+            {
+              "unit": "MTE1",
+              "core": "cubecore0",
+              "instructionId": 215,
+              "pop": 1727,
+              "retire": 1757
+            },
+            {
+              "unit": "FIXP",
+              "core": "cubecore0",
+              "instructionId": 316,
+              "pop": 2181,
+              "retire": 2230
+            },
+            {
+              "unit": "MTE3",
+              "core": "cubecore0",
+              "instructionId": 207,
+              "pop": 2148,
+              "retire": 2179
+            },
+            {
+              "unit": "SCALAR",
+              "core": "cubecore0",
+              "instructionId": 1,
+              "pop": 325,
+              "retire": 327
+            }
+          ],
+          "sha256": "e5db754840a47c27eefe7507ecb3765d9dd87e2a10c5a0728d5b1d1e8ef8c9f9"
+        },
+        "lanes": {
+          "SCALAR": [
+            8927,
+            581
+          ],
+          "VEC": [
+            484,
+            1
+          ],
+          "MTE1": [
+            24726,
+            360
+          ],
+          "MTE2": [
+            158555,
+            2
+          ],
+          "MTE3": [
+            4444,
+            8
+          ],
+          "CUBE": [
+            48200,
+            172
+          ],
+          "FIXP": [
+            1131,
+            7
+          ]
+        },
+        "platform": "kirin9030",
+        "sha256": "2439d753241334b7d3b6a3bf9ee49d163b176ded9dd19fe5b161216cd4cf0f4a"
+      },
+      "pipeline": {
+        "cycles": 160000,
+        "utilization_percent": 99.096875,
+        "mte2_idle_percent": 0.903125,
+        "mte2_long_gaps": 0,
+        "mte2_longest_gap": 66,
+        "cube_overlap_percent": 100.0
+      },
+      "spec": {
+        "dimensions": {
+          "M": 1024,
+          "K": 3360,
+          "N": 13568
+        }
+      }
+    },
+    {
+      "id": "dit_ff_down",
+      "group": "BooguImage",
+      "label": "FFN 下投影",
+      "golden": "e111fa7baca383abe69068b7833c65dd1136c8a0bcbc9167b79ae5fe864d7144",
+      "omc": "08306386ea67c391750bc39eedb3b72809862b01900efa327817c7bbd13c5e18",
+      "accuracy": {
+        "elements": 3440640,
+        "different": 882120,
+        "max_ulp": 1,
+        "max_abs": 0.25,
+        "over": 0,
+        "actual_sha256": "ab370c233c9fbf9fedd4228a01fd75e46b9d52355ddf7538feb972e52153541b",
+        "golden_sha256": "e111fa7baca383abe69068b7833c65dd1136c8a0bcbc9167b79ae5fe864d7144"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:21:35.650545",
+              25654,
+              26356.093
+            ],
+            [
+              "17:21:35.683527",
+              25731,
+              26362.5
+            ],
+            [
+              "17:21:35.706229",
+              25607,
+              26173.282
+            ],
+            [
+              "17:21:35.728705",
+              25626,
+              26167.031
+            ],
+            [
+              "17:21:35.760510",
+              25554,
+              26029.843
+            ]
+          ]
+        },
+        {
+          "round": 2,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:21:45.830959",
+              25856,
+              26506.25
+            ],
+            [
+              "17:21:45.853091",
+              25805,
+              26385.781
+            ],
+            [
+              "17:21:45.885687",
+              25816,
+              26334.063
+            ],
+            [
+              "17:21:45.908293",
+              25701,
+              26254.375
+            ],
+            [
+              "17:21:45.939648",
+              25768,
+              26247.5
+            ]
+          ]
+        },
+        {
+          "round": 3,
+          "warmup": 3,
+          "hot": [
+            [
+              "17:21:54.348637",
+              26067,
+              26714.063
+            ],
+            [
+              "17:21:54.381137",
+              25976,
+              26569.063
+            ],
+            [
+              "17:21:54.401306",
+              25981,
+              26621.094
+            ],
+            [
+              "17:21:54.432457",
+              25859,
+              26411.719
+            ],
+            [
+              "17:21:54.463048",
+              25993,
+              26524.062
+            ]
+          ]
+        }
+      ],
+      "trace": {
+        "date": "2026-11-20",
+        "scope": "prefix",
+        "cycles": 160000,
+        "source": "从本次实机 OMC 提取 Kernel 与 tiling，使用同一输入仿真",
+        "golden": false,
+        "accuracy": null,
+        "file": "traces/5ca343576a41d94a0c5b61adf25b068d3b1c50827709b089b405bdaebd403adb.json.gz",
+        "lifecycle": {
+          "file": "traces/e99abfd953fb75d492e9494ea51ba2665a42479a9f7551aa3459c80d7b7157da.json.gz",
+          "firstCycle": 325,
+          "counts": {
+            "SCALAR pop": 1892,
+            "SCALAR retire": 1909,
+            "MTE2 pop": 189,
+            "MTE2 retire": 274,
+            "MTE1 pop": 180,
+            "MTE1 retire": 358,
+            "MTE3 pop": 3,
+            "MTE3 retire": 3,
+            "FIXP pop": 3,
+            "FIXP retire": 3,
+            "CUBE pop": 178,
+            "CUBE retire": 178
+          },
+          "examples": [
+            {
+              "unit": "CUBE",
+              "core": "cubecore0",
+              "instructionId": 567,
+              "pop": 3692,
+              "retire": 3970
+            },
+            {
+              "unit": "MTE2",
+              "core": "cubecore0",
+              "instructionId": 160,
+              "pop": 1379,
+              "retire": 1724
+            },
+            {
+              "unit": "MTE1",
+              "core": "cubecore0",
+              "instructionId": 215,
+              "pop": 1727,
+              "retire": 1757
+            },
+            {
+              "unit": "FIXP",
+              "core": "cubecore0",
+              "instructionId": 316,
+              "pop": 2181,
+              "retire": 2230
+            },
+            {
+              "unit": "MTE3",
+              "core": "cubecore0",
+              "instructionId": 207,
+              "pop": 2148,
+              "retire": 2179
+            },
+            {
+              "unit": "SCALAR",
+              "core": "cubecore0",
+              "instructionId": 1,
+              "pop": 325,
+              "retire": 327
+            }
+          ],
+          "sha256": "e99abfd953fb75d492e9494ea51ba2665a42479a9f7551aa3459c80d7b7157da"
+        },
+        "lanes": {
+          "SCALAR": [
+            8487,
+            556
+          ],
+          "VEC": [
+            484,
+            1
+          ],
+          "MTE1": [
+            26692,
+            360
+          ],
+          "MTE2": [
+            158555,
+            2
+          ],
+          "MTE3": [
+            793,
+            3
+          ],
+          "CUBE": [
+            49484,
+            178
+          ],
+          "FIXP": [
+            231,
+            2
+          ]
+        },
+        "platform": "kirin9030",
+        "sha256": "5ca343576a41d94a0c5b61adf25b068d3b1c50827709b089b405bdaebd403adb"
+      },
+      "pipeline": {
+        "cycles": 160000,
+        "utilization_percent": 99.096875,
+        "mte2_idle_percent": 0.903125,
+        "mte2_long_gaps": 0,
+        "mte2_longest_gap": 66,
+        "cube_overlap_percent": 100.0
+      },
+      "spec": {
+        "dimensions": {
+          "M": 1024,
+          "K": 13568,
+          "N": 3360
+        }
+      }
+    }
+  ],
+  "device": "Mate 80 Pro · SGT-AL00",
+  "statistic": "hot-samples-median",
+  "note": "M64 切块；按 N 面板准备并复用系数，Fixpipe 反量化后经 UB、MTE3 写回。",
+  "schema_version": 1,
+  "protocol": "S8S8 历史采样"
+}

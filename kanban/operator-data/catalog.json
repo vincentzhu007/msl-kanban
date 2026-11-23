@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "platforms": {
+    "kirin9030": "Kirin 9030",
+    "kirin9050": "Kirin 9050"
+  },
+  "operators": {
+    "MsMatmulS8S8": {
+      "kirin9030": [
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261116.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261117-prefetch-old.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261117-prefetch-new.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261117-boogu-old.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261117-boogu-new.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261117-cross-m-old.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261117-cross-m-new.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261119-m64-new.json",
+        "runs/MsMatmulS8S8/kirin9030/s8s8-9030-20261120-fixpipe.json"
+      ],
+      "kirin9050": [
+        "runs/MsMatmulS8S8/kirin9050/s8s8-9050-20261123-l510.json"
+      ]
+    }
+  }
+}

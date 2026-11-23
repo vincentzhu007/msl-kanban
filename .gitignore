@@ -23,3 +23,6 @@ build/
 
 # Downloaded official Actions Runner distribution
 /infra/github-runner/runner-dist/
+
+# Locally provisioned pinned Perfetto distribution
+/kanban/static/operators/viewer/

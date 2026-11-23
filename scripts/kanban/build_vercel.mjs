@@ -1,6 +1,7 @@
-import { readFile, readdir, mkdir, writeFile, copyFile } from 'node:fs/promises';
+import { readFile, readdir, mkdir, writeFile, copyFile, cp, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { installPerfetto } from './install_perfetto.mjs';
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const source = join(root, 'kanban', 'static');
@@ -58,4 +59,54 @@ await Promise.all([
   writeFile(join(output, 'runs.json'), JSON.stringify(results, null, 2) + '\n'),
   copyFile(join(source, 'style.css'), join(output, 'style.css')),
 ]);
+await copyOperators();
 console.log(`Built ${results.length} benchmark results in ${output}`);
+
+async function copyOperators() {
+  const operatorData = join(root, 'kanban', 'operator-data');
+  const catalog = JSON.parse(await readFile(join(operatorData, 'catalog.json'), 'utf8'));
+  if (catalog.schema_version !== 1) throw new Error('Unsupported operator catalog');
+  const target = join(output, 'operator-data');
+  await rm(target, {recursive: true, force: true});
+  await mkdir(target, {recursive: true});
+  const copied = new Set();
+  async function copyData(path) {
+    if (copied.has(path)) return;
+    const dest = join(target, path);
+    await mkdir(resolve(dest, '..'), {recursive: true});
+    await copyFile(join(operatorData, path), dest);
+    copied.add(path);
+  }
+  for (const [operator, platforms] of Object.entries(catalog.operators)) {
+    for (const [platform, files] of Object.entries(platforms)) {
+      for (const path of files) {
+        if (!/^runs\/(?:[\w-]+\/){2}[\w-]+\.json$/.test(path) || copied.has(path)) {
+          throw new Error(`Invalid or duplicate operator record: ${path}`);
+        }
+        const record = JSON.parse(await readFile(join(operatorData, path), 'utf8'));
+        if (record.schema_version !== 1 || record.operator !== operator || record.platform !== platform ||
+            path !== `runs/${operator}/${platform}/${record.id}.json`) {
+          throw new Error(`Operator record does not match the catalog: ${path}`);
+        }
+        for (const item of [...record.cases, ...(record.simulations ?? [])]) {
+          for (const trace of [item.trace, item.trace?.lifecycle, item.trace?.instructions].filter(Boolean)) {
+            if (!/^[0-9a-f]{64}$/.test(trace.sha256) ||
+                ![`traces/${trace.sha256}.json`, `traces/${trace.sha256}.json.gz`].includes(trace.file)) {
+              throw new Error(`Invalid trace attachment: ${trace.file}`);
+            }
+            await copyData(trace.file);
+          }
+        }
+        await copyData(path);
+      }
+    }
+  }
+  await copyData('catalog.json');
+  const pageTarget = join(output, 'operators');
+  await rm(pageTarget, {recursive: true, force: true});
+  await cp(join(source, 'operators'), pageTarget, {recursive: true});
+  if (process.argv.includes('--prepare-perfetto')) {
+    await installPerfetto(join(pageTarget, 'viewer'));
+  }
+  await copyFile(join(source, 'operators.html'), join(output, 'operators.html'));
+}

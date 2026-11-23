@@ -1,0 +1,551 @@
+{
+  "schema_version": 1,
+  "id": "s8s8-9050-20261123-l510",
+  "operator": "MsMatmulS8S8",
+  "platform": "kirin9050",
+  "date": "2026-11-23",
+  "source_sha256": "cf0736e2e3b51bd1d577b2a45d7ce0113213e6e0a8bf05fe27ffb10f5b0f9de4",
+  "base_commit": "eca1429736c7585091d24d6951c81cff0dec9df1",
+  "device": "Mate 90 Pro Max · CMM-AL10",
+  "system": "CMM-AL10P 7.0.0.107 (SP10C00E108R6P3)",
+  "mode": "SDK profiling",
+  "protocol": "BinRunner · 单节点 OMC",
+  "environment": {
+    "ddk": "HiAI_DDK_100.600.020.010"
+  },
+  "statistic": "hot-samples-median",
+  "note": "L510 首版 · M16 / N128 / K128。实机使用固定种子合成输入，每规格 3 次预热、5 个热样本。",
+  "cases": [
+    {
+      "id": "dit_patch",
+      "group": "BooguImage",
+      "label": "DiT Patch",
+      "spec": {
+        "dimensions": {
+          "M": 4096,
+          "K": 64,
+          "N": 3360
+        }
+      },
+      "accuracy": {
+        "summary": "13,762,560 个 FP16 输出与参考逐位一致",
+        "elements": 13762560,
+        "different": 0,
+        "max_ulp": 0,
+        "actual_sha256": "21794eaf6096d2e6e7c8ae485d467131df27f862f03474a161d247fcf9bd6fa5",
+        "golden_sha256": "21794eaf6096d2e6e7c8ae485d467131df27f862f03474a161d247fcf9bd6fa5"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "12:16:10.950444",
+              23875,
+              24703.125
+            ],
+            [
+              "12:16:10.982561",
+              24332,
+              26975.625
+            ],
+            [
+              "12:16:11.5873",
+              23188,
+              24128.75
+            ],
+            [
+              "12:16:11.27723",
+              23142,
+              23930.156
+            ],
+            [
+              "12:16:11.47788",
+              15901,
+              16762.187
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dit_q",
+      "group": "BooguImage",
+      "label": "DiT Q",
+      "spec": {
+        "dimensions": {
+          "M": 1024,
+          "K": 3360,
+          "N": 3360
+        }
+      },
+      "accuracy": {
+        "summary": "3,440,640 个 FP16 输出与参考逐位一致",
+        "elements": 3440640,
+        "different": 0,
+        "max_ulp": 0,
+        "actual_sha256": "30606b6a8569ec5558e133f3319cc40dbe2768823a4ed1c6a3a104bf59c29f10",
+        "golden_sha256": "30606b6a8569ec5558e133f3319cc40dbe2768823a4ed1c6a3a104bf59c29f10"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "12:16:55.921480",
+              66595,
+              67520.625
+            ],
+            [
+              "12:16:55.986690",
+              66575,
+              68997.188
+            ],
+            [
+              "12:16:56.64317",
+              68921,
+              69918.125
+            ],
+            [
+              "12:16:56.128526",
+              66838,
+              68141.094
+            ],
+            [
+              "12:16:56.205114",
+              71530,
+              72218.438
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vit",
+      "group": "ViT",
+      "label": "Q / K / V 与输出投影",
+      "spec": {
+        "dimensions": {
+          "M": 1024,
+          "K": 768,
+          "N": 768
+        }
+      },
+      "accuracy": {
+        "summary": "786,432 个 FP16 输出与参考逐位一致",
+        "elements": 786432,
+        "different": 0,
+        "max_ulp": 0,
+        "actual_sha256": "43996723e67472bf96cb6ac2bf7be0930b0a0eb63a2147422e2a3afba801eee0",
+        "golden_sha256": "43996723e67472bf96cb6ac2bf7be0930b0a0eb63a2147422e2a3afba801eee0"
+      },
+      "runs": [
+        {
+          "round": 1,
+          "warmup": 3,
+          "hot": [
+            [
+              "12:15:37.209348",
+              2529,
+              3091.094
+            ],
+            [
+              "12:15:37.219925",
+              2559,
+              4983.282
+            ],
+            [
+              "12:15:37.219930",
+              2890,
+              3323.281
+            ],
+            [
+              "12:15:37.219931",
+              2598,
+              2952.969
+            ],
+            [
+              "12:15:37.230467",
+              2935,
+              3827.187
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "simulations": [
+    {
+      "id": "multi",
+      "label": "M / N 尾块与三段 K",
+      "spec": {
+        "dimensions": {
+          "M": 17,
+          "K": 288,
+          "N": 144
+        }
+      },
+      "trace": {
+        "date": "2026-11-23",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 8574,
+        "source": "L510 当前版本独立仿真。2,448 个输出与本仿真规格的 FP16 参考逐位一致。矩阵指令 12 条，FIX 搬出 4 次。",
+        "file": "traces/bedfb188083cc9447bbe1eddbbe9e6d11f8198ddfb4a589f223679066a889ab1.json.gz",
+        "lanes": {
+          "VEC": [
+            1452,
+            10
+          ],
+          "SCALAR": [
+            1823,
+            43
+          ],
+          "MTE1": [
+            636,
+            28
+          ],
+          "MTE2": [
+            4300,
+            13
+          ],
+          "CUBE": [
+            720,
+            36
+          ],
+          "FIXP": [
+            284,
+            4
+          ],
+          "MTE3": [
+            652,
+            4
+          ]
+        },
+        "lifecycle": {
+          "file": "traces/477ccfd444863cc1a2e2a9b98dd151d706e4fabcf6119623c69a966d605e46d8.json.gz",
+          "counts": {
+            "SCALAR pop": 160,
+            "SCALAR retire": 166,
+            "MTE2 pop": 18,
+            "MTE2 retire": 39,
+            "MTE1 pop": 14,
+            "VEC pop": 6,
+            "MTE1 retire": 14,
+            "VEC retire": 6,
+            "CUBE pop": 36,
+            "CUBE retire": 36,
+            "FIXP pop": 4,
+            "FIXP retire": 8,
+            "MTE3 pop": 4,
+            "MTE3 retire": 4
+          },
+          "sha256": "477ccfd444863cc1a2e2a9b98dd151d706e4fabcf6119623c69a966d605e46d8"
+        },
+        "instructions": {
+          "file": "traces/fcb53a90243d20138ac1bf3b754214958d7180dffcab370326c2e897ba7250f8.json.gz",
+          "sha256": "fcb53a90243d20138ac1bf3b754214958d7180dffcab370326c2e897ba7250f8"
+        },
+        "sha256": "bedfb188083cc9447bbe1eddbbe9e6d11f8198ddfb4a589f223679066a889ab1"
+      }
+    },
+    {
+      "id": "three",
+      "label": "两块 N、三段 K",
+      "spec": {
+        "dimensions": {
+          "M": 16,
+          "K": 384,
+          "N": 192
+        }
+      },
+      "trace": {
+        "date": "2026-11-23",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 5817,
+        "source": "L510 当前版本独立仿真。3,072 个输出与本仿真规格的 FP16 参考逐位一致。矩阵指令 6 条，FIX 搬出 2 次。",
+        "file": "traces/0bbd96f76dfcef22c935c5dc49edd73cc43927fa5a32956f3613b0f8494f0682.json.gz",
+        "lanes": {
+          "VEC": [
+            1103,
+            6
+          ],
+          "SCALAR": [
+            1490,
+            18
+          ],
+          "MTE1": [
+            480,
+            16
+          ],
+          "MTE2": [
+            2540,
+            7
+          ],
+          "CUBE": [
+            450,
+            18
+          ],
+          "FIXP": [
+            166,
+            2
+          ],
+          "MTE3": [
+            344,
+            2
+          ]
+        },
+        "lifecycle": {
+          "file": "traces/9fa705c2f91e2f737a310a1adb229a53bd6824a4089f0efad3db1c0eea30faf8.json.gz",
+          "counts": {
+            "SCALAR pop": 103,
+            "SCALAR retire": 109,
+            "MTE2 pop": 12,
+            "MTE2 retire": 21,
+            "MTE1 pop": 8,
+            "VEC pop": 4,
+            "MTE1 retire": 8,
+            "VEC retire": 4,
+            "CUBE pop": 18,
+            "CUBE retire": 18,
+            "FIXP pop": 2,
+            "FIXP retire": 4,
+            "MTE3 pop": 2,
+            "MTE3 retire": 2
+          },
+          "sha256": "9fa705c2f91e2f737a310a1adb229a53bd6824a4089f0efad3db1c0eea30faf8"
+        },
+        "instructions": {
+          "file": "traces/b9dff560dbb54c14c91fb09714b1471d726318e4c52b8bd92fe2e33413c18a2c.json.gz",
+          "sha256": "b9dff560dbb54c14c91fb09714b1471d726318e4c52b8bd92fe2e33413c18a2c"
+        },
+        "sha256": "0bbd96f76dfcef22c935c5dc49edd73cc43927fa5a32956f3613b0f8494f0682"
+      }
+    },
+    {
+      "id": "onehot",
+      "label": "稀疏权重与 NZN 排布",
+      "spec": {
+        "dimensions": {
+          "M": 16,
+          "K": 128,
+          "N": 64
+        }
+      },
+      "trace": {
+        "date": "2026-11-23",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 2449,
+        "source": "L510 当前版本独立仿真。1,024 个输出与本仿真规格的 FP16 参考逐位一致。矩阵指令 1 条，FIX 搬出 1 次。",
+        "file": "traces/99a32a0bc2ef7e686c7a2491c09cef2a9802411f398f1cea9a654f1681ab9205.json.gz",
+        "lanes": {
+          "VEC": [
+            490,
+            3
+          ],
+          "SCALAR": [
+            1175,
+            9
+          ],
+          "MTE1": [
+            82,
+            4
+          ],
+          "MTE2": [
+            607,
+            2
+          ],
+          "CUBE": [
+            61,
+            3
+          ],
+          "FIXP": [
+            67,
+            1
+          ],
+          "MTE3": [
+            164,
+            1
+          ]
+        },
+        "lifecycle": {
+          "file": "traces/ec4cfc27c250494306532be4fa59e002552f898491cfedc0d2b04dfa2788ec0f.json.gz",
+          "counts": {
+            "SCALAR pop": 52,
+            "SCALAR retire": 58,
+            "MTE2 pop": 5,
+            "MTE2 retire": 5,
+            "MTE1 pop": 2,
+            "VEC pop": 2,
+            "MTE1 retire": 2,
+            "VEC retire": 2,
+            "CUBE pop": 3,
+            "CUBE retire": 3,
+            "FIXP pop": 1,
+            "FIXP retire": 2,
+            "MTE3 pop": 1,
+            "MTE3 retire": 1
+          },
+          "sha256": "ec4cfc27c250494306532be4fa59e002552f898491cfedc0d2b04dfa2788ec0f"
+        },
+        "instructions": {
+          "file": "traces/c2fbcfdd2957555fab7cc8776a3dde0ca0412e9d5b577de27c4b31864509d6df.json.gz",
+          "sha256": "c2fbcfdd2957555fab7cc8776a3dde0ca0412e9d5b577de27c4b31864509d6df"
+        },
+        "sha256": "99a32a0bc2ef7e686c7a2491c09cef2a9802411f398f1cea9a654f1681ab9205"
+      }
+    },
+    {
+      "id": "min",
+      "label": "最小规格",
+      "spec": {
+        "dimensions": {
+          "M": 1,
+          "K": 32,
+          "N": 16
+        }
+      },
+      "trace": {
+        "date": "2026-11-23",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 2079,
+        "source": "L510 当前版本独立仿真。16 个输出与本仿真规格的 FP16 参考逐位一致。矩阵指令 1 条，FIX 搬出 1 次。",
+        "file": "traces/76c7b60815c9b9db96f5efe4a9111264f324267caaacbdfb270b6bf70b5f22c0.json.gz",
+        "lanes": {
+          "VEC": [
+            351,
+            3
+          ],
+          "SCALAR": [
+            1175,
+            9
+          ],
+          "MTE1": [
+            46,
+            4
+          ],
+          "MTE2": [
+            471,
+            2
+          ],
+          "CUBE": [
+            37,
+            3
+          ],
+          "FIXP": [
+            43,
+            1
+          ],
+          "MTE3": [
+            147,
+            1
+          ]
+        },
+        "lifecycle": {
+          "file": "traces/ac6e372752f9702fa999c69c20aef76c21256f9d880f2bbf764f7622649edad1.json.gz",
+          "counts": {
+            "SCALAR pop": 52,
+            "SCALAR retire": 58,
+            "MTE2 pop": 5,
+            "MTE2 retire": 5,
+            "MTE1 pop": 2,
+            "MTE1 retire": 2,
+            "VEC pop": 2,
+            "VEC retire": 2,
+            "CUBE pop": 3,
+            "CUBE retire": 3,
+            "FIXP pop": 1,
+            "FIXP retire": 2,
+            "MTE3 pop": 1,
+            "MTE3 retire": 1
+          },
+          "sha256": "ac6e372752f9702fa999c69c20aef76c21256f9d880f2bbf764f7622649edad1"
+        },
+        "instructions": {
+          "file": "traces/b49313bd059ac1e61880816d17a3e2d55ffaf938c17db765a24a2be5f240478d.json.gz",
+          "sha256": "b49313bd059ac1e61880816d17a3e2d55ffaf938c17db765a24a2be5f240478d"
+        },
+        "sha256": "76c7b60815c9b9db96f5efe4a9111264f324267caaacbdfb270b6bf70b5f22c0"
+      }
+    },
+    {
+      "id": "limits",
+      "label": "FP16 边界",
+      "spec": {
+        "dimensions": {
+          "M": 1,
+          "K": 32,
+          "N": 16
+        }
+      },
+      "trace": {
+        "date": "2026-11-23",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 2087,
+        "source": "L510 当前版本独立仿真。16 个输出与本仿真规格的 FP16 参考逐位一致。矩阵指令 1 条，FIX 搬出 1 次。",
+        "file": "traces/80444db617a16b7d1a5173dab8d14e6ba52a78235d6e5ea5a1f4a357f43cc95c.json.gz",
+        "lanes": {
+          "VEC": [
+            472,
+            2
+          ],
+          "SCALAR": [
+            1175,
+            9
+          ],
+          "MTE1": [
+            46,
+            4
+          ],
+          "MTE2": [
+            478,
+            2
+          ],
+          "CUBE": [
+            37,
+            3
+          ],
+          "FIXP": [
+            43,
+            1
+          ],
+          "MTE3": [
+            147,
+            1
+          ]
+        },
+        "lifecycle": {
+          "file": "traces/347052addb35ec1f0af8095f553651d27c2a887a29dfae5795e1f3841b9d0af2.json.gz",
+          "counts": {
+            "SCALAR pop": 52,
+            "SCALAR retire": 58,
+            "MTE2 pop": 5,
+            "MTE2 retire": 5,
+            "MTE1 pop": 2,
+            "MTE1 retire": 2,
+            "VEC pop": 2,
+            "CUBE pop": 3,
+            "CUBE retire": 3,
+            "FIXP pop": 1,
+            "FIXP retire": 2,
+            "VEC retire": 2,
+            "MTE3 pop": 1,
+            "MTE3 retire": 1
+          },
+          "sha256": "347052addb35ec1f0af8095f553651d27c2a887a29dfae5795e1f3841b9d0af2"
+        },
+        "instructions": {
+          "file": "traces/2864a51c42bb525229cc43732cbc66cfd859dbb3473426f1ce1234a3a7c1c2c5.json.gz",
+          "sha256": "2864a51c42bb525229cc43732cbc66cfd859dbb3473426f1ce1234a3a7c1c2c5"
+        },
+        "sha256": "80444db617a16b7d1a5173dab8d14e6ba52a78235d6e5ea5a1f4a357f43cc95c"
+      }
+    }
+  ]
+}

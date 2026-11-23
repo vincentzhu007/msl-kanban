@@ -12,6 +12,7 @@ services:
     volumes:
       - ./data:/kanban/data:ro
       - ./jobs:/kanban/jobs:ro
+      - ./operator-data:/kanban/operator-data:ro
     environment:
       DATA_DIR: /kanban/data
     read_only: true

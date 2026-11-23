@@ -7,10 +7,15 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 from urllib.parse import urlsplit
 
 BASE = Path(__file__).resolve().parent
 LOGGER = logging.getLogger(__name__)
+OPERATOR_DATA = re.compile(
+    r'/operator-data/(?:catalog\.json|runs/(?:[A-Za-z0-9_-]+/){2}[A-Za-z0-9_-]+\.json'
+    r'|traces/[0-9a-f]{64}\.json(?:\.gz)?)'
+)
 
 
 def load_runs(directory):
@@ -45,8 +50,22 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Referrer-Policy', 'no-referrer')
         self.send_header('X-Content-Type-Options', 'nosniff')
-        self.send_header('X-Frame-Options', 'DENY')
+        path = urlsplit(self.path).path
+        viewer = path.startswith('/operators/viewer/')
+        self.send_header('X-Frame-Options', 'SAMEORIGIN' if viewer else 'DENY')
+        if path == '/operators.html' or viewer:
+            self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+            self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
         super().end_headers()
+
+    def translate_path(self, path):
+        path = urlsplit(path).path
+        if OPERATOR_DATA.fullmatch(path):
+            directory = (self.data_dir.parent / 'operator-data').resolve()
+            file = (directory / path.removeprefix('/operator-data/')).resolve()
+            if file.is_relative_to(directory) and file.is_file():
+                return str(file)
+        return super().translate_path(path)
 
     def send_payload(self, payload, content_type='text/html; charset=utf-8', status=200):
         self.send_response(status)
@@ -55,6 +74,21 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         if self.command != 'HEAD':
             self.wfile.write(payload)
+
+    def is_operator_asset(self, path):
+        if not path.startswith('/operators/'):
+            return False
+        directory = (BASE / 'static/operators').resolve()
+        file = Path(super().translate_path(path)).resolve()
+        return file.is_relative_to(directory) and file.is_file()
+
+    def serve_static_file(self, path):
+        if not Path(self.translate_path(path)).is_file():
+            self.send_error(404)
+        elif self.command == 'HEAD':
+            super().do_HEAD()
+        else:
+            super().do_GET()
 
     def do_HEAD(self):
         self.do_GET()
@@ -73,7 +107,15 @@ class Handler(SimpleHTTPRequestHandler):
             directory = self.data_dir.parent / 'audits'
             rows = [json.loads(p.read_text()) for p in sorted(directory.glob('*.record.json'))] if directory.is_dir() else []
             self.send_payload(json.dumps(rows, ensure_ascii=False).encode(), 'application/json; charset=utf-8')
-        elif path in ('/', '/index.html', '/detail.html', '/summary.js', '/summary-model.mjs', '/detail-filters.mjs', '/visible-refresh.mjs', '/app.js', '/style.css', '/iteration.html', '/iteration.js', '/iteration-config.js', '/iteration.css', '/playground.html', '/playground.css', '/playground.mjs', '/mindspore-logo.svg'):
+        elif path == '/operators.html' or self.is_operator_asset(path) or OPERATOR_DATA.fullmatch(path):
+            self.serve_static_file(path)
+        elif path in (
+            '/', '/index.html', '/detail.html', '/summary.js', '/summary-model.mjs',
+            '/detail-filters.mjs', '/visible-refresh.mjs', '/app.js', '/style.css',
+            '/trends.js', '/trends.mjs', '/ram-method.mjs', '/audit-view.mjs',
+            '/iteration.html', '/iteration.js', '/iteration-config.js', '/iteration.css',
+            '/playground.html', '/playground.css', '/playground.mjs', '/mindspore-logo.svg',
+        ):
             if self.command == 'HEAD':
                 super().do_HEAD()
             else:

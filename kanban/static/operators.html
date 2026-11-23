@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>算子性能 · MSL Kanban</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/operators/style.css">
+</head>
+<body class="operator-page">
+<nav class="site-nav" aria-label="主导航">
+  <a class="site-brand" href="/"><span class="site-symbol"><img src="/mindspore-logo.svg" alt="MindSpore" width="111" height="36"></span><strong>MSL KANBAN</strong></a>
+  <div class="site-sections"><a href="/iteration.html">迭代进展</a><a href="/">性能评测</a><a href="/operators.html" aria-current="page">算子性能</a><a href="/playground.html">Playground</a></div>
+</nav>
+<header>
+  <div>
+    <div class="eyebrow">MSL KANBAN / OPERATOR PERFORMANCE</div>
+    <h1>算子性能</h1>
+    <p>单算子实机耗时、版本趋势与 CAModel 流水</p>
+  </div>
+</header>
+<main>
+  <section class="panel detail-filters">
+    <div class="filter-grid operator-filters">
+      <label>算子<select id="operator" disabled></select></label>
+      <label>平台<select id="platform" disabled></select></label>
+      <label>场景<select id="group" disabled></select></label>
+      <label>规格<select id="case" disabled></select></label>
+    </div>
+    <div class="filter-footer">
+      <div id="status" role="status">正在加载算子记录…</div>
+      <button id="refresh">刷新数据</button>
+    </div>
+    <div id="error" role="alert"></div>
+  </section>
+  <section class="panel trend-panel" id="trend" hidden>
+    <div class="toolbar">
+      <h2>耗时趋势</h2>
+      <div class="operator-tabs" id="axes" aria-label="趋势横轴">
+        <button type="button" data-axis="day" aria-pressed="true">按日期</button>
+        <button type="button" data-axis="version" aria-pressed="false">按版本</button>
+        <button type="button" data-axis="run" aria-pressed="false">按运行</button>
+      </div>
+    </div>
+    <div class="operator-controls">
+      <label>日期<select id="date"><option value="">全部日期</option></select></label>
+      <label>耗时指标<select id="metric"><option value="1">NPU 算子耗时</option><option value="2">RunSync 墙钟耗时</option></select></label>
+    </div>
+    <p id="trend-note" class="note"></p>
+    <div class="operator-chart-wrap">
+      <div id="operator-chart" aria-label="交互耗时折线图"></div>
+      <div id="operator-point-tooltip" class="trend-tooltip" role="tooltip" hidden></div>
+    </div>
+  </section>
+  <section class="panel" id="detail" hidden>
+    <div class="toolbar">
+      <div><h2>运行详情</h2><p id="detail-heading" class="muted"></p></div>
+      <label>运行记录 <select id="record" aria-label="运行记录"></select></label>
+    </div>
+    <div id="timing" class="cards"></div>
+    <div id="metadata" class="spec"></div>
+    <p id="run-note" class="note"></p>
+    <details class="operator-samples">
+      <summary>查看逐次实测 <span id="sample-count"></span></summary>
+      <div class="tablewrap"><table>
+        <thead><tr><th>轮次</th><th>采样时间</th><th>NPU（µs）</th><th>RunSync（µs）</th></tr></thead>
+        <tbody id="samples"></tbody>
+      </table></div>
+    </details>
+  </section>
+  <section class="panel operator-trace" id="trace" hidden>
+    <div class="toolbar">
+      <div><h2>CAModel 流水</h2><p id="trace-note" class="muted"></p></div>
+      <div id="trace-actions" class="actions">
+        <select id="trace-mode" aria-label="流水轨道"></select>
+        <button id="open-trace">打开 Perfetto</button>
+        <a id="download-trace" download>下载 JSON</a>
+      </div>
+    </div>
+    <div class="operator-controls" id="simulation-controls" hidden>
+      <label>仿真规格<select id="simulation"></select></label>
+    </div>
+    <p id="trace-source" class="note"></p>
+    <div id="trace-lanes" class="operator-lanes"></div>
+    <p id="trace-status" role="status"></p>
+    <div id="viewer"></div>
+    <div id="viewer-grip" hidden role="separator" aria-orientation="horizontal" aria-controls="viewer" tabindex="0"
+         aria-label="调整 Perfetto 高度" aria-valuemin="240" aria-valuemax="4000" aria-valuenow="960"></div>
+  </section>
+  <footer>MSL Kanban · 页面可见时每 15 分钟检查性能数据更新</footer>
+</main>
+<script type="module" src="/operators/app.mjs"></script>
+</body>
+</html>
