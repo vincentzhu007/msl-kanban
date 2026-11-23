@@ -56,6 +56,42 @@ class MeasurementTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Incomplete memory'):
                 read_memory(Path(tmp), log, rows)
 
+    def test_non_positive_pss_total_is_rejected(self):
+        # Pre-existing parser gap: a zero Total used to summarize. Not introduced by the 1.5B head.
+        wall = 1_700_000_000_000
+        log = (
+            f'WALL_MS {wall} MONOTONIC_MS 0\n'
+            'PHASE inference run=1 monotonic_ms=0\nPHASE end run=1 monotonic_ms=5000\n'
+            'PHASE inference run=2 monotonic_ms=5000\nPHASE end run=2 monotonic_ms=9000\n'
+        )
+        rows = [
+            {'run': 1, 'status': 0, 'output_callbacks': 128, 'finish_reason': 3,
+             'ttft_ms': 10, 'decode_ms': 10, 'total_ms': 20, 'decode_tps': 1},
+            {'run': 2, 'status': 0, 'output_callbacks': 128, 'finish_reason': 3,
+             'ttft_ms': 10, 'decode_ms': 10, 'total_ms': 20, 'decode_tps': 1},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            for index, start in enumerate((wall + 1000, wall + 6000)):
+                (directory / f'memory-{index:04d}.txt').write_text(
+                    f'PID 9\n{start * 1000000}\n  Graph 1\n  Total 0\n{(start + 10) * 1000000}\n')
+            with self.assertRaisesRegex(ValueError, 'Non-positive PSS Total'):
+                read_memory(directory, log, rows)
+            (directory / 'memory-0000.txt').write_text(
+                f'PID 9\n{(wall + 1000) * 1000000}\nhidumper failed\n{(wall + 1010) * 1000000}\n')
+            with self.assertRaisesRegex(ValueError, 'Incomplete memory'):
+                read_memory(directory, log, rows)
+        with self.assertRaisesRegex(ValueError, 'Non-positive PSS Total'):
+            summarize(rows, [
+                {'stable_decode': True, 'fully_in_inference': True, 'graph_kib': 1,
+                 'total_pss_kib': 0, 'start_epoch_ms': 1},
+                {'stable_decode': True, 'fully_in_inference': True, 'graph_kib': 1,
+                 'total_pss_kib': 0, 'start_epoch_ms': 2},
+            ])
+        failed = [dict(row, status=1) for row in rows]
+        with self.assertRaises(ValueError):
+            validate_rows(failed, count=2)
+
     def test_ten_runs_p90_and_count_validation(self):
         rows = [dict(run=i, status=0, output_callbacks=128, input_tokens=1024,
                      eog_tokens=0, ttft_ms=i, decode_ms=i, total_ms=i*2, decode_tps=i)

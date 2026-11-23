@@ -1,7 +1,11 @@
 {
   "archive_root": "/data",
   "task_id": "qwen25-15b-msl-w4a16-kirin9020",
-  "blocked": "Qwen2.5-1.5B Kirin9020 daily stays off until a maintainer confirms an official master package contains the mindspore-lite !1404 merge commit and checks the package archive and component checksums.",
+  "device_transport": {
+    "mode": "safe_norestart",
+    "preferred_host_port": 19147,
+    "device_port": 8888
+  },
   "model_generation": {
     "mode": "master_daily",
     "source_model": "/assets/source-models/Qwen2.5-1.5B-Instruct",
@@ -9,6 +13,13 @@
     "quant_type": "q4_0",
     "chunk_size": 64,
     "python": "/usr/local/bin/python3",
-    "timeout_seconds": 5400
+    "timeout_seconds": 5400,
+    "minimum_free_bytes": 68719476736,
+    "export_environment": {
+      "tmpdir_root": "/tmp",
+      "tmpdir_prefix": "e15.",
+      "tmpdir_minimum_free_bytes": 42949672960,
+      "prepend_path": ["/opt/ddk/ddk/ccec_compiler/bin"]
+    }
   }
 }

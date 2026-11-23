@@ -75,8 +75,12 @@ def run_profile(profile, argv=None):
     thread = threading.Thread(target=sample_memory)
     thread.start()
     try:
-        launch = subprocess.run(prefix + ["run", shlex.join(command), "--timeout", "45"],
-                                cwd=args.binrunner, capture_output=True, text=True, timeout=60)
+        launch_args = ["run", shlex.join(command), "--timeout", "45"]
+        if profile.get("transport") is None:
+            launch = subprocess.run(prefix + launch_args,
+                                    cwd=args.binrunner, capture_output=True, text=True, timeout=60)
+        else:
+            launch = profile["transport"].invoke(launch_args, timeout=60)
         (out / "launch.log").write_text(launch.stdout + launch.stderr)
         if launch.returncode or "WORKER_PID" not in launch.stdout:
             raise RuntimeError("Worker launch failed; see launch.log")
@@ -87,10 +91,15 @@ def run_profile(profile, argv=None):
             check_sampler()
             if time.monotonic() >= deadline:
                 break
+            pull_args = ["pull", args.log, str(out / "inference.log")]
+            pull_timeout = min(30, max(.01, deadline - time.monotonic()))
             try:
-                result = subprocess.run(prefix + ["pull", args.log, str(out / "inference.log")],
-                                        cwd=args.binrunner, capture_output=True, text=True,
-                                        timeout=min(30, max(.01, deadline - time.monotonic())))
+                if profile.get("transport") is None:
+                    result = subprocess.run(prefix + pull_args,
+                                            cwd=args.binrunner, capture_output=True, text=True,
+                                            timeout=pull_timeout)
+                else:
+                    result = profile["transport"].invoke(pull_args, timeout=pull_timeout)
             except subprocess.TimeoutExpired:
                 print("Log pull timed out; memory sampling continues", flush=True)
                 delay = args.poll_interval

@@ -1,0 +1,56 @@
+{
+  "archive_root": "/data",
+  "task_id": "qwen25-15b-msl-w4a16-kirin9020",
+  "device_alias": "dog-kirin9020",
+  "native": "/assets/native",
+  "device_transport": {
+    "mode": "safe_norestart",
+    "preferred_host_port": 19147,
+    "device_port": 8888
+  },
+  "environment": {
+    "schema_version": 1,
+    "host": "dog",
+    "device": {
+      "serial": "127.0.0.1:2000",
+      "port": "19147",
+      "pool": "Kirin9020",
+      "soc": "Kirin9020",
+      "os_version": "OpenHarmony-6.1.1.120"
+    },
+    "binrunner": "/assets/binrunner",
+    "output_root": "/data/runs",
+    "artifacts": {
+      "model": {
+        "host_path": "/assets/model/unset-qwen25-15b-w4a16.msl",
+        "device_path": "@/bin/unset-qwen25-15b-w4a16.msl",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "probe": {
+        "host_path": "/assets/native/unset-recipe-msl",
+        "device_path": "@/bin/recipe-msl",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "runtime": {
+        "host_path": "/data/packages/unset/mindspore-lite-llm-linux-x64-0.2.0.tar.gz",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  },
+  "model_generation": {
+    "mode": "master_daily",
+    "source_model": "/assets/source-models/Qwen2.5-1.5B-Instruct",
+    "ddk_packages": "/assets/ddk-packages",
+    "quant_type": "q4_0",
+    "chunk_size": 64,
+    "python": "/usr/local/bin/python3",
+    "timeout_seconds": 5400,
+    "minimum_free_bytes": 68719476736,
+    "export_environment": {
+      "tmpdir_root": "/tmp",
+      "tmpdir_prefix": "e15.",
+      "tmpdir_minimum_free_bytes": 42949672960,
+      "prepend_path": ["/opt/ddk/ddk/ccec_compiler/bin"]
+    }
+  }
+}

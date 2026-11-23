@@ -9,6 +9,8 @@
 | Qwen3-4B MSL S16S4 | Kirin9030 | 当天 MSL daily + PR1362/PR62 归档模型 |
 | Qwen3-0.6B MSL S16S4 | Kirin9030 | 当天 MSL daily + PR1362/PR62 归档模型 |
 | Qwen2.5-0.5B llama.cpp Q4_0 CPU | Kirin9020 | 固定 07822bdd 源码每日重编译；4线程、batch64 |
+| Qwen2.5-1.5B MSL W4A16 | Kirin9020 | 当天 MSL daily 导出工具与算子重新生成模型；上传/启动/拉日志不走 br |
+| Qwen2.5-1.5B MSL Q3_0 | Kirin9020 | 同上，量化为 q3_0。2026-11-22 只验证了导出，同规格真机与精度都还没有通过记录 |
 
 Q3_0 是 Kirin9020 上 Q4_0 之外的例外量化方式，导出配置名为 `q3_0`（decoder 为 Q3_0，embedding 与 head 仍按运行时契约保持 Q4_0）。该任务每天用当天 master daily 的导出工具和算子重新生成模型，导出能力随 mindspore-lite !1211 于 2026-11-10 合入 master，首个包含该能力的 master daily 发布件为 2026-11-11 构建；更早日期手动补跑会因导出工具不支持 `q3_0` 而失败。
 
@@ -37,7 +39,7 @@ python3 scripts/daily.py --config /config/tasks/qwen3-4b-msl-s16s4-kirin9030.jso
 - `completed/`：成功结果索引；日期、发布件、recipe、评测代码 commit 和设备环境均相同才去重（固定竞品次日仍会重测）。force 可以显式复测。
 - `leases/`：整个准备/部署/评测阶段共享的设备锁。其他人工任务也需遵守同一设备使用约定；不强制终止未知进程。
 
-整个工作流互斥，矩阵 max-parallel=1，五项依次执行且 fail-fast=false；某一项失败不取消其余项。每项独立归档并提交，run id 包含 recipe id，避免同一工作流内覆盖。发现仍在运行的 recipe-msl / recipe-llama / edge-llama 时拒绝覆盖探针。模型不会从发布件自动替换。异常退出后应检查残留 worker，再重跑。
+整个工作流互斥，矩阵 max-parallel=1，七项依次执行且 fail-fast=false；某一项失败不取消其余项。前五项的任务 id、顺序和 br 上传路径不变。后两项是 Qwen2.5-1.5B，只在这两项上改用安全传输。定时表达式仍是 `0 19 * * *`，不改 `DAILY_ENABLED`。手动指定一个 task id 时，select 只把该 id 放进矩阵，其余项不会启动评测；`all` 或空选择仍是七项。未知 id 会使 select 失败，不能把全部跳过的绿色 run 当成成功。每项独立归档并提交，run id 包含 recipe id，避免同一工作流内覆盖。发现仍在运行的 recipe-msl / recipe-llama / edge-llama 时拒绝覆盖探针，不杀进程。模型不会从发布件自动替换。异常退出后应检查残留 worker，再重跑。安全传输拆除自己的 fport 也不表示 worker 已经退出。
 
 ## 发布和指标
 
@@ -65,7 +67,7 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 
 ## 每日重新生成 MSL 模型
 
-三个 MSL 任务通过 `config/daily/*.json` 的 `model_generation` 启用全链路：
+六个带 `model_generation` 的 MSL 任务启用全链路：Qwen2.5-0.5B W4A16、Qwen2.5-0.5B Q3_0、Qwen3-4B、Qwen3-0.6B、Qwen2.5-1.5B W4A16、Qwen2.5-1.5B Q3_0。
 
 1. 选择指定日期最新成功发布的 master daily 包，校验归档 SHA256。
 2. 从同一包取 `mslite_llm` wheel、`mslite_llm_ops` wheel 和算子 `.run`。三者独立记录哈希，不混用 PR adapter 或既有算子。包中没有独立 internal Git SHA 时明确记为 null，不能将 runtime SHA 当作 internal SHA。
@@ -82,15 +84,35 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 
 新增只读挂载：
 
-- `SOURCE_MODELS_DIR` → `/assets/source-models`（Qwen2.5-0.5B-Instruct、Qwen3-4B、Qwen3-0.6B）。
+- `SOURCE_MODELS_DIR` → `/assets/source-models`（Qwen2.5-0.5B-Instruct、Qwen2.5-1.5B-Instruct、Qwen3-4B、Qwen3-0.6B）。
 - `DDK_PACKAGES_DIR` → `/assets/ddk-packages`（官方 DDK-tools 及两种芯片 plugin zip）。
 
-配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟；导出前检查至少12GiB可用空间，不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
+配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟。未设置 `minimum_free_bytes` 时，任务目录的可用空间缺省门槛是 12GiB。Qwen2.5-1.5B 两项在任务目录上另设 64GiB，并在 `/tmp` 上另设 40GiB；这是两次独立比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，两处读到的可用空间不能相加。不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
 
 ## Qwen2.5-1.5B Kirin9020
 
-两个任务共用 HF 源 `/assets/source-models/Qwen2.5-1.5B-Instruct`，`model_generation.mode` 都是 `master_daily`。`qwen25-15b-msl-w4a16-kirin9020` 的 `quant_type` 与 recipe `format` 是 `q4_0`。`qwen25-15b-msl-q30-kirin9020` 的 `quant_type` 与 recipe `format` 是 `q3_0`。导出产物和结果曲线按 format 分开。模型清单里 Kirin 9020 的 Q4_0 仍是未支持。
+两个任务共用 HF 源 `/assets/source-models/Qwen2.5-1.5B-Instruct`，`model_generation.mode` 都是 `master_daily`。`qwen25-15b-msl-w4a16-kirin9020` 的 `quant_type` 与 recipe `format` 是 `q4_0`。`qwen25-15b-msl-q30-kirin9020` 的 `quant_type` 与 recipe `format` 是 `q3_0`。导出产物和结果曲线按 format 分开。模型清单里 Kirin 9020 的 Q4_0 标为支持，依据是 2026-11-22 16:00 包的 10 次真机，不是新的测量。Q3_0 保持待确认：没有晚于那天的同规格真机结果；名为 Q30 的当天日志实际是 W4A16。
 
-规格都是上下文 2048、输入 1024、输出 128、连续 10 次，抄自 0.5B。1.5B 尚无正式包在该规格下的实测。测量沿用现有 Total PSS 与 Graph，并记录 TTFT 与 decode。不发布 ION、DMA 与普通内存拆分。
+规格都是上下文 2048、输入 1024、输出 128、连续 10 次，与 0.5B 相同。测量沿用现有 Total PSS、Graph、hidumper 与样本合同，并记录 TTFT 与 decode。不发布 ION、DMA 与普通内存拆分。链路跑通、样本完整、精度达标是三件不同的事。
 
-两个配置都有 `blocked`，两个任务 id 都不在手动选项和矩阵里，定时仍是现有五项。source-models 挂载清单仍是已有三项。两项都等人工确认同一个正式 master 包包含 !1404 的 merge commit 后，用该包分别重导。其后的 master 提交同样有效。代码不按祖先关系拦截。PR 历史包不能当作这次首跑。设备与环境留在运行配置中。
+recipe 里的 `model.sha256` 与 `build.commit` 是全 0 哨兵。`model.bytes` 是 1，因为 schema 的下限是 1，写成 0 会被拒绝。这三项都不是测量值，也不能把 `bytes` 的 1 读成文件大小。导出成功后由当次 `export_model` 写成该次模型的摘要和字节数，以及该次包的身份。2026-11-23 14:17 现场核对过的最新 master daily tar SHA256 是 `05c304249884d7674a415442eb437042844a53745e3a73f9d66f2c4f6ee438a1`（commit `415fad80e2f936f73400477d92ac063bcbdd40b2`）。这只是该时点的包身份。任务仍按日期发现当天包，并用包内 sidecar 校验；commit 相同不能代替 tar 摘要。
+
+### 只给这两项的安全传输
+
+`device_transport.mode` 为 `safe_norestart`。它覆盖探针和模型上传、沙箱 `sha256sum`、`aa start` 启动和日志 pull，失败后不回退 `python -m binrunner`。连接被拒绝、连接超时、传输中断、摘要不符、pull 超时、已有 worker、未知 fport 或端口竞态都停在安全失败：不 force-stop，不杀共享 App，不删 19005 或任何不是本任务刚创建的转发。宿主端口只从当时空闲的 19147–19159 里选，设备端固定 8888。监听端口从 `/proc/net/tcp` 和 `/proc/net/tcp6` 读取，不调用 `ss`。任一表缺失、不可读或无法按内核格式解析，就拒绝建立转发。不再使用宿主 18888，也不使用宿主 8888。`hdc` 命令带 `-t` 本机序列号；序列号以 `:3000` 结尾时直接拒绝，不向 TTS 的 3000 发命令。
+
+转发在同一把 `/data/leases` 设备锁里创建。成功去重使用序列号、系统版本、设备池和 SoC；当次选出的宿主端口写在 environment 和 `safe-transport.json`，不进入 completed 键。Daily 的 `/data/leases` 与 `execute()` 的 `runs/.leases` 是两个 flock 文件，不会天然互斥，本 PR 不把它们合成一把。导出阶段已经持有本任务的 fport，但还没有 `runs/.leases`。评测结束或失败时，只要本会话已经发出创建命令，关闭阶段会再列一次转发；只有列表里仍是本序列号的同一条 `tcp:<port> tcp:8888` 才删除。列表失败或看不到该行时不删除任何转发。笔记 `removed-own-fport` 只在实际发出 `fport rm` 且随后列表不再含该条时写入。若关闭时第一次列表看得到、下一次列表已经没有，则不发 `rm`，笔记是 `own-tuple-not-listed`。pull 超时只让内存采样继续，不拆转发，也不把 detached worker 记成已经退出。已有 `recipe-msl` / `recipe-llama` / `edge-llama` 时拒绝启动，不杀进程。`awake_device` 仍负责亮屏和把 BinRunner 拉到前台，那是现有的 `aa start`，不是 force-stop。probe 只说明 `127.0.0.1:<port>` 能连上，不作为设备身份；设备身份仍是原来的 OS 版本核对。pull 的字节数不是产物身份，沙箱 SHA256 必须与主机一致。
+
+`environment.binrunner` 仍要填容器里的 `/assets/binrunner`，因为锁定 schema 需要这个字段。它不是“可以调用 br”的许可。不要把旧的 `binrunner=/data/binrunner-1.4.1` 或 `binrunner_device_port: 8888` 抄进来。
+
+### 导出环境
+
+只有这两项设置 `export_environment`。导出子进程使用 `/tmp/e15.*` 短目录，使 `$TMPDIR/listener-XXXXXXXX` 短于 107 字节，并在 `source set_ascendc_env.sh` 之后重新导出 `TMPDIR` 和 `PATH`。`PATH` 前置 `/opt/ddk/ddk/ccec_compiler/bin`，因为正式镜像里有 `bisheng`，默认 PATH 找不到它，1.5B 的 JIT 不能靠 0.5B 的缓存命中。目录只删除本进程创建的 `/tmp/e15.*`。`/data` 上该次任务要求至少 64GiB 可用（24GiB 低水位加 40GiB 工作预算），`/tmp` 至少 40GiB。这两道门槛分开比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，读到的可用空间不能相加，40GiB 不是 64GiB 之外的另一份容量。未设置 `minimum_free_bytes` 的其他导出任务仍用 12GiB 缺省。不自动删归档。两项高峰不要重叠；第一项结束后再决定是否发第二项。
+
+### 私有部署文件
+
+仓库 `config/daily/` 里的两份 JSON 不含设备序列号和环境，避免把运行配置写进公开任务文件。dog 上 `/home/zhugd/msl-kanban-runner-deploy/tasks/` 要换成 `config/deploy/` 里同名的两份，只替换这两份，不改原来五项。部署文件带 Kirin9020 环境、`device_alias`、`/assets/native` 和 `/assets/binrunner`。其中的 model/probe/runtime 路径和全 0 摘要是占位，进入锁之前会被当次编译、导出和包校验替换，不能填旧 runtime `29e90492…` 或宿主 `/home/...` 探针路径。目录是只读挂载，通常不用重启容器；若现场发现必须重启，先停下说明，不要连同 App 一起重启。
+
+### 只串行跑这两项
+
+不要选 `all`，不要留空 task。workflow 的 concurrency group 不会替你保留两个排队的 dispatch。先只发 `qwen25-15b-msl-w4a16-kirin9020`，`force=false`，日期用执行日。等该 run 终态、10 次样本和内存归属都通过，并确认手机没有遗留 worker 之后，再单独发 `qwen25-15b-msl-q30-kirin9020`。第一项失败就不要发第二项。Q3_0 的第一次真机不是已经通过的精度结果。

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "qwen25-15b-msl-w4a16-kirin9020",
-  "description": "Qwen2.5-1.5B-Instruct on Kirin9020. Task name W4A16 uses export quant_type q4_0, same as qwen25-05b-msl-w4a16-kirin9020. Not scheduled. Workload 2048/1024/128 is copied from that task and is not evidence from an official 1.5B package. model.sha256, model.bytes, and build.commit are unset sentinels. Stays blocked until a maintainer confirms an official master package contains the mindspore-lite !1404 merge commit.",
+  "description": "Qwen2.5-1.5B-Instruct on Kirin9020. Task name W4A16 uses export quant_type q4_0, same as qwen25-05b-msl-w4a16-kirin9020. Scheduled. Workload 2048/1024/128 matches that task. model.sha256, model.bytes, and build.commit are unset sentinels, not measured hashes. The daily exporter replaces sha256, bytes, and provenance with that run's model and package. A 2026-11-22 device run is historical evidence for an earlier package, not this recipe's identity.",
   "model": {
     "name": "Qwen2.5-1.5B-Instruct",
     "variant": "instruct",

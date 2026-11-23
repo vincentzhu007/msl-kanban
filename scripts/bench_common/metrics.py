@@ -92,6 +92,9 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
                 warnings.warn(f"Skipping incomplete memory sample: {file}")
                 continue
             raise ValueError(f"Incomplete memory sample: {file}")
+        total_pss = int(values["Total"][1])
+        if total_pss <= 0:
+            raise ValueError(f"Non-positive PSS Total: {file}")
         start, end = (int(n) / 1e6 for n in timestamps)
         if end < start:
             raise ValueError(f"Reversed memory sample interval: {file}")
@@ -99,7 +102,7 @@ def read_memory(directory, log, rows, pattern="memory-*.txt", skip_invalid=False
                      end <= ends[r["run"]] for r in rows if r["run"] >= 2)
         memory.append({"file": file.name, "start_epoch_ms": start, "end_epoch_ms": end,
                        "graph_kib": int(values["Graph"][1]) if values["Graph"] else 0,
-                       "total_pss_kib": int(values["Total"][1]),
+                       "total_pss_kib": total_pss,
                        "stable_decode": stable,
                        "fully_in_inference": start >= starts[1] and end <= ends[len(rows)]})
         if baseline:
@@ -114,6 +117,9 @@ def _finite_kib(value):
 
 
 def summarize(rows, memory):
+    for sample in memory:
+        if 'total_pss_kib' in sample and _finite_kib(sample['total_pss_kib']) and sample['total_pss_kib'] <= 0:
+            raise ValueError("Non-positive PSS Total")
     stable = [sample for sample in memory if sample["stable_decode"]]
     inference = [sample for sample in memory if sample["fully_in_inference"]]
     if len(memory) < 2 or not stable or not inference:

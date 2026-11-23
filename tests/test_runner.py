@@ -40,6 +40,43 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(len(json.loads((out / 'samples.json').read_text())), 5)
             self.assertTrue(list(out.glob('memory-*.txt')))
 
+    def test_safe_transport_pull_timeout_keeps_sampling_and_the_session(self):
+        fixture = ROOT / 'reports/qwen3-9030-daily-20261026/pr-validation/results-aligned'
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'run'
+            pulls = []
+
+            class Transport:
+                closed = False
+
+                def invoke(self, args, timeout):
+                    if args[0] == 'run':
+                        return subprocess.CompletedProcess(args, 0, 'WORKER_PID 123\n', '')
+                    pulls.append(args)
+                    if len(pulls) == 1:
+                        raise subprocess.TimeoutExpired(args, timeout)
+                    (out / 'inference.log').write_text((fixture / 'inference.log').read_text())
+                    return subprocess.CompletedProcess(args, 0, '', '')
+
+            transport = Transport()
+            profile = dict(device='test', port='19147', binrunner=tmp, output=str(out),
+                           binary='test', model='@/bin/model', log='result.log',
+                           process='worker', backend='msl', completion='DESTROY status=0',
+                           transport=transport)
+
+            def execute(command, **kwargs):
+                self.assertNotIn('binrunner', command)
+                self.assertNotIn('force-stop', ' '.join(command))
+                result = '123 worker\n' if command[-1].startswith('ps ') else 'memory sample\n'
+                return subprocess.CompletedProcess(command, 0, result, '')
+
+            with patch.object(sys, 'argv', ['run', '--initial-wait', '.05', '--poll-interval', '.01']), \
+                 patch('bench_common.runner.subprocess.run', side_effect=execute):
+                run_profile(profile)
+            self.assertGreaterEqual(len(pulls), 2)
+            self.assertFalse(transport.closed)
+            self.assertTrue((out / 'samples.json').exists())
+
     def test_frozen_worker_invalidates_measurement(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / 'run'

@@ -7,7 +7,10 @@ import zipfile
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from daily_ci.model_export import extract_zip, source_manifest, export_model, run_export, restore_ddk_header_link
+from daily_ci.model_export import (
+    extract_zip, source_manifest, export_model, run_export, restore_ddk_header_link,
+    listener_path_length, prepare_export_environment, wrap_export_command,
+)
 
 
 class ModelExportTests(unittest.TestCase):
@@ -77,3 +80,34 @@ class ModelExportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'Expected one daily component'):
                 export_model(root,recipe,{},settings,root,{},lambda *a,**k:None,lambda *a:None)
             self.assertEqual(recipe['model']['sha256'],'old-model')
+
+    def test_export_command_stays_unchanged_without_task_env(self):
+        command = wrap_export_command('set.sh', ['python3', 'export_entry.py'])
+        self.assertEqual(command, ['bash', '-c', 'source "$1"; shift; exec "$@"', 'daily-ddk-env', 'set.sh',
+                                   'python3', 'export_entry.py'])
+        self.assertNotIn('TMPDIR', command[2])
+
+    def test_opt_in_export_env_uses_short_tmpdir_and_bisheng_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            compiler = Path(tmp) / 'bisheng'
+            compiler.write_text('#!/bin/sh\nexit 0\n')
+            compiler.chmod(0o755)
+            managed = prepare_export_environment({'export_environment': {
+                'tmpdir_root': '/tmp', 'tmpdir_prefix': 'e15.', 'tmpdir_minimum_free_bytes': 0,
+                'prepend_path': [tmp]}})
+            try:
+                self.assertTrue(managed.tmpdir.startswith('/tmp/e15.'))
+                self.assertLess(listener_path_length(managed.tmpdir), 107)
+                env = managed.apply({'PATH': '/usr/bin', 'TMPDIR': '/long/private/task/tmp'})
+                self.assertEqual(env['TMPDIR'], managed.tmpdir)
+                self.assertTrue(env['PATH'].startswith(tmp + ':'))
+                self.assertIn('/usr/bin', env['PATH'])
+                wrapped = wrap_export_command('set.sh', ['python3'], {
+                    'tmpdir': managed.tmpdir, 'prepend_path': [tmp]})
+                self.assertIn('export TMPDIR="$2"', wrapped[2])
+                self.assertIn('export PATH="$3${PATH:+:}$PATH"', wrapped[2])
+                self.assertEqual(wrapped[4], 'set.sh')
+                self.assertEqual(wrapped[5], managed.tmpdir)
+            finally:
+                managed.cleanup()
+            self.assertFalse(Path(managed.tmpdir).exists())
