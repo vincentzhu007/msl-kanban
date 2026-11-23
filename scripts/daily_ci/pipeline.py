@@ -295,6 +295,18 @@ def record_blocked(repo, config, day):
     return 0
 
 
+def completed_device_key(device, safe):
+    """Identity stored in the success marker.
+
+    The five fixed tasks keep the whole device record, including their
+    configured port. A safe task's host port is chosen per run, so the marker
+    uses the stable serial, OS, pool, and SoC instead.
+    """
+    if safe:
+        return digest({key: device[key] for key in ('serial', 'os_version', 'pool', 'soc')})
+    return digest(device)
+
+
 def deploy_files(env, config, task, probe, regenerated, transport):
     """Push the probe and, for a regenerated model, the new package.
 
@@ -370,7 +382,7 @@ def run(repo, recipe_path, config, day, force=False):
                     env, config, listing_text=read_fport_listing(env['device']['serial']),
                     listeners=listening_tcp_ports())['host_port']
                 env['device']['port'] = str(planned_port)
-            device_key = digest(env['device'])
+            device_key = completed_device_key(env['device'], safe)
             source_identity = digest(source_manifest(Path(config['model_generation']['source_model']))) if backend == 'msl' and config.get('model_generation') else None
             key = digest({'source_model': source_identity, 'build': build, 'recipe': recipe, 'code': code, 'device': device_key, 'day': day, 'model_generation': config.get('model_generation')})
             marker = root / 'completed' / (key + '.json')

@@ -67,7 +67,7 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 
 ## 每日重新生成 MSL 模型
 
-三个 MSL 任务通过 `config/daily/*.json` 的 `model_generation` 启用全链路：
+六个带 `model_generation` 的 MSL 任务启用全链路：Qwen2.5-0.5B W4A16、Qwen2.5-0.5B Q3_0、Qwen3-4B、Qwen3-0.6B、Qwen2.5-1.5B W4A16、Qwen2.5-1.5B Q3_0。
 
 1. 选择指定日期最新成功发布的 master daily 包，校验归档 SHA256。
 2. 从同一包取 `mslite_llm` wheel、`mslite_llm_ops` wheel 和算子 `.run`。三者独立记录哈希，不混用 PR adapter 或既有算子。包中没有独立 internal Git SHA 时明确记为 null，不能将 runtime SHA 当作 internal SHA。
@@ -87,7 +87,7 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 - `SOURCE_MODELS_DIR` → `/assets/source-models`（Qwen2.5-0.5B-Instruct、Qwen2.5-1.5B-Instruct、Qwen3-4B、Qwen3-0.6B）。
 - `DDK_PACKAGES_DIR` → `/assets/ddk-packages`（官方 DDK-tools 及两种芯片 plugin zip）。
 
-配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟；导出前检查至少12GiB可用空间，不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
+配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟。未设置 `minimum_free_bytes` 时，任务目录的可用空间缺省门槛是 12GiB。Qwen2.5-1.5B 两项在任务目录上另设 64GiB，并在 `/tmp` 上另设 40GiB；这是两次独立比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，两处读到的可用空间不能相加。不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
 
 ## Qwen2.5-1.5B Kirin9020
 
@@ -95,19 +95,19 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 
 规格都是上下文 2048、输入 1024、输出 128、连续 10 次，与 0.5B 相同。测量沿用现有 Total PSS、Graph、hidumper 与样本合同，并记录 TTFT 与 decode。不发布 ION、DMA 与普通内存拆分。链路跑通、样本完整、精度达标是三件不同的事。
 
-recipe 里的 `model.sha256`、`model.bytes`、`build.commit` 仍是全 0 哨兵，不是任何一次产物的测量值。导出成功后由当次 `export_model` 写成该次模型和包的身份。2026-11-23 14:17 现场核对过的最新 master daily tar SHA256 是 `05c304249884d7674a415442eb437042844a53745e3a73f9d66f2c4f6ee438a1`（commit `415fad80e2f936f73400477d92ac063bcbdd40b2`）。这只是该时点的包身份。任务仍按日期发现当天包，并用包内 sidecar 校验；commit 相同不能代替 tar 摘要。
+recipe 里的 `model.sha256` 与 `build.commit` 是全 0 哨兵。`model.bytes` 是 1，因为 schema 的下限是 1，写成 0 会被拒绝。这三项都不是测量值，也不能把 `bytes` 的 1 读成文件大小。导出成功后由当次 `export_model` 写成该次模型的摘要和字节数，以及该次包的身份。2026-11-23 14:17 现场核对过的最新 master daily tar SHA256 是 `05c304249884d7674a415442eb437042844a53745e3a73f9d66f2c4f6ee438a1`（commit `415fad80e2f936f73400477d92ac063bcbdd40b2`）。这只是该时点的包身份。任务仍按日期发现当天包，并用包内 sidecar 校验；commit 相同不能代替 tar 摘要。
 
 ### 只给这两项的安全传输
 
-`device_transport.mode` 为 `safe_norestart`。它覆盖探针和模型上传、沙箱 `sha256sum`、`aa start` 启动和日志 pull，失败后不回退 `python -m binrunner`。连接被拒绝、连接超时、传输中断、摘要不符、pull 超时、已有 worker、未知 fport 或端口竞态都停在安全失败：不 force-stop，不杀共享 App，不删 19005 或任何不是本任务刚创建的转发。宿主端口只从当时空闲的 19147–19159 里选，设备端固定 8888。不再使用宿主 18888，也不使用宿主 8888。`hdc` 命令带 `-t` 本机序列号；序列号以 `:3000` 结尾时直接拒绝，不向 TTS 的 3000 发命令。
+`device_transport.mode` 为 `safe_norestart`。它覆盖探针和模型上传、沙箱 `sha256sum`、`aa start` 启动和日志 pull，失败后不回退 `python -m binrunner`。连接被拒绝、连接超时、传输中断、摘要不符、pull 超时、已有 worker、未知 fport 或端口竞态都停在安全失败：不 force-stop，不杀共享 App，不删 19005 或任何不是本任务刚创建的转发。宿主端口只从当时空闲的 19147–19159 里选，设备端固定 8888。监听端口从 `/proc/net/tcp` 和 `/proc/net/tcp6` 读取，不调用 `ss`。任一表缺失、不可读或无法按内核格式解析，就拒绝建立转发。不再使用宿主 18888，也不使用宿主 8888。`hdc` 命令带 `-t` 本机序列号；序列号以 `:3000` 结尾时直接拒绝，不向 TTS 的 3000 发命令。
 
-转发在同一把 `/data/leases` 设备锁里创建，评测结束或失败时只删除自己那一条，且删除前再次核对仍是本序列号的 `tcp:<port> tcp:8888`。pull 超时只让内存采样继续，不拆转发，也不把 detached worker 记成已经退出。已有 `recipe-msl` / `recipe-llama` / `edge-llama` 时拒绝启动，不杀进程。`awake_device` 仍负责亮屏和把 BinRunner 拉到前台，那是现有的 `aa start`，不是 force-stop。probe 只说明 `127.0.0.1:<port>` 能连上，不作为设备身份；设备身份仍是原来的 OS 版本核对。pull 的字节数不是产物身份，沙箱 SHA256 必须与主机一致。
+转发在同一把 `/data/leases` 设备锁里创建。成功去重使用序列号、系统版本、设备池和 SoC；当次选出的宿主端口写在 environment 和 `safe-transport.json`，不进入 completed 键。`execute()` 仍会再取 `runs/.leases` 里的另一把锁，两把锁不合并。评测结束或失败时，只要本会话已经发出创建命令，关闭阶段会再列一次转发；只有列表里仍是本序列号的同一条 `tcp:<port> tcp:8888` 才删除。列表失败或看不到该行时不删除任何转发。pull 超时只让内存采样继续，不拆转发，也不把 detached worker 记成已经退出。已有 `recipe-msl` / `recipe-llama` / `edge-llama` 时拒绝启动，不杀进程。`awake_device` 仍负责亮屏和把 BinRunner 拉到前台，那是现有的 `aa start`，不是 force-stop。probe 只说明 `127.0.0.1:<port>` 能连上，不作为设备身份；设备身份仍是原来的 OS 版本核对。pull 的字节数不是产物身份，沙箱 SHA256 必须与主机一致。
 
 `environment.binrunner` 仍要填容器里的 `/assets/binrunner`，因为锁定 schema 需要这个字段。它不是“可以调用 br”的许可。不要把旧的 `binrunner=/data/binrunner-1.4.1` 或 `binrunner_device_port: 8888` 抄进来。
 
 ### 导出环境
 
-只有这两项设置 `export_environment`。导出子进程使用 `/tmp/e15.*` 短目录，使 `$TMPDIR/listener-XXXXXXXX` 短于 107 字节，并在 `source set_ascendc_env.sh` 之后重新导出 `TMPDIR` 和 `PATH`。`PATH` 前置 `/opt/ddk/ddk/ccec_compiler/bin`，因为正式镜像里有 `bisheng`，默认 PATH 找不到它，1.5B 的 JIT 不能靠 0.5B 的缓存命中。目录只删除本进程创建的 `/tmp/e15.*`。`/data` 上该次任务要求至少 64GiB 可用（24GiB 低水位加 40GiB 工作预算），`/tmp` 至少 40GiB。不自动删归档。两项高峰不要重叠；第一项结束后再决定是否发第二项。
+只有这两项设置 `export_environment`。导出子进程使用 `/tmp/e15.*` 短目录，使 `$TMPDIR/listener-XXXXXXXX` 短于 107 字节，并在 `source set_ascendc_env.sh` 之后重新导出 `TMPDIR` 和 `PATH`。`PATH` 前置 `/opt/ddk/ddk/ccec_compiler/bin`，因为正式镜像里有 `bisheng`，默认 PATH 找不到它，1.5B 的 JIT 不能靠 0.5B 的缓存命中。目录只删除本进程创建的 `/tmp/e15.*`。`/data` 上该次任务要求至少 64GiB 可用（24GiB 低水位加 40GiB 工作预算），`/tmp` 至少 40GiB。这两道门槛分开比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，读到的可用空间不能相加，40GiB 不是 64GiB 之外的另一份容量。未设置 `minimum_free_bytes` 的其他导出任务仍用 12GiB 缺省。不自动删归档。两项高峰不要重叠；第一项结束后再决定是否发第二项。
 
 ### 私有部署文件
 

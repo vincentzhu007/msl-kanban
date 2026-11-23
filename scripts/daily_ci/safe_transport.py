@@ -184,6 +184,7 @@ class SafeSession:
         self._hdc = hdc
         self.task_dir = None if task_dir is None else Path(task_dir)
         self.created = False
+        self._create_sent = False
         self.closed = False
         self._closing = False
         self.worker_observed_exited = False
@@ -225,6 +226,8 @@ class SafeSession:
             raise SafeTransportError('host port appeared before create; not reusing it')
         self._closing = False
         self.hdc(['fport', f'tcp:{self.port}', f'tcp:{DEVICE_PORT}'], timeout=15)
+        # The command was accepted. Close must look again even if this listing misses the row.
+        self._create_sent = True
         after = self._listing()
         if ours not in after:
             raise SafeTransportError('own fport did not appear')
@@ -255,16 +258,33 @@ class SafeSession:
         return after
 
     def close(self):
-        """Drop only our tuple. This does not observe or stop a device worker."""
+        """Drop only our tuple. This does not observe or stop a device worker.
+
+        A create command that was already sent is checked again here. The row
+        is removed only when a fresh listing still shows this serial and the
+        same tcp:<port> tcp:8888 tuple. A failed listing removes nothing.
+        """
         if self.closed:
             return
         self.closed = True
         self.worker_observed_exited = False
-        if not self.created:
+        if not self.created and not self._create_sent:
             self._write_note('not-created')
             return
         ours = (self.serial, f'tcp:{self.port}', f'tcp:{DEVICE_PORT}')
-        self._remove_if_exact(ours)
+        try:
+            current = self._listing()
+        except SafeTransportError:
+            self._write_note('listing-failed-not-removed')
+            return
+        if ours not in current:
+            self._write_note('own-tuple-not-listed')
+            return
+        try:
+            self._remove_if_exact(ours)
+        except SafeTransportError:
+            self._write_note('listing-failed-not-removed')
+            return
         self._write_note('removed-own-fport')
 
     def _write_note(self, state):
@@ -400,22 +420,68 @@ class SafeSession:
         return False
 
 
-def listening_tcp_ports():
-    try:
-        completed = subprocess.run(['ss', '-H', '-ltn'], capture_output=True, text=True, timeout=10, check=False)
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise SafeTransportError('cannot list host listeners; not creating a forward') from error
-    if completed.returncode != 0:
-        raise SafeTransportError('ss failed; not creating a forward')
+_PROC_TCP = ('/proc/net/tcp', '/proc/net/tcp6')
+_PROC_TCP_HEADER = ('sl', 'local_address', 'rem_address', 'st')
+_TCP_LISTEN = '0A'
+
+
+def parse_proc_net_tcp(text, *, ipv6):
+    """Return listening ports from one /proc/net/tcp or tcp6 table.
+
+    A missing header, a short record, or a non-hex field fails closed.
+    Established and other states are ignored. An empty table is valid.
+    """
+    if not isinstance(text, str) or not text.strip():
+        raise SafeTransportError('proc net tcp is empty; not creating a forward')
+    lines = text.splitlines()
+    header = lines[0].split()
+    # tcp uses rem_address; tcp6 uses remote_address. Both are the kernel's own labels.
+    if (len(header) < 4 or tuple(header[:2]) != _PROC_TCP_HEADER[:2]
+            or header[2] not in ('rem_address', 'remote_address') or header[3] != _PROC_TCP_HEADER[3]):
+        raise SafeTransportError('proc net tcp header is not recognized; not creating a forward')
+    address_length = 32 if ipv6 else 8
     ports = set()
-    for line in completed.stdout.splitlines():
+    for line in lines[1:]:
+        if not line.strip():
+            raise SafeTransportError('proc net tcp has a blank record; not creating a forward')
         fields = line.split()
-        if len(fields) < 4:
-            continue
-        local = fields[3]
-        port_text = local.rsplit(':', 1)[-1]
-        if port_text.isdigit():
-            ports.add(int(port_text))
+        if len(fields) < 4 or not fields[0].endswith(':'):
+            raise SafeTransportError('proc net tcp record is truncated; not creating a forward')
+        local, state = fields[1], fields[3]
+        if local.count(':') != 1:
+            raise SafeTransportError('proc net tcp local address is malformed; not creating a forward')
+        address, port_hex = local.split(':')
+        if len(address) != address_length or len(port_hex) != 4 or len(state) != 2:
+            raise SafeTransportError('proc net tcp field width is unexpected; not creating a forward')
+        try:
+            int(address, 16)
+            port = int(port_hex, 16)
+            int(state, 16)
+        except ValueError as error:
+            raise SafeTransportError('proc net tcp field is not hex; not creating a forward') from error
+        if port > 65535:
+            raise SafeTransportError('proc net tcp port is out of range; not creating a forward')
+        if state.upper() == _TCP_LISTEN:
+            ports.add(port)
+    return ports
+
+
+def listening_tcp_ports(paths=None):
+    """Read listening TCP ports from procfs. This does not invoke ss.
+
+    The official runner image has no ss. Both IPv4 and IPv6 tables are
+    required. A missing, unreadable, or corrupt table refuses the forward.
+    """
+    selected = _PROC_TCP if paths is None else tuple(paths)
+    if len(selected) != 2:
+        raise SafeTransportError('listener check needs both tcp and tcp6 tables')
+    ports = set()
+    for index, path in enumerate(selected):
+        try:
+            text = Path(path).read_text(encoding='ascii')
+        except (OSError, UnicodeError) as error:
+            raise SafeTransportError('cannot list host listeners; not creating a forward') from error
+        ports.update(parse_proc_net_tcp(text, ipv6=index == 1))
     return ports
 
 

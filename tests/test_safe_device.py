@@ -13,13 +13,14 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from daily_ci.pipeline import deploy_files, run
+from daily_ci.pipeline import completed_device_key, deploy_files, run
 from daily_ci.safe_br_io import (
     RESUME_MAGIC, SafeStop, SafeTransportError, probe_connect, pull_file, push_file, validate_host_port,
 )
 from daily_ci.safe_transport import (
     DETACHED_WORKER_NOTE, SafeSession, aa_start_shell, choose_host_port, decode_hilog_stream,
-    open_safe_session, parse_forwards, plan_host_port, refuse_serial, requires_safe_norestart,
+    listening_tcp_ports, open_safe_session, parse_forwards, parse_proc_net_tcp, plan_host_port,
+    refuse_serial, requires_safe_norestart,
 )
 from daily_ci.workflow_tasks import ORIGINAL_FIVE, SCHEDULED, select_tasks
 from recipe_ci.execution import execute
@@ -151,6 +152,85 @@ class PortPolicyTests(unittest.TestCase):
                 {'device': {'serial': SERIAL}},
                 config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
                 listing_text=listing, listeners=set())
+
+    def test_create_hidden_from_the_next_listing_is_removed_when_it_reappears(self):
+        class Reappear:
+            def __init__(self):
+                self.created = []
+                self.removed = []
+                self.ls_n = 0
+
+            def __call__(self, serial, args, timeout):
+                if args == ['fport', 'ls']:
+                    self.ls_n += 1
+                    if self.ls_n <= 2:
+                        text = f'{serial} tcp:19005 tcp:8888 [Forward]\n'
+                    elif self.ls_n == 3:
+                        text = ''
+                    elif self.removed:
+                        text = f'{serial} tcp:19005 tcp:8888 [Forward]\n'
+                    else:
+                        text = (
+                            f'{serial} tcp:19005 tcp:8888 [Forward]\n'
+                            f'{serial} tcp:19147 tcp:8888 [Forward]\n'
+                        )
+                    return subprocess.CompletedProcess(args, 0, text, '')
+                if args[:1] == ['fport'] and 'rm' not in args and 'ls' not in args:
+                    self.created.append(list(args))
+                    return subprocess.CompletedProcess(args, 0, 'OK\n', '')
+                if args[:2] == ['fport', 'rm']:
+                    self.removed.append(list(args))
+                    return subprocess.CompletedProcess(args, 0, 'OK\n', '')
+                raise AssertionError(args)
+
+        hdc = Reappear()
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(SafeTransportError, 'did not appear'):
+                with open_safe_session(
+                        {'device': {'serial': SERIAL}},
+                        config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
+                        Path(tmp), 19147, hdc=hdc):
+                    pass
+        self.assertEqual(hdc.created, [['fport', 'tcp:19147', 'tcp:8888']])
+        self.assertEqual(hdc.removed, [['fport', 'rm', 'tcp:19147', 'tcp:8888']])
+
+    def test_failed_listing_after_create_does_not_remove_other_rows(self):
+        class EmptyThenFail:
+            def __init__(self):
+                self.created = []
+                self.removed = []
+                self.ls_n = 0
+
+            def __call__(self, serial, args, timeout):
+                if args == ['fport', 'ls']:
+                    self.ls_n += 1
+                    if self.ls_n <= 2:
+                        text = f'{serial} tcp:19005 tcp:8888 [Forward]\n'
+                    elif self.ls_n == 3:
+                        text = ''
+                    else:
+                        text = '[Fail] listing unavailable\n'
+                    return subprocess.CompletedProcess(args, 0, text, '')
+                if args[:1] == ['fport'] and 'rm' not in args and 'ls' not in args:
+                    self.created.append(list(args))
+                    return subprocess.CompletedProcess(args, 0, 'OK\n', '')
+                if args[:2] == ['fport', 'rm']:
+                    self.removed.append(list(args))
+                    return subprocess.CompletedProcess(args, 0, 'OK\n', '')
+                raise AssertionError(args)
+
+        hdc = EmptyThenFail()
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(SafeTransportError, 'did not appear'):
+                with open_safe_session(
+                        {'device': {'serial': SERIAL}},
+                        config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
+                        Path(tmp), 19147, hdc=hdc):
+                    pass
+            note = json.loads((Path(tmp) / 'safe-transport.json').read_text())
+        self.assertEqual(hdc.created, [['fport', 'tcp:19147', 'tcp:8888']])
+        self.assertEqual(hdc.removed, [])
+        self.assertEqual(note['state'], 'listing-failed-not-removed')
 
     def test_preferred_port_skips_a_busy_candidate_inside_the_range(self):
         rows = parse_forwards(f'{SERIAL} tcp:19147 tcp:8888 [Forward]\n{SERIAL} tcp:19005 tcp:8888 [Forward]\n')
@@ -436,6 +516,21 @@ class OfficialPathTests(unittest.TestCase):
         self.assertEqual(stdout, 'WORKER_PID 9\n')
         self.assertEqual(code, '0')
 
+    def test_chosen_host_port_does_not_change_the_success_key(self):
+        device = {
+            'serial': SERIAL, 'port': '19147', 'pool': 'Kirin9020',
+            'soc': 'Kirin9020', 'os_version': 'OpenHarmony-6.1.1.120',
+        }
+        other = dict(device, port='19148')
+        self.assertEqual(completed_device_key(device, True), completed_device_key(other, True))
+        self.assertNotEqual(completed_device_key(device, False), completed_device_key(other, False))
+
+    def test_missing_proc_tables_fail_without_inventing_listeners(self):
+        with self.assertRaises(SafeTransportError) as caught:
+            listening_tcp_ports(('/tmp/no-such-msl-tcp', '/tmp/no-such-msl-tcp6'))
+        self.assertIn('cannot list host listeners', str(caught.exception))
+        self.assertFalse(hasattr(caught.exception, 'listeners'))
+
     def test_dispatch_selects_one_task_and_keeps_the_original_five_first(self):
         self.assertEqual(select_tasks('schedule', ''), list(SCHEDULED))
         self.assertEqual(select_tasks('workflow_dispatch', 'all'), list(SCHEDULED))
@@ -461,6 +556,137 @@ class OfficialPathTests(unittest.TestCase):
                 self.assertNotIn(banned, blob)
             self.assertEqual(private['environment']['device']['serial'], '127.0.0.1:2000')
             self.assertNotEqual(private['environment']['device']['serial'], '127.0.0.1:3000')
+
+
+PROC_HEADER = '  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n'
+PROC6_HEADER = (
+    '  sl  local_address                         remote_address                        '
+    'st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n'
+)
+
+
+def proc_line(address, port_hex, state, *, ipv6=False):
+    remote = ('0' * (32 if ipv6 else 8)) + ':0000'
+    return f'   0: {address}:{port_hex} {remote} {state} 00000000:00000000 00:00000000 00000000 0 0 1 1 0 100 0 0 10 0\n'
+
+
+class ListenerProcTests(unittest.TestCase):
+    def write_tables(self, root, ipv4, ipv6):
+        v4 = Path(root) / 'tcp'
+        v6 = Path(root) / 'tcp6'
+        v4.write_text(ipv4)
+        v6.write_text(ipv6)
+        return (v4, v6)
+
+    def test_ipv4_and_ipv6_listen_ports_are_kept_and_other_states_are_not(self):
+        # 19147=0x4ACB, 19148=0x4ACC, 19151=0x4ACF, 19152=0x4AD0.
+        ipv4 = PROC_HEADER + proc_line('00000000', '4ACB', '0A') + proc_line('0100007F', '4ACC', '01')
+        ipv6 = PROC6_HEADER + proc_line('0' * 32, '4ACF', '0A', ipv6=True) + proc_line('0' * 24 + '01000000', '4AD0', '0A', ipv6=True)
+        with tempfile.TemporaryDirectory() as tmp:
+            ports = listening_tcp_ports(self.write_tables(tmp, ipv4, ipv6))
+        self.assertEqual(ports, {19147, 19151, 19152})
+        self.assertNotIn(19148, ports)
+
+    def test_kernel_rows_of_twelve_and_seventeen_fields_both_parse(self):
+        # TIME_WAIT is the kernel's 12-field form. A full socket is 17 fields.
+        # Listening state stays in the same early columns, so neither width is required.
+        def row(address, port_hex, state, width, *, ipv6=False):
+            remote = ('0' * (32 if ipv6 else 8)) + ':0000'
+            common = f'   0: {address}:{port_hex} {remote} {state} 00000000:00000000 03:00000001 00000000 0 0 0 1 0000000000000000'
+            if width == 12:
+                return common + '\n'
+            if width == 17:
+                return common + ' 100 0 0 10 0\n'
+            raise AssertionError(width)
+
+        ipv4_listen = row('00000000', '4ACB', '0A', 17)
+        ipv4_wait = row('00000000', '4ACC', '06', 12)
+        ipv6_listen = row('0' * 32, '4ACF', '0A', 12, ipv6=True)
+        ipv6_wait = row('0' * 32, '4AD0', '06', 17, ipv6=True)
+        self.assertEqual(len(ipv4_listen.split()), 17)
+        self.assertEqual(len(ipv4_wait.split()), 12)
+        self.assertEqual(len(ipv6_listen.split()), 12)
+        self.assertEqual(len(ipv6_wait.split()), 17)
+        ipv4 = PROC_HEADER + ipv4_listen + ipv4_wait
+        ipv6 = PROC6_HEADER + ipv6_listen + ipv6_wait
+        with tempfile.TemporaryDirectory() as tmp:
+            ports = listening_tcp_ports(self.write_tables(tmp, ipv4, ipv6))
+        self.assertEqual(ports, {19147, 19151})
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            short = PROC_HEADER + '   0: 00000000:4ACB 00000000:0000\n'
+            (root / 'tcp').write_text(short)
+            (root / 'tcp6').write_text(PROC6_HEADER)
+            with self.assertRaises(SafeTransportError):
+                listening_tcp_ports((root / 'tcp', root / 'tcp6'))
+
+    def test_missing_unreadable_and_corrupt_tables_fail_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            good = PROC_HEADER
+            ipv6 = PROC6_HEADER
+            (root / 'tcp').write_text(good)
+            (root / 'tcp6').write_text(ipv6)
+            (root / 'tcp').chmod(0)
+            try:
+                with self.assertRaises(SafeTransportError) as blocked:
+                    listening_tcp_ports((root / 'tcp', root / 'tcp6'))
+            finally:
+                (root / 'tcp').chmod(0o644)
+            self.assertIn('cannot list host listeners', str(blocked.exception))
+            with self.assertRaises(SafeTransportError):
+                listening_tcp_ports((root / 'missing-tcp', root / 'tcp6'))
+            samples = [
+                '',
+                'not a header\n',
+                PROC_HEADER + '\n',
+                PROC_HEADER + '   0: 00000000:4ACB\n',
+                PROC_HEADER + proc_line('00000000', 'ZZZZ', '0A'),
+                PROC_HEADER + proc_line('00000000000000000000000000000000', '4ACB', '0A'),
+            ]
+            for text in samples:
+                with self.subTest(text=text[:40]):
+                    (root / 'bad4').write_text(text)
+                    (root / 'bad6').write_text(ipv6)
+                    with self.assertRaises(SafeTransportError):
+                        listening_tcp_ports((root / 'bad4', root / 'bad6'))
+            (root / 'bad4').write_text(good)
+            (root / 'bad6').write_text(PROC6_HEADER + proc_line('00000000', '4ACF', '0A', ipv6=True))
+            with self.assertRaises(SafeTransportError):
+                listening_tcp_ports((root / 'bad4', root / 'bad6'))
+            binary = root / 'binary'
+            binary.write_bytes(b'\xff\xfe not ascii')
+            with self.assertRaises(SafeTransportError):
+                listening_tcp_ports((binary, root / 'tcp6'))
+
+    def test_live_proc_listener_check_does_not_call_ss(self):
+        def reject_ss(argv, *args, **kwargs):
+            if argv and argv[0] == 'ss':
+                raise AssertionError('listener check invoked ss')
+            return original(argv, *args, **kwargs)
+
+        original = subprocess.run
+        with patch('daily_ci.safe_transport.subprocess.run', side_effect=reject_ss):
+            before = listening_tcp_ports()
+        self.assertIsInstance(before, set)
+        self.assertTrue(all(isinstance(port, int) and 0 <= port <= 65535 for port in before))
+        held = socket.socket()
+        held.bind(('127.0.0.1', 0))
+        held.listen(1)
+        port = held.getsockname()[1]
+        try:
+            self.assertIn(port, listening_tcp_ports())
+            listing = f'{SERIAL} tcp:19005 tcp:8888 [Forward]\n'
+            plan = plan_host_port(
+                {'device': {'serial': SERIAL}},
+                config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
+                listing_text=listing, listeners=listening_tcp_ports())
+            self.assertNotIn(plan['host_port'], listening_tcp_ports())
+            self.assertGreaterEqual(plan['host_port'], 19147)
+            self.assertLessEqual(plan['host_port'], 19159)
+        finally:
+            held.close()
+        self.assertEqual(parse_proc_net_tcp(PROC_HEADER, ipv6=False), set())
 
 
 if __name__ == '__main__':
