@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "qwen25-15b-msl-q30-kirin9020",
-  "description": "Qwen2.5-1.5B-Instruct Q3_0 on Kirin9020. Export quant_type q3_0 matches qwen25-05b-msl-q30-kirin9020. Not scheduled. Workload 2048/1024/128 is copied from that task and is not evidence from an official 1.5B package. Uses the same HF source directory as qwen25-15b-msl-w4a16-kirin9020. model.sha256, model.bytes, and build.commit are unset sentinels. Stays blocked until a maintainer confirms an official master package contains the mindspore-lite !1404 merge commit.",
+  "description": "Qwen2.5-1.5B-Instruct Q3_0 on Kirin9020. Export quant_type q3_0 matches qwen25-05b-msl-q30-kirin9020. Scheduled. Uses the same HF source directory as qwen25-15b-msl-w4a16-kirin9020. model.sha256, model.bytes, and build.commit are unset sentinels, not measured hashes. The daily exporter replaces them with that run's model and package. A 2026-11-22 export is the evidence so far. No same-spec device or accuracy result is claimed. The log file named Q30 from that day recorded the W4A16 run.",
   "model": {
     "name": "Qwen2.5-1.5B-Instruct",
     "variant": "instruct",

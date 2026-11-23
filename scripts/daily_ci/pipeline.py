@@ -1,4 +1,5 @@
 """Consume a verified MSL daily package and run the existing frozen-model recipe."""
+import contextlib
 import copy
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -22,6 +23,10 @@ from recipe_ci.planner import resolve, write_new
 from recipe_ci.recipe import load, digest, sha256_file, require
 from recipe_ci.results import summarize_recipe, unstable_baseline_warning
 from .model_export import export_model, source_manifest
+from .safe_transport import (
+    SafeTransportError, listening_tcp_ports, open_safe_session, plan_host_port,
+    read_fport_listing, requires_safe_norestart, sandbox_basename,
+)
 
 BASE_URL = 'https://repo.mindspore.cn/mindspore/mindspore-lite/version/'
 PACKAGE = 'mindspore-lite-llm-linux-x64-0.2.0.tar.gz'
@@ -290,9 +295,40 @@ def record_blocked(repo, config, day):
     return 0
 
 
+def deploy_files(env, config, task, probe, regenerated, transport):
+    """Push the probe and, for a regenerated model, the new package.
+
+    transport=None keeps the official br push used by the existing tasks.
+    A safe session never falls back to that CLI, including after a refusal,
+    a timeout, or a bad sandbox hash.
+    """
+    if transport is not None:
+        transport.probe()
+        transport.push_host(probe, task / 'push.log')
+        if regenerated:
+            deployed = task / sandbox_basename(env['artifacts']['model']['device_path'])
+            os.link(env['artifacts']['model']['host_path'], deployed)
+            transport.push_host(deployed, task / 'push-model.log')
+        return
+    prefix = ['python3', '-m', 'binrunner', '-t', env['device']['serial'], '-p', env['device']['port']]
+    ensure_forward(env, config.get('binrunner_device_port', 8888))
+    run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
+    if regenerated:
+        # BinRunner push defaults to basename; match the locked device path exactly.
+        deployed = task / Path(env['artifacts']['model']['device_path']).name
+        os.link(env['artifacts']['model']['host_path'], deployed)
+        push_with_resume(prefix + ['push', str(deployed)], task / 'push-model.log',
+                         cwd=env['binrunner'],
+                         size_bytes=Path(env['artifacts']['model']['host_path']).stat().st_size)
+
+
 def run(repo, recipe_path, config, day, force=False):
-    env = copy.deepcopy(config['environment'])
     recipe = load(recipe_path)
+    if requires_safe_norestart(config, recipe['id']) and 'environment' not in config:
+        raise SafeTransportError(
+            'mounted Qwen2.5-1.5B config has no environment; refusing br push. '
+            'Install the matching file from config/deploy/.')
+    env = copy.deepcopy(config['environment'])
     backend = recipe['backend']['name']
     root = Path(config['archive_root'])
     task_id = os.environ.get('GITHUB_RUN_ID', uuid.uuid4().hex[:12])
@@ -326,6 +362,14 @@ def run(repo, recipe_path, config, day, force=False):
             update(stage='PREPARE')
             actual_os = device_output(env, ['param', 'get', 'const.ohos.fullname'])
             require(actual_os == env['device']['os_version'], 'Device OS differs from configured environment')
+            safe = requires_safe_norestart(config, recipe['id'])
+            planned_port = None
+            if safe:
+                # Read-only. The tuple is created only after the dedup check, under this same lease.
+                planned_port = plan_host_port(
+                    env, config, listing_text=read_fport_listing(env['device']['serial']),
+                    listeners=listening_tcp_ports())['host_port']
+                env['device']['port'] = str(planned_port)
             device_key = digest(env['device'])
             source_identity = digest(source_manifest(Path(config['model_generation']['source_model']))) if backend == 'msl' and config.get('model_generation') else None
             key = digest({'source_model': source_identity, 'build': build, 'recipe': recipe, 'code': code, 'device': device_key, 'day': day, 'model_generation': config.get('model_generation')})
@@ -336,44 +380,38 @@ def run(repo, recipe_path, config, day, force=False):
                 write_json(repo / 'kanban/data' / (result['id'] + '.json'), result)
                 update(status='SKIPPED', result_id=result['id'], stage='ARCHIVED')
                 return 0
-            archive, probe = (prepare_msl(repo, config, build, task, root / 'packages')
-                              if backend == 'msl' else prepare_llama(repo, config, build, task))
-            regenerated = backend == 'msl' and bool(config.get('model_generation'))
-            if regenerated:
-                update(stage='EXPORT_MODEL')
-                recipe, components = export_model(repo, recipe, env, config, task, build, run_command, write_json)
-                build = dict(build, model_generation='master_daily', daily_components=components)
-            native = Path(config['native'])
-            write_json(task / 'toolchain.json', {'compiler': subprocess.check_output(
-                [str(native / 'llvm/bin/clang++'), '--version'], text=True),
-                'compiler_sha256': sha256_file(native / 'llvm/bin/clang++'),
-                'binrunner_commit': subprocess.check_output(['git', '-C', env['binrunner'], 'rev-parse', 'HEAD'], text=True).strip()})
-            recipe['build'] = {**{k: build[k] for k in ['commit', 'source_url', 'sha256'] if k in build}, **({'components': recipe['build']['components']} if 'components' in recipe['build'] else {})}
-            recipe['description'] = ('Master daily exporter/operators regenerated model' if regenerated else 'Daily runtime with fixed archived model')
-            env['output_root'] = str(root / 'runs')
-            env['artifacts']['probe'] = {'host_path': str(probe), 'device_path': '@/bin/' + probe.name, 'sha256': sha256_file(probe)}
-            env['artifacts']['runtime'] = {'host_path': str(archive), 'sha256': build['sha256']}
-            lock = resolve(recipe, env)
-            write_new(task / 'resolved-recipe.json', lock)
-            write_json(task / 'environment.json', env)
-            write_json(task / 'recipe.json', recipe)
-            processes = device_output(env, ['ps', '-A', '-o', 'PID,COMM'])
-            require(not any(line.split()[-1].strip('[]') in {'recipe-msl', 'recipe-llama', 'edge-llama'}
-                            for line in processes.splitlines() if line.split()), 'Device worker still running')
-            prefix = ['python3', '-m', 'binrunner', '-t', env['device']['serial'], '-p', env['device']['port']]
-            update(stage='DEPLOY')
-            ensure_forward(env, config.get('binrunner_device_port', 8888))
-            with awake_device(env['device']['serial']):
-                run_command(prefix + ['push', str(probe)], task / 'push.log', cwd=env['binrunner'])
+            session = (open_safe_session(env, config, task, planned_port)
+                       if safe else contextlib.nullcontext(None))
+            with session as transport:
+                archive, probe = (prepare_msl(repo, config, build, task, root / 'packages')
+                                  if backend == 'msl' else prepare_llama(repo, config, build, task))
+                regenerated = backend == 'msl' and bool(config.get('model_generation'))
                 if regenerated:
-                    # BinRunner push defaults to basename; match the locked device path exactly.
-                    deployed = task / Path(env['artifacts']['model']['device_path']).name
-                    os.link(env['artifacts']['model']['host_path'], deployed)
-                    push_with_resume(prefix + ['push', str(deployed)], task / 'push-model.log',
-                                     cwd=env['binrunner'],
-                                     size_bytes=Path(env['artifacts']['model']['host_path']).stat().st_size)
-            update(stage='MEASURE')
-            output = execute(lock)
+                    update(stage='EXPORT_MODEL')
+                    recipe, components = export_model(repo, recipe, env, config, task, build, run_command, write_json)
+                    build = dict(build, model_generation='master_daily', daily_components=components)
+                native = Path(config['native'])
+                write_json(task / 'toolchain.json', {'compiler': subprocess.check_output(
+                    [str(native / 'llvm/bin/clang++'), '--version'], text=True),
+                    'compiler_sha256': sha256_file(native / 'llvm/bin/clang++'),
+                    'binrunner_commit': subprocess.check_output(['git', '-C', env['binrunner'], 'rev-parse', 'HEAD'], text=True).strip()})
+                recipe['build'] = {**{k: build[k] for k in ['commit', 'source_url', 'sha256'] if k in build}, **({'components': recipe['build']['components']} if 'components' in recipe['build'] else {})}
+                recipe['description'] = ('Master daily exporter/operators regenerated model' if regenerated else 'Daily runtime with fixed archived model')
+                env['output_root'] = str(root / 'runs')
+                env['artifacts']['probe'] = {'host_path': str(probe), 'device_path': '@/bin/' + probe.name, 'sha256': sha256_file(probe)}
+                env['artifacts']['runtime'] = {'host_path': str(archive), 'sha256': build['sha256']}
+                lock = resolve(recipe, env)
+                write_new(task / 'resolved-recipe.json', lock)
+                write_json(task / 'environment.json', env)
+                write_json(task / 'recipe.json', recipe)
+                processes = device_output(env, ['ps', '-A', '-o', 'PID,COMM'])
+                require(not any(line.split()[-1].strip('[]') in {'recipe-msl', 'recipe-llama', 'edge-llama'}
+                                for line in processes.splitlines() if line.split()), 'Device worker still running')
+                update(stage='DEPLOY')
+                with awake_device(env['device']['serial']):
+                    deploy_files(env, config, task, probe, regenerated, transport)
+                update(stage='MEASURE')
+                output = execute(lock, transport=transport)
             update(stage='VALIDATE')
             result = summarize_recipe(recipe, output, run_id=run_id)
             require(result['verification']['artifact_identity'], 'Device artifact identity was not verified')

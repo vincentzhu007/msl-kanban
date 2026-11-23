@@ -7,13 +7,14 @@ import copy
 import json
 import os
 import re
-import signal
-import time
-from pathlib import Path
 import shutil
+import signal
 import stat
 import subprocess
+import tempfile
+import time
 import zipfile
+from pathlib import Path
 
 from recipe_ci.recipe import require, sha256_file, digest, validate
 
@@ -73,6 +74,91 @@ def source_manifest(source):
     require(any(p.suffix == '.safetensors' for p in files), 'Missing source model weights')
     return {p.relative_to(source).as_posix(): sha256_file(p) for p in files
             if '.cache' not in p.relative_to(source).parts}
+
+
+UNIX_SOCKET_BUDGET = 107
+LISTENER_SUFFIX = '/listener-XXXXXXXX'
+EXPORT_ENV_KEYS = frozenset({'tmpdir_root', 'tmpdir_prefix', 'tmpdir_minimum_free_bytes', 'prepend_path'})
+
+
+def listener_path_length(tmpdir):
+    return len(tmpdir) + len(LISTENER_SUFFIX)
+
+
+def wrap_export_command(script, inner, managed=None):
+    """Source the DDK env. Re-apply a short TMPDIR and PATH only when requested.
+
+    set_ascendc_env.sh can replace PATH. The five tasks keep the original
+    command. The 1.5B tasks pass managed TMPDIR and bisheng directories.
+    """
+    script = str(script)
+    if not managed:
+        return ['bash', '-c', 'source "$1"; shift; exec "$@"', 'daily-ddk-env', script, *inner]
+    tmpdir = managed['tmpdir']
+    prepend = os.pathsep.join(managed['prepend_path'])
+    return [
+        'bash', '-c',
+        'source "$1"; export TMPDIR="$2"; export TMP="$2"; export TEMP="$2"; '
+        'export PATH="$3${PATH:+:}$PATH"; shift 3; exec "$@"',
+        'daily-ddk-env', script, tmpdir, prepend, *inner,
+    ]
+
+
+class ManagedExportEnv:
+    def __init__(self, tmpdir, prepend_path):
+        self.tmpdir = tmpdir
+        self.prepend_path = list(prepend_path)
+
+    def apply(self, env):
+        env = dict(env)
+        env['TMPDIR'] = env['TMP'] = env['TEMP'] = self.tmpdir
+        env['PATH'] = os.pathsep.join([*self.prepend_path, env.get('PATH', '')])
+        return env
+
+    def cleanup(self):
+        path = Path(self.tmpdir)
+        if path.is_symlink() or not self.tmpdir.startswith('/tmp/'):
+            return
+        prefix = '/tmp/' + getattr(self, 'prefix', 'e15.')
+        if self.tmpdir.startswith(prefix) and path.is_dir():
+            shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+
+def prepare_export_environment(settings):
+    """Short TMPDIR and bisheng PATH for a task that opts in. Others stay unchanged."""
+    extra = settings.get('export_environment')
+    if not extra:
+        return None
+    if not isinstance(extra, dict) or set(extra) - EXPORT_ENV_KEYS:
+        raise ValueError('export_environment has unknown or invalid fields')
+    root = extra.get('tmpdir_root', '/tmp')
+    prefix = extra.get('tmpdir_prefix', 'e15.')
+    if root != '/tmp' or not re.fullmatch(r'[A-Za-z0-9.]{1,8}', prefix):
+        raise ValueError('export TMPDIR must be a short unique directory under /tmp')
+    minimum = extra.get('tmpdir_minimum_free_bytes', 0)
+    if isinstance(minimum, bool) or not isinstance(minimum, int) or minimum < 0:
+        raise ValueError('tmpdir free-byte floor must be a non-negative int')
+    if shutil.disk_usage(root).free < minimum:
+        raise RuntimeError('insufficient free space on /tmp for daily export')
+    prepend = extra.get('prepend_path') or []
+    if not isinstance(prepend, list) or not prepend or not all(
+            isinstance(item, str) and item.startswith('/') and '..' not in Path(item).parts for item in prepend):
+        raise ValueError('prepend_path must be absolute directories')
+    tmpdir = tempfile.mkdtemp(prefix=prefix, dir=root)
+    try:
+        if not tmpdir.startswith('/tmp/' + prefix) or Path(tmpdir).is_symlink():
+            raise RuntimeError('mkdtemp returned an unexpected TMPDIR')
+        if listener_path_length(tmpdir) >= UNIX_SOCKET_BUDGET:
+            raise RuntimeError('TMPDIR still makes the AF_UNIX listener path too long')
+        env_path = os.pathsep.join([*prepend, os.environ.get('PATH', '')])
+        if shutil.which('bisheng', path=env_path) is None:
+            raise RuntimeError('bisheng is not executable on the export PATH')
+    except Exception:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise
+    managed = ManagedExportEnv(tmpdir, prepend)
+    managed.prefix = prefix
+    return managed
 
 
 def run_export(command, *, env, task, timeout, poll_seconds=5):
@@ -175,9 +261,22 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
                '--model', str(source), '--output', str(output), '--target', target,
                '--quant-type', settings['quant_type'], '--max-length', str(recipe['workload']['context_tokens']),
                '--chunk-size', str(settings.get('chunk_size', 64)), '--keep-artifacts']
-    command = ['bash', '-c', 'source "$1"; shift; exec "$@"', 'daily-ddk-env',
-               str(ddk / 'tools/tools_ascendc/set_ascendc_env.sh'), *command]
-    run_export(command, env=export_env, task=task, timeout=settings.get('timeout_seconds', 5400))
+    managed = prepare_export_environment(settings)
+    if managed is not None:
+        export_env = managed.apply(export_env)
+        write_json(task / 'export-environment.json', {
+            'tmpdir': managed.tmpdir,
+            'listener_path_length': listener_path_length(managed.tmpdir),
+            'prepend_path': managed.prepend_path,
+            'note': 'TMPDIR and PATH are re-applied after set_ascendc_env.sh for this task only.'})
+    command = wrap_export_command(
+        ddk / 'tools/tools_ascendc/set_ascendc_env.sh', command,
+        None if managed is None else {'tmpdir': managed.tmpdir, 'prepend_path': managed.prepend_path})
+    try:
+        run_export(command, env=export_env, task=task, timeout=settings.get('timeout_seconds', 5400))
+    finally:
+        if managed is not None:
+            managed.cleanup()
     require(source_manifest(source) == manifest, 'Source model changed during export')
     require(output.is_file() and output.stat().st_size > 24, 'Exporter did not produce a model')
     with output.open('rb') as stream:

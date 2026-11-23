@@ -32,9 +32,11 @@ const combinations = [];
 // 模型支持清单，依据 2026-11-03 提供的工作簿；只有明确记录的支持项填入 supported。
 // 未列出的芯片 / 量化组合均为待确认，不代表不支持。
 // 可选字段 unsupported:{芯片:[量化]} 表示维护者确认未支持。
+// Qwen2.5-1.5B / Kirin 9020 / Q4_0 依据 2026-11-22 16:00 包的 10 次真机，不是当日新包的测量。
+// Q3_0 仍是待确认：没有更晚的同规格真机结果；名为 Q30 的 11-22 日志实际是 W4A16。
 const modelSupport = [
   {family:'Qwen2.5', size:'0.5B', url:'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct', supported:{'Kirin 9020':['Q4_0','Q3_0']}},
-  {family:'Qwen2.5', size:'1.5B', url:'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct', supported:{}, unsupported:{'Kirin 9020':['Q4_0']}},
+  {family:'Qwen2.5', size:'1.5B', url:'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct', supported:{'Kirin 9020':['Q4_0']}},
   {family:'Qwen2.5', size:'3B', url:'https://huggingface.co/Qwen/Qwen2.5-3B-Instruct', supported:{}},
   {family:'Qwen3', size:'0.6B', url:'https://huggingface.co/Qwen/Qwen3-0.6B', supported:{'Kirin 9030':['S16S4']}},
   {family:'Qwen3', size:'1.7B', url:'https://huggingface.co/Qwen/Qwen3-1.7B', supported:{}},

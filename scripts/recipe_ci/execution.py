@@ -30,7 +30,7 @@ def device_lease(root, serial):
             fcntl.flock(stream, fcntl.LOCK_UN)
 
 
-def execute(lock):
+def execute(lock, transport=None):
     require(lock['host_artifacts_verified'], 'A preview lock cannot execute; resolve on dog with verified artifacts')
     recipe, env = lock['recipe'], lock['environment']
     # Recheck file content at execution time to detect changes since resolution.
@@ -51,8 +51,12 @@ def execute(lock):
             artifact = env['artifacts'][name]
             evidence = root / "verification" / uuid.uuid4().hex
             evidence.mkdir(parents=True)
-            check = subprocess.run(prefix + ['run', shlex.join(['sha256sum', artifact['device_path']]), '--timeout', '90'],
-                                   cwd=env['binrunner'], capture_output=True, text=True, timeout=110)
+            check_args = ['run', shlex.join(['sha256sum', artifact['device_path']]), '--timeout', '90']
+            if transport is None:
+                check = subprocess.run(prefix + check_args,
+                                       cwd=env['binrunner'], capture_output=True, text=True, timeout=110)
+            else:
+                check = transport.invoke(check_args, timeout=110)
             (evidence / (name + '.log')).write_text(check.stdout + '\n' + check.stderr)
             hashes = re.findall(r'(?m)^([a-f0-9]{64})\s+', check.stdout)
             require(check.returncode == 0 and hashes == [artifact['sha256']],
@@ -71,6 +75,8 @@ def execute(lock):
                    'completion': 'DESTROY status=0' if backend == 'msl' else 'DONE status=0',
                    'workload': recipe['workload'], 'backend_options': recipe['backend']['options'],
                    'command_template': lock['command_template'], 'resolved_recipe': lock}
+        if transport is not None:
+            profile['transport'] = transport
         try:
             run_profile(profile, [])
         except Exception as error:

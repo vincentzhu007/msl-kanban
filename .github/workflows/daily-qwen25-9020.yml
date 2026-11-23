@@ -18,6 +18,8 @@ on:
           - qwen3-4b-msl-s16s4-kirin9030
           - qwen3-06b-msl-s16s4-kirin9030
           - qwen25-05b-llama-q40-kirin9020
+          - qwen25-15b-msl-w4a16-kirin9020
+          - qwen25-15b-msl-q30-kirin9020
       force:
         description: 'Re-evaluate an already archived build'
         default: false
@@ -28,23 +30,51 @@ on:
 permissions:
   contents: write
 
+env:
+  # Schedule order. The first five stay first. A dispatch of one id runs only that id.
+  DAILY_SCHEDULED_TASKS: qwen25-05b-msl-w4a16-kirin9020 qwen25-05b-msl-q30-kirin9020 qwen3-4b-msl-s16s4-kirin9030 qwen3-06b-msl-s16s4-kirin9030 qwen25-05b-llama-q40-kirin9020 qwen25-15b-msl-w4a16-kirin9020 qwen25-15b-msl-q30-kirin9020
+
 concurrency:
   group: daily-model-evaluations
   cancel-in-progress: false
 
 jobs:
+  select:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.DAILY_ENABLED == 'true')
+    runs-on: [self-hosted, dog, msl-kanban, container]
+    outputs:
+      tasks: ${{ steps.pick.outputs.tasks }}
+    steps:
+      - name: Choose the daily task matrix
+        id: pick
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || '' }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          scheduled = os.environ['DAILY_SCHEDULED_TASKS'].split()
+          event = os.environ.get('EVENT_NAME', '')
+          requested = os.environ.get('REQUESTED_TASK', '')
+          if event == 'workflow_dispatch' and requested and requested != 'all':
+              if requested not in scheduled:
+                  sys.exit('refusing unknown daily task: ' + requested)
+              chosen = [requested]
+          else:
+              chosen = scheduled
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
+              handle.write('tasks=' + json.dumps(chosen) + '\n')
+          print('daily tasks:', ' '.join(chosen))
+          PY
   daily:
+    needs: select
     if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.DAILY_ENABLED == 'true')
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        task:
-          - qwen25-05b-msl-w4a16-kirin9020
-          - qwen25-05b-msl-q30-kirin9020
-          - qwen3-4b-msl-s16s4-kirin9030
-          - qwen3-06b-msl-s16s4-kirin9030
-          - qwen25-05b-llama-q40-kirin9020
+        task: ${{ fromJSON(needs.select.outputs.tasks) }}
     name: ${{ matrix.task }}
     runs-on: [self-hosted, dog, msl-kanban, container]
     timeout-minutes: 150

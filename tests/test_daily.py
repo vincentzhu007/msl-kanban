@@ -201,19 +201,24 @@ class Qwen2515BDailyTests(unittest.TestCase):
         return items
 
     def test_schedule_matches_blocked_or_enabled_contract(self):
+        from daily_ci.workflow_tasks import ORIGINAL_FIVE, SCHEDULED
         workflow = (ROOT / '.github/workflows/daily-qwen25-9020.yml').read_text()
         options = self.listed_tasks(workflow, '        options:')
-        matrix = self.listed_tasks(workflow, '        task:')
+        declared = workflow.split('DAILY_SCHEDULED_TASKS:', 1)[1].splitlines()[0].strip().split()
+        self.assertEqual(tuple(declared), SCHEDULED)
+        self.assertEqual(SCHEDULED[:5], ORIGINAL_FIVE)
+        self.assertIn("cron: '0 19 * * *'", workflow)
+        self.assertIn('fromJSON(needs.select.outputs.tasks)', workflow)
         states = []
         public = []
         for task_id, expect in self.TASKS.items():
             task = json.loads((ROOT / 'config/daily' / (task_id + '.json')).read_text())
-            listed = task_id in options and task_id in matrix
-            withheld = task_id not in options and task_id not in matrix
+            listed = task_id in options and task_id in SCHEDULED
+            withheld = task_id not in options and task_id not in SCHEDULED
             prepared = 'blocked' in task and bool(task['blocked']) and withheld
             enabled = 'blocked' not in task and listed
             self.assertTrue(prepared or enabled)
-            self.assertEqual(task_id in options, task_id in matrix)
+            self.assertEqual(task_id in options, task_id in SCHEDULED)
             self.assertEqual(task['model_generation']['quant_type'], expect['quant'])
             self.assertEqual(task['model_generation']['source_model'], expect['source'])
             for absent in ('activation', 'device_alias', 'environment', 'required_build_commit'):
@@ -222,9 +227,14 @@ class Qwen2515BDailyTests(unittest.TestCase):
             public.append((ROOT / 'config/daily' / (task_id + '.json')).read_text())
             public.append((ROOT / 'recipes' / (task_id + '.json')).read_text())
         self.assertEqual(len(set(states)), 1)
+        self.assertFalse(states[0])
         blob = '\n'.join(public)
         self.assertNotRegex(blob, r'(?i)dog|/home/|\d{1,3}(?:\.\d{1,3}){3}')
-        for forbidden in ('external_gguf', 'e4a9c657', '711013248', 'e464a610'):
+        for forbidden in ('external_gguf', 'e4a9c657', '711013248', 'e464a610',
+                          '6868d15f1805e036c2ab2f4a4ca15a24189a7475741f78f78f0de5aeab602d5b',
+                          '44ee68d8d34ea39ac21d6a23209a3b8c96899aba79e90ed207ccbab4833205e8',
+                          '05c304249884d7674a415442eb437042844a53745e3a73f9d66f2c4f6ee438a1',
+                          '29e904924e12e4bc351f9b99569602f1fd2bb7b2a8cf4ea3c160866ca795b046'):
             self.assertNotIn(forbidden, blob)
 
     def test_synthetic_blocked_config_records_status_without_performance(self):
