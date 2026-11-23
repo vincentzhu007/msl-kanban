@@ -57,8 +57,8 @@ def requires_safe_norestart(config, recipe_id):
 def refuse_serial(serial):
     if not isinstance(serial, str) or not serial or any(c in serial for c in ' \t\r\n'):
         raise SafeTransportError('device serial is empty or unsafe')
-    if serial == '3000' or serial.endswith(':3000'):
-        raise SafeTransportError('refusing TTS device 3000')
+    if serial in {'3000', '3001'} or serial.endswith((':3000', ':3001')):
+        raise SafeTransportError('refusing TTS device 3000/3001')
     return serial
 
 
@@ -86,11 +86,15 @@ def parse_forwards(text):
         if not line.strip():
             continue
         fields = line.split()
-        if len(fields) < 3 or not fields[1].startswith('tcp:') or not fields[2].startswith('tcp:'):
+        if (len(fields) not in (3, 4) or (len(fields) == 4 and fields[3] != '[Forward]') or
+                not re.fullmatch(r'[A-Za-z0-9_.:-]+', fields[0]) or
+                not fields[1].startswith('tcp:') or not fields[2].startswith('tcp:')):
             raise SafeTransportError('unparsed fport line; not editing forwards')
         local_port = fields[1][4:]
         remote_port = fields[2][4:]
-        if not local_port.isdigit() or not remote_port.isdigit():
+        if (not local_port.isascii() or not local_port.isdigit() or
+                not remote_port.isascii() or not remote_port.isdigit() or
+                not 1 <= int(local_port) <= 65535 or not 1 <= int(remote_port) <= 65535):
             raise SafeTransportError('unparsed fport ports; not editing forwards')
         rows.append((fields[0], fields[1], fields[2]))
     return tuple(rows)
@@ -240,10 +244,15 @@ class SafeSession:
         return ours
 
     def _remove_if_exact(self, ours):
+        if (ours != (self.serial, f'tcp:{self.port}', f'tcp:{DEVICE_PORT}') or
+                not (self.created or self._create_sent)):
+            raise SafeTransportError('refusing to remove a tuple not created by this session')
         current = self._listing()
         if ours not in current:
             return False
         others = [row for row in current if row != ours]
+        if any(row[1] == ours[1] for row in others):
+            raise SafeTransportError('host port has another owner; not removing any forward')
         self._closing = True
         try:
             self.hdc(['fport', 'rm', f'tcp:{self.port}', f'tcp:{DEVICE_PORT}'], timeout=15)
@@ -512,8 +521,6 @@ def open_safe_session(env, config, task_dir, port, *, hdc=None):
     session = SafeSession(serial, port, hdc or default_hdc, task_dir)
     try:
         before = session._listing()
-        if any(row[0] != serial for row in before):
-            raise SafeTransportError('fport listing contains another serial; not editing forwards')
         session.create(before)
         yield session
     finally:
@@ -539,11 +546,6 @@ def plan_host_port(env, config, *, listing_text, listeners):
         raise SafeTransportError('safe_norestart only forwards to device port 8888')
     preferred = transport.get('preferred_host_port')
     rows = parse_forwards(listing_text)
-    if any(row[0].endswith(':3000') or row[0] == '3000' for row in rows):
-        # A foreign serial may appear only when hdc was not targeted. Refuse
-        # the whole listing rather than edit a row that names device 3000.
-        raise SafeTransportError('fport listing names TTS device 3000; not editing forwards')
-    if any(row[0] != serial for row in rows):
-        raise SafeTransportError('fport listing contains another serial; not editing forwards')
     port = choose_host_port(rows, listeners, None if preferred is None else int(preferred))
-    return {'serial': serial, 'host_port': port, 'device_port': DEVICE_PORT, 'rows': rows}
+    return {'serial': serial, 'host_port': port, 'device_port': DEVICE_PORT, 'rows': rows,
+            'editable_rows': tuple(row for row in rows if row[0] == serial)}

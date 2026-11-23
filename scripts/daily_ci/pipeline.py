@@ -24,7 +24,7 @@ from recipe_ci.recipe import load, digest, sha256_file, require
 from recipe_ci.results import summarize_recipe, unstable_baseline_warning
 from .model_export import export_model, source_manifest
 from .safe_transport import (
-    SafeTransportError, listening_tcp_ports, open_safe_session, plan_host_port,
+    SAFE_TASKS, SafeTransportError, listening_tcp_ports, open_safe_session, plan_host_port,
     read_fport_listing, requires_safe_norestart, sandbox_basename,
 )
 
@@ -82,8 +82,13 @@ def safe_extract(archive, destination):
         bundle.extractall(destination, members=members)
 
 
-def download(build, cache):
+def download(build, cache, *, require_cached=False):
     directory = cache / build['sha256']
+    if require_cached:
+        archive = directory / PACKAGE
+        require(archive.is_file(), 'Locked package is missing from cache')
+        require(sha256_file(archive) == build['sha256'], 'Locked package SHA256 mismatch')
+        return archive
     directory.mkdir(parents=True, exist_ok=True)
     archive = directory / PACKAGE
     if not archive.exists() or sha256_file(archive) != build['sha256']:
@@ -93,6 +98,42 @@ def download(build, cache):
         require(sha256_file(temporary) == build['sha256'], 'Downloaded package SHA256 mismatch')
         temporary.replace(archive)
     return archive
+
+
+_LOCK_URL = re.compile(
+    re.escape(BASE_URL) +
+    r'(?P<month>[0-9]{6})/(?P<day>[0-9]{8})/master_(?P=day)[0-9]{6}_'
+    r'(?P<commit>[0-9a-f]{40})_newest/lite/ohos_aarch64/' + re.escape(PACKAGE) + r'$'
+)
+
+
+def select_msl_build(config, recipe_id, day, cache):
+    """Use an explicit package lock, or discover the requested run day.
+
+    `package_lock.day` records the date embedded in the official package URL.
+    It is not the calendar day of this run and is not compared to `day`.
+    """
+    if 'package_lock' not in config:
+        return discover(day)
+    require(recipe_id in SAFE_TASKS, 'Package locks are limited to the two 1.5B backfill tasks')
+    lock = config['package_lock']
+    require(isinstance(lock, dict) and set(lock) == {'day', 'commit', 'source_url', 'sha256'},
+            'Package lock needs exactly day, commit, source_url, sha256')
+    require(isinstance(lock['day'], str) and bool(re.fullmatch(r'[0-9]{8}', lock['day'])),
+            'Invalid package lock day record')
+    require(isinstance(lock['sha256'], str) and bool(re.fullmatch(r'[0-9a-f]{64}', lock['sha256'])),
+            'Invalid locked SHA256')
+    require(isinstance(lock['commit'], str) and bool(re.fullmatch(r'[0-9a-f]{40}', lock['commit'])),
+            'Invalid locked commit')
+    require(isinstance(lock['source_url'], str), 'Locked URL must be a string')
+    matched = _LOCK_URL.fullmatch(lock['source_url'])
+    require(matched is not None, 'Locked URL must match the official day, commit, platform and package')
+    require(matched.group('month') == lock['day'][:6] and matched.group('day') == lock['day'],
+            'Package lock day record does not match the URL path')
+    require(matched.group('commit') == lock['commit'], 'Locked commit does not match the URL')
+    build = {key: lock[key] for key in ('commit', 'source_url', 'sha256')}
+    download(build, cache, require_cached=True)
+    return build
 
 
 def run_command(command, log, *, cwd=None, timeout=180):
@@ -233,7 +274,7 @@ def write_json(path, value):
 
 
 def prepare_msl(repo, config, build, task, cache):
-    archive = download(build, cache)
+    archive = download(build, cache, require_cached='package_lock' in config)
     package_dir = task / 'package'
     safe_extract(archive, package_dir)
     libraries = list(package_dir.glob('*/lib/libmindspore-lite-llm.a'))
@@ -362,13 +403,17 @@ def run(repo, recipe_path, config, day, force=False):
     try:
         update()
         run_command(['git', 'archive', '--format=tar.gz', '--output=' + str(task / 'source.tar.gz'), code], task / 'source.log', cwd=repo)
-        build = discover(day) if backend == 'msl' else dict(recipe['build'], sha256=config['environment']['artifacts']['runtime']['sha256'])
+        require('package_lock' not in config or backend == 'msl', 'Package locks require the MSL backend')
+        build = (select_msl_build(config, recipe['id'], day, root / 'packages') if backend == 'msl'
+                 else dict(recipe['build'], sha256=config['environment']['artifacts']['runtime']['sha256']))
         if build is None:
             update(status='NO_BUILD')
             return 0
         status['build_commit'] = build['commit']
         status['build_sha256'] = build['sha256']
         write_json(task / 'build.json', build)
+        if 'package_lock' in config:
+            write_json(task / 'package-lock.json', config['package_lock'])
         # Shared across all daily tasks: preparation/deployment must also own the device lease.
         with device_lease(root / 'leases', env['device']['serial']):
             update(stage='PREPARE')

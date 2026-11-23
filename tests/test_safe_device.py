@@ -137,21 +137,22 @@ class PortPolicyTests(unittest.TestCase):
             session.hdc(['shell', 'aa', 'force-stop', 'com.example.binrunner'])
 
     def test_tts_serial_is_refused_before_hdc(self):
-        calls = []
-        with self.assertRaises(SafeTransportError):
-            refuse_serial('127.0.0.1:3000')
-        with self.assertRaises(SafeTransportError):
-            plan_host_port(
-                {'device': {'serial': '127.0.0.1:3000'}},
-                config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
-                listing_text='', listeners=set())
-        self.assertEqual(calls, [])
-        listing = '127.0.0.1:3000 tcp:19005 tcp:8888 [Forward]\n'
-        with self.assertRaises(SafeTransportError):
-            plan_host_port(
-                {'device': {'serial': SERIAL}},
-                config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
-                listing_text=listing, listeners=set())
+        for serial in ('3000', '3001', '127.0.0.1:3000', '127.0.0.1:3001'):
+            with self.subTest(serial=serial), patch('daily_ci.safe_transport.default_hdc') as hdc:
+                with self.assertRaises(SafeTransportError):
+                    refuse_serial(serial)
+                with self.assertRaises(SafeTransportError):
+                    with open_safe_session({'device': {'serial': serial}},
+                                           config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
+                                           None, 19147):
+                        pass
+                hdc.assert_not_called()
+        selected = plan_host_port(
+            {'device': {'serial': SERIAL}},
+            config_for('qwen25-15b-msl-w4a16-kirin9020', 19147),
+            listing_text='127.0.0.1:3000 tcp:19147 tcp:8888 [Forward]\n', listeners=set())
+        self.assertEqual(selected['host_port'], 19148)
+        self.assertEqual(selected['editable_rows'], ())
 
     def test_create_hidden_from_the_next_listing_is_removed_when_it_reappears(self):
         class Reappear:
