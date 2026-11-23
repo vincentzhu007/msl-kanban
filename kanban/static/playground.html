@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Playground · MSL Kanban</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="playground.css"></head>
+<body>
+<nav class="site-nav" aria-label="主导航"><a class="site-brand" href="/"><span class="site-symbol"><img src="mindspore-logo.svg" alt="MindSpore" width="111" height="36"></span><strong>MSL KANBAN</strong></a><div class="site-sections"><a href="/iteration.html">迭代进展</a><a href="/">性能评测</a><a href="/playground.html" aria-current="page">Playground</a></div></nav>
+<main>
+<section class="hero"><canvas id="wave" aria-hidden="true"></canvas><div class="hero-copy"><h1>Playground<span>.</span></h1><p>在麒麟真机上运行 MindSpore Lite 模型</p></div>
+<div class="deployment"><label for="phone">手机类型<select id="phone"><option selected value="mate80-pro">Mate 80 Pro（kirin9030）</option><option value="mate70-pro">Mate 70 Pro（kirin9202）</option></select></label><label for="models">部署模型<select id="models" disabled><option value="">正在加载模型…</option></select></label></div>
+</section>
+<div class="status"><span id="connection" role="status"></span><button id="retry" hidden>重新加载</button></div>
+<section class="studio"><nav id="modes" aria-label="体验方式"><button data-mode="chat" aria-pressed="true"><b aria-hidden="true">◌</b>模型对话</button><button data-mode="api" aria-pressed="false"><b aria-hidden="true">⌘</b>API 调用</button><button data-mode="device" aria-pressed="false"><b aria-hidden="true">▯</b>真机 App</button></nav>
+<div id="chat"><div class="chat-head"><h2>模型对话</h2><button id="clear">清空对话</button></div>
+<div id="empty"><p>选择一个问题开始，或写下自己的提示词。</p><div class="ideas"><button data-prompt="用一个生活中的例子解释 KV Cache。"><span>解释概念</span>用一个例子解释 KV Cache <em>↗</em></button><button data-prompt="用 Python 写一个简单的 LRU 缓存。"><span>编写代码</span>用 Python 实现 LRU 缓存 <em>↗</em></button></div></div>
+<div id="history" aria-live="polite"></div>
+<form id="compose"><textarea id="prompt" aria-label="消息" placeholder="给模型发送消息…" required></textarea><div class="compose-foot"><span>⌘ / Ctrl + Enter 发送</span><button id="send" disabled>发送 <b aria-hidden="true">↑</b></button></div></form></div>
+<div id="api" hidden><div class="chat-head"><h2>API 调用</h2></div><div class="terminal"><div><strong>POST</strong> /v1/chat/completions <button id="copy">复制命令</button></div><pre id="sample"></pre></div></div>
+<div id="device" hidden><div class="chat-head"><h2>真机 App</h2><div><button id="start" disabled>进入真机</button><button id="end" hidden>释放设备</button></div></div><div class="screen-stage"><div id="standby"><i aria-hidden="true"></i><strong>等待投屏</strong><p>进入真机后，点击和拖动画面即可操作手机。</p></div><img id="screen" alt="真机实时截图" draggable="false" hidden></div><p id="screenState" role="status"></p></div>
+<p id="feedback" role="status"></p></section></main><script type="module" src="playground.mjs"></script></body></html>

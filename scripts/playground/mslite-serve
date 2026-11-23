@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Single-device, text-only OpenAI-compatible endpoint on the dog host."""
+import argparse
+import hmac
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import threading
+import time
+import uuid
+from pathlib import Path
+from functools import partial
+from http.server import ThreadingHTTPServer
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "kanban"))
+from server import BASE, Handler as KanbanHandler
+
+
+from screen import Screen, ScreenError
+
+
+class Problem(Exception):
+    def __init__(self, code, message):
+        self.code, self.message = code, message
+
+
+def generate(args, body):
+    if not isinstance(body, dict) or set(body) - {'model', 'messages', 'max_tokens', 'stream'}:
+        raise Problem(400, 'Supported fields: model, messages, max_tokens, stream.')
+    if body.get('model') != args.model_id:
+        raise Problem(404, 'Unknown model.')
+    if body.get('stream', False) is not False:
+        raise Problem(400, 'Streaming is unavailable.')
+    limit = body.get('max_tokens', 128)
+    messages = body.get('messages')
+    if type(limit) is not int or not 1 <= limit <= 512 or not isinstance(messages, list) or not messages:
+        raise Problem(400, 'Provide messages and max_tokens between 1 and 512.')
+    prompt = ''
+    for item in messages:
+        if not isinstance(item, dict) or item.get('role') not in ('system', 'user', 'assistant'):
+            raise Problem(400, 'Invalid message role.')
+        content = item.get('content')
+        if not isinstance(content, str) or not content.strip() or '\x00' in content or '<|' in content:
+            raise Problem(400, 'Expected nonempty text without reserved template markers.')
+        prompt += f"<|im_start|>{item['role']}\n{content}<|im_end|>\n"
+    prompt += '<|im_start|>assistant\n'
+    raw = prompt.encode()
+    # Conservative byte bound for Qwen byte-level tokenizer, including template.
+    if len(raw) + limit > args.context:
+        raise Problem(400, 'Conversation exceeds the conservative context budget.')
+    command = shlex.join(['@/bin/mslite-generate', args.model_path, str(limit), raw.hex()])
+    result = subprocess.run([sys.executable, '-m', 'binrunner', '-t', args.device, '-p', args.port,
+                             'run', command, '--timeout', '90'], cwd=args.binrunner,
+                            capture_output=True, timeout=100)
+    match = re.search(rb'^MSL_REPLY (stop|length) ([0-9a-f]*)\s*$', result.stdout, re.M)
+    if result.returncode or not match or re.search(rb'exit=(?!0\b)\d+|timedOut=true', result.stdout):
+        raise Problem(503, 'Device generation failed.')
+    answer = bytes.fromhex(match[2].decode()).decode()
+    return {'id': 'chatcmpl-' + uuid.uuid4().hex, 'object': 'chat.completion',
+            'created': int(time.time()), 'model': args.model_id, 'choices': [{'index': 0,
+            'message': {'role': 'assistant', 'content': answer},
+            'finish_reason': match[1].decode()}]}
+
+
+class Handler(KanbanHandler):
+    def reply(self, status, body):
+        data = json.dumps(body, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def dispatch(self):
+        args = self.server.settings
+        try:
+            auth = self.headers.get('Authorization', '').encode()
+            if self.server.authorization and not hmac.compare_digest(auth, self.server.authorization):
+                raise Problem(401, 'Invalid API key.')
+            if self.headers.get('X-Phone-Type', args.phone_type) != args.phone_type:
+                raise Problem(503, '所选机型尚未接入此网关。')
+            if self.command == 'GET' and self.path == '/v1/models':
+                self.reply(200, {'object': 'list', 'data': [{'object': 'model', 'id': args.model_id,
+                           'owned_by': 'mslite', 'created': 0}]})
+                return
+            screen_route = self.path.startswith('/device/')
+            if self.command != 'POST' or not (screen_route or self.path == '/v1/chat/completions'):
+                raise Problem(404, 'Unknown endpoint.')
+            size = self.headers.get('Content-Length', '')
+            if not size.isdecimal() or not 0 < int(size) <= 65536:
+                raise Problem(413, 'Expected a JSON body up to 64 KiB.')
+            body = json.loads(self.rfile.read(int(size)))
+            if screen_route:
+                if self.server.screen is None:
+                    raise Problem(503, '尚未配置专用体验设备。')
+                if not isinstance(body, dict):
+                    raise Problem(400, 'Expected a JSON object.')
+                self.reply(200, self.server.screen.request(self.path[8:], body, self.headers.get('X-Device-Session')))
+                return
+            if not self.server.slot.acquire(blocking=False):
+                raise Problem(429, 'Device is busy.')
+            try:
+                completion = generate(args, body)
+            finally:
+                self.server.slot.release()
+            self.reply(200, completion)
+        except (Problem, ScreenError) as error:
+            self.reply(error.code, {'error': {'message': error.message}})
+        except (ValueError, RecursionError):
+            self.reply(400, {'error': {'message': 'Invalid request encoding.'}})
+        except (OSError, subprocess.TimeoutExpired):
+            self.reply(503, {'error': {'message': 'Device connection unavailable.'}})
+
+    do_POST = dispatch
+
+    def do_GET(self):
+        if self.path.startswith(('/v1/', '/device/')):
+            self.dispatch()
+        else:
+            super().do_GET()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ('device', 'port', 'binrunner', 'model-id', 'model-path'):
+        parser.add_argument('--' + name, required=True)
+    parser.add_argument('--phone-type', choices=('mate80-pro', 'mate70-pro'), default='mate80-pro')
+    parser.add_argument('--listen-port', type=int, default=8081)
+    parser.add_argument('--context', type=int, default=2048)
+    parser.add_argument('--screen-device')
+    parser.add_argument('--bundle')
+    parser.add_argument('--ability')
+    args = parser.parse_args()
+    screen_args = (args.screen_device, args.bundle, args.ability)
+    if any(screen_args) and not all(screen_args):
+        parser.error('Specify screen-device, bundle and ability together.')
+    key = os.environ.get('MSLITE_API_KEY')
+    with ThreadingHTTPServer(('127.0.0.1', args.listen_port), partial(Handler, data_dir=BASE / 'data')) as server:
+        server.settings = args
+        server.screen = Screen(*screen_args) if all(screen_args) else None
+        server.authorization = ('Bearer ' + key).encode() if key else None
+        server.slot = threading.Lock()
+        server.serve_forever()
