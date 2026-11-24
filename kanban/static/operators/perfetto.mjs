@@ -121,8 +121,8 @@ export function createTraceViewer($, dataRoot, escape) {
   $('open-trace').onclick = open;
 
   return {
-    show(next, platforms, title, context) {
-      const nextKey = next ? JSON.stringify([next, title, context]) : '';
+    show(next, platforms, title) {
+      const nextKey = next ? JSON.stringify([next, title]) : '';
       if (nextKey === traceKey) return;
       traceKey = nextKey;
       trace = next;
@@ -131,7 +131,7 @@ export function createTraceViewer($, dataRoot, escape) {
       $('trace-actions').hidden = !trace;
       $('trace-source').textContent = trace?.source ?? '';
       $('trace-note').textContent = trace ? [
-        context, platforms[trace.platform] ?? trace.platform, trace.date,
+        platforms[trace.platform] ?? trace.platform, trace.date,
         trace.scope === 'full' ? '完整仿真' : '起始窗口', trace.cycles.toLocaleString('zh-CN') + ' cycles'
       ].filter(Boolean).join(' · ') : '该次运行没有归档流水。';
       $('trace-lanes').innerHTML = trace ? Object.entries(trace.lanes ?? {}).map(([unit, [busy, count]]) =>

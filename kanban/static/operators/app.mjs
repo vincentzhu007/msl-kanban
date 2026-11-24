@@ -1,5 +1,5 @@
 import {bindAutoRefresh} from '../visible-refresh.mjs';
-import {dimensions, environmentKey, measurement, samplePoints, versionKey, versionLabel} from './trends.mjs';
+import {dimensions, seriesKey, measurement, samplePoints, versionKey, versionLabel} from './trends.mjs';
 import {createTraceViewer} from './perfetto.mjs';
 
 const $ = id => document.getElementById(id);
@@ -166,12 +166,12 @@ function drawChart() {
         `<text x="${labelX}" y="${bottom + 22 + row * 18}" text-anchor="middle">${escape(line)}</text>`).join('') : ''}`;
   }).join('');
   const segments = [];
-  let previousEnvironment;
+  let previousSeries;
   points.forEach((point, index) => {
-    const environment = environmentKey(point.item);
-    if (environment !== previousEnvironment) segments.push([]);
+    const series = seriesKey(point.item);
+    if (series !== previousSeries) segments.push([]);
     segments.at(-1).push(x(point, index) + ',' + y(point.value));
-    previousEnvironment = environment;
+    previousSeries = series;
   });
   const paths = segments.filter(segment => segment.length > 1).map(segment =>
     `<polyline fill="none" stroke="currentColor" stroke-width="2.5" points="${segment.join(' ')}"/>`
@@ -208,6 +208,7 @@ function renderDetail() {
   const fields = [
     ['规格', dimensions(item.spec) || item.label], ['设备 / 系统', record.device + ' · ' + record.system],
     ['运行模式 / 协议', record.mode + ' · ' + record.protocol], ['算子源码版本', versionKey(record)],
+    ['实测日期', record.measured_date],
     ['统计口径', record.statistic === 'hot-samples-median' ? '全部热样本取中位数' : '各轮中位数再取中位数'],
     ['输出校验', check], ['DDK / 运行库', [record.environment?.ddk, record.environment?.runtime].filter(Boolean).join(' · ')]
   ];
@@ -221,29 +222,7 @@ function renderDetail() {
       <td>第 ${escape(run.round)} 轮 · ${escape(run.warmup)} 次预热</td>
       <td>${escape(row[0])}</td><td>${number(row[1])}</td><td>${number(row[2])}</td>
     </tr>`)).join('');
-  renderSimulation(record, item);
-}
-
-function renderSimulation(record, item) {
-  const independent = record.simulations ?? [];
-  const picker = $('simulation');
-  $('simulation-controls').hidden = !independent.length;
-  const previous = picker.dataset.record === record.id ? picker.value : '';
-  const entries = independent.map(({id, label, spec}) => [id, label + ' · ' + dimensions(spec)]);
-  if (item.trace) entries.unshift(['case', '当前实机规格']);
-  options(picker, entries, previous || (item.trace ? 'case' : independent[0]?.id));
-  picker.dataset.record = record.id;
-  const show = () => {
-    const selected = independent.find(({id}) => id === picker.value);
-    if (!selected) {
-      viewer.show(item.trace, catalog.platforms, item.label);
-      return;
-    }
-    const label = selected.label + ' · ' + dimensions(selected.spec);
-    viewer.show(selected.trace, catalog.platforms, label, '独立仿真 · ' + label);
-  };
-  picker.onchange = show;
-  show();
+  viewer.show(item.trace, catalog.platforms, item.label);
 }
 
 function pointMarker(target) {

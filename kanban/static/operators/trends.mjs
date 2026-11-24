@@ -46,11 +46,9 @@ function canonical(value) {
   return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
 }
 
-export function environmentKey({record, case: item}) {
-  // Historical campaigns are explicitly grouped by their recorded environment.
-  // New imports can record the full test configuration in environment.
-  return JSON.stringify(canonical([record.platform, record.device, record.system, record.mode,
-    record.protocol, record.environment, item.spec]));
+export function seriesKey({record, case: item}) {
+  // Connect revisions for the same device and shape, with run settings recorded in the details.
+  return JSON.stringify(canonical([record.platform, record.device, item.spec]));
 }
 
 export function dimensions(spec) {
