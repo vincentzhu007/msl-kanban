@@ -35,7 +35,7 @@ new ResizeObserver(drawWave).observe($('wave'));
 for (const button of document.querySelectorAll('[data-prompt]')) {
   button.onclick = () => {
     $('prompt').value = button.dataset.prompt;
-    $('prompt').focus();
+    $('prompt').focus(); controls();
   };
 }
 $('prompt').onkeydown = event => {
@@ -68,10 +68,21 @@ async function request(path, body, lease) {
 }
 function controls() {
   $('phone').disabled = busy || !!session || startingScreen;
-  $('send').disabled = busy || !online || preview;
-  $('clear').disabled = busy;
+  $('send').disabled = busy || !online || preview || !$('prompt').value.trim();
+  $('send').textContent = busy ? '处理中…' : '发送 ↑';
+  $('compose-hint').textContent = preview ? '离线预览 · 可编辑提示词，不发送到真机' : !online ? '连接服务后可发送；你可以先编写提示词' : '⌘ / Ctrl + Enter 发送 · Enter 换行';
+  $('chat-context').textContent = online ? $('models').selectedOptions[0]?.textContent + ' · 切换模型将开始新对话' : '等待连接 · 草稿可以先写好';
+  $('retry').disabled = busy;
+  $('copy').disabled = !online;
+  $('clear').disabled = busy || !messages.length;
   $('start').disabled = busy || !online || !!session || preview;
-  $('models').disabled = !online || busy;
+  $('models').disabled = !online || busy || !!session || startingScreen;
+}
+$('prompt').addEventListener('input', controls);
+function connection(state, title, help) {
+  $('connection').closest('.status').dataset.state = state;
+  $('connection').textContent = title;
+  $('connection-help').textContent = help;
 }
 function sample() {
   const body = {model: $('models').disabled ? '<model-id>' : $('models').value,
@@ -82,10 +93,12 @@ function reset() {
   messages = [];
   $('history').replaceChildren();
   $('empty').hidden = false;
+  controls();
 }
 function line(role, content) {
   const block = document.createElement('article'), name = document.createElement('strong');
   name.textContent = role;
+  block.className = role === '你' ? 'message-user' : 'message-model';
   block.append(name, document.createTextNode(content));
   $('history').append(block);
   block.scrollIntoView({block:'nearest'});
@@ -93,7 +106,7 @@ function line(role, content) {
 async function loadModels() {
   $('retry').hidden = true;
   busy = true; controls();
-  $('connection').textContent = '正在获取部署模型…';
+  connection('loading', '正在连接服务', '正在获取所选设备的部署模型。');
   try {
     const {data} = preview
       ? {data: [{id:'Qwen3-4B'}, {id:'Qwen3-0.6B'}]}
@@ -101,12 +114,12 @@ async function loadModels() {
     if (!Array.isArray(data) || !data.length) throw Error('服务未登记模型。');
     $('models').replaceChildren(...data.map(m => new Option(m.id, m.id)));
     online = true;
-    $('connection').textContent = preview ? '离线预览 · 示例模型，未连接真机' : '';
+    connection(preview ? 'preview' : 'ready', preview ? '离线预览' : '模型服务已连接', preview ? '示例模型仅供查看界面，不会发送请求或操作手机。' : '已获取部署模型；发送消息时将在真机上加载并运行。');
     reset();
   } catch (e) {
     online = false;
     $('models').replaceChildren(new Option('暂无可用模型', ''));
-    $('connection').textContent = e.message;
+    connection('offline', '暂未连接模型服务', e.message + ' 可先浏览界面、编写提示词，服务就绪后点击重新连接。');
     $('retry').hidden = false;
   } finally { busy = false; controls(); sample(); }
 }
@@ -125,7 +138,8 @@ $('compose').onsubmit = async event => {
   if (!content || busy || !online || preview) return;
   const next = [...messages, {role:'user', content}];
   const model = $('models').value;
-  busy = true; controls(); $('feedback').textContent = '等待真机生成…';
+  busy = true; controls(); $('feedback').textContent = '';
+  $('pending').hidden = false; $('history').setAttribute('aria-busy','true');
   try {
     const result = await request('/v1/chat/completions', {model, messages:next,max_tokens:128});
     const answer = result.choices[0].message;
@@ -136,9 +150,9 @@ $('compose').onsubmit = async event => {
     if ($('prompt').value.trim() === content) $('prompt').value = '';
     $('feedback').textContent = '';
   } catch (e) { $('feedback').textContent = e.message; }
-  finally { busy = false; controls(); }
+  finally { busy = false; $('pending').hidden = true; $('history').setAttribute('aria-busy','false'); controls(); }
 };
-$('models').onchange = () => {reset(); sample();};
+$('models').onchange = () => {reset(); $('feedback').textContent = ''; sample();};
 $('clear').onclick = reset;
 function forget() {
   $('standby').hidden = false;
