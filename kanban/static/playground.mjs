@@ -52,11 +52,42 @@ $('copy').onclick = async () => {
     $('feedback').textContent = '命令已复制。';
   } catch { $('feedback').textContent = '请选中示例并复制。'; }
 };
+// Temporary shared tunnel for the two hosted Playground sites.
+const sharedEndpoint = 'wss://identifying-choices-will-transit.trycloudflare.com';
+const hosted = location.hostname === 'msl-kanban.pages.dev' || location.hostname === 'msl-kanban.vercel.app';
+function sharedRequest(path, body) {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(sharedEndpoint);
+    let controller, settled = false, ended = false;
+    const stream = new ReadableStream({
+      start(c) { controller = c; },
+      cancel() { socket.close(); },
+    });
+    socket.onopen = () => socket.send(JSON.stringify({path, body, phone:$('phone').value}));
+    socket.onmessage = event => {
+      try {
+        const item = JSON.parse(event.data);
+        if (item.status) {
+          settled = true;
+          resolve(new Response(stream, {status:item.status, headers:{'Content-Type':item.content_type}}));
+        } else if (item.data !== undefined) controller.enqueue(new TextEncoder().encode(item.data));
+        else if (item.end) { ended = true; controller.close(); socket.close(); }
+        else if (item.error) { ended = true; controller.error(Error(item.error)); socket.close(); if (!settled) reject(Error(item.error)); }
+      } catch (error) { if (!settled) reject(error); else controller.error(error); socket.close(); }
+    };
+    socket.onerror = () => { if (!settled) reject(Error('暂时无法连接模型服务。')); };
+    socket.onclose = () => { if (!settled) reject(Error('暂时无法连接模型服务。')); else if (!ended) controller.error(Error('模型连接中断。')); };
+  });
+}
+function modelFetch(path, body) {
+  if (hosted) return sharedRequest(path, body);
+  return fetch(path, {method: body ? 'POST' : 'GET', headers: {'X-Phone-Type':$('phone').value, ...(body ? {'Content-Type':'application/json'} : {})}, body:body ? JSON.stringify(body) : undefined, cache:'no-store', redirect:'error'});
+}
 async function request(path, body, lease) {
   const headers = {'X-Phone-Type': $('phone').value};
   if (lease) headers['X-Device-Session'] = lease;
   if (body) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, {
+  const response = hosted && path.startsWith('/v1/') ? await sharedRequest(path, body) : await fetch(path, {
     method: body ? 'POST' : 'GET', headers, body: body && JSON.stringify(body),
     cache: 'no-store', redirect: 'error'
   });
@@ -73,9 +104,9 @@ function controls() {
   $('compose-hint').textContent = preview ? '离线预览 · 可编辑提示词，不发送到真机' : !online ? '连接服务后可发送；你可以先编写提示词' : '⌘ / Ctrl + Enter 发送 · Enter 换行';
   $('chat-context').textContent = online ? $('models').selectedOptions[0]?.textContent + ' · 切换模型将开始新对话' : '等待连接 · 草稿可以先写好';
   $('retry').disabled = busy;
-  $('copy').disabled = !online;
+  $('copy').disabled = !online || hosted;
   $('clear').disabled = busy || !messages.length;
-  $('start').disabled = busy || !online || !!session || preview;
+  $('start').disabled = busy || !online || !!session || preview || hosted;
   $('models').disabled = !online || busy || !!session || startingScreen;
 }
 $('prompt').addEventListener('input', controls);
@@ -85,8 +116,9 @@ function connection(state, title, help) {
   $('connection-help').textContent = help;
 }
 function sample() {
+  if (hosted) { $('sample').textContent = '网页对话已通过临时共享通路连接真机，HTTP API 暂不对外开放。'; return; }
   const body = {model: $('models').disabled ? '<model-id>' : $('models').value,
-    messages: [{role: 'user', content: '你好'}], max_tokens: 128};
+    messages: [{role: 'user', content: '你好'}], max_tokens: 1024};
   $('sample').textContent = 'curl ' + (preview ? '"$MSLITE_BASE_URL"' : location.origin) + '/v1/chat/completions \\\n  -H "X-Phone-Type: ' + $('phone').value + '" \\\n  -H "Content-Type: application/json" \\\n  --data-binary @- <<\'JSON\'\n' + JSON.stringify(body, null, 2) + '\nJSON';
 }
 function reset() {
@@ -101,7 +133,8 @@ function line(role, content) {
   block.className = role === '你' ? 'message-user' : 'message-model';
   block.append(name, document.createTextNode(content));
   $('history').append(block);
-  block.scrollIntoView({block:'nearest'});
+  const history = $('history');
+  history.scrollTop = history.scrollHeight;
 }
 async function loadModels() {
   $('retry').hidden = true;
@@ -112,7 +145,11 @@ async function loadModels() {
       ? {data: [{id:'Qwen3-4B'}, {id:'Qwen3-0.6B'}]}
       : await request('/v1/models');
     if (!Array.isArray(data) || !data.length) throw Error('服务未登记模型。');
-    $('models').replaceChildren(...data.map(m => new Option(m.id, m.id)));
+    const scoped = data.some(m => /^(mate80-pro|mate70-pro)\//.test(m.id));
+    const prefix = $('phone').value + '/';
+    const available = scoped ? data.filter(m => m.id.startsWith(prefix)) : data;
+    if (!available.length) throw Error('所选手机尚未登记部署模型。');
+    $('models').replaceChildren(...available.map(m => new Option(scoped ? m.id.slice(prefix.length) : m.id, m.id)));
     online = true;
     connection(preview ? 'preview' : 'ready', preview ? '离线预览' : '模型服务已连接', preview ? '示例模型仅供查看界面，不会发送请求或操作手机。' : '已获取部署模型；发送消息时将在真机上加载并运行。');
     reset();
@@ -132,6 +169,37 @@ $('phone').onchange = () => {
   $('models').replaceChildren(new Option('正在加载模型…', ''));
   loadModels();
 };
+// Render buffered text steadily even when the device sends several tokens together.
+function createTypewriter(node) {
+  const segmenter = typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'}) : null;
+  let target = '', shown = 0, timer = null, resolveDrain = null;
+  const characters = () => segmenter
+    ? Array.from(segmenter.segment(target), part => part.segment) : Array.from(target);
+  function tick() {
+    timer = null;
+    const history = $('history');
+    const follow = history.scrollHeight - history.scrollTop - history.clientHeight <= 24;
+    const parts = characters();
+    const remaining = parts.length - shown;
+    shown += Math.min(remaining, remaining > 160 ? 3 : remaining > 80 ? 2 : 1);
+    node.textContent = parts.slice(0, shown).join('');
+    if (follow) history.scrollTop = history.scrollHeight;
+    if (shown < parts.length) timer = setTimeout(tick, 25);
+    else if (resolveDrain) { resolveDrain(); resolveDrain = null; }
+  }
+  return {
+    append(text) {
+      target += text;
+      if (timer === null) timer = setTimeout(tick, 25);
+    },
+    drain() {
+      if (timer === null) return Promise.resolve();
+      return new Promise(resolve => { resolveDrain = resolve; });
+    },
+  };
+}
+
 $('compose').onsubmit = async event => {
   event.preventDefault();
   const content = $('prompt').value.trim();
@@ -140,16 +208,54 @@ $('compose').onsubmit = async event => {
   const model = $('models').value;
   busy = true; controls(); $('feedback').textContent = '';
   $('pending').hidden = false; $('history').setAttribute('aria-busy','true');
+  let typewriter;
   try {
-    const result = await request('/v1/chat/completions', {model, messages:next,max_tokens:128});
-    const answer = result.choices[0].message;
-    if (!messages.length) $('history').replaceChildren();
-    messages = [...next, answer];
+    const response = await modelFetch('/v1/chat/completions', {model, messages:next, max_tokens:1024, stream:true});
+    if (!response.ok) {
+      const error = await response.json();
+      throw Error(error.error?.message || '请求失败，请重新连接。');
+    }
+    if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body)
+      throw Error('服务暂不支持流式输出。');
     $('empty').hidden = true;
-    line('你', content); line(model, answer.content);
+    line('你', content);
+    line(model, '');
+    const answerBlock = $('history').lastElementChild;
+    const answerText = document.createTextNode('');
+    answerBlock.append(answerText);
+    typewriter = createTypewriter(answerText);
+    const reader = response.body.getReader(), decoder = new TextDecoder();
+    let buffer = '', answer = '', done = false;
+    while (true) {
+      const chunk = await reader.read();
+      buffer += decoder.decode(chunk.value || new Uint8Array(), {stream: !chunk.done});
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+      for (const event of events) {
+        if (!event.startsWith('data: ')) continue;
+        const data = event.slice(6);
+        if (data === '[DONE]') { done = true; continue; }
+        const item = JSON.parse(data);
+        if (item.error) throw Error(item.error.message);
+        const text = item.choices?.[0]?.delta?.content || '';
+        if (text) {
+          $('pending').hidden = true;
+          answer += text;
+          typewriter.append(text);
+        }
+      }
+      if (chunk.done) break;
+    }
+    await typewriter.drain();
+    if (!done) throw Error('生成中断，请重试。');
+    messages = [...next, {role:'assistant', content:answer}];
     if ($('prompt').value.trim() === content) $('prompt').value = '';
     $('feedback').textContent = '';
-  } catch (e) { $('feedback').textContent = e.message; }
+  } catch (e) {
+    if (typewriter) await typewriter.drain();
+    $('feedback').textContent = e.message;
+    if (!messages.length) $('empty').hidden = false;
+  }
   finally { busy = false; $('pending').hidden = true; $('history').setAttribute('aria-busy','false'); controls(); }
 };
 $('models').onchange = () => {reset(); $('feedback').textContent = ''; sample();};

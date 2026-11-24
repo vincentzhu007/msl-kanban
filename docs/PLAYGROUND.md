@@ -62,3 +62,9 @@ curl http://127.0.0.1:18081/v1/chat/completions \
 - 在目标机上发送两轮中文问答，核对第二轮能使用前文；以 max_tokens=1 验证截断原因；拔掉设备后核对 503，再恢复连接重试。
 - 打开 App 后点击输入框，用屏幕键盘输入并提交，拖动查看输出。用第二个浏览器验证占用提示、手动释放和过期回收，并核对旋转后触点映射。
 - 本地接口测试用替身替代 BinRunner 与 HDC。运行 `python3 -m unittest discover -s tests -p test_playground.py`。物理设备的推理质量、模型加载时延和投屏手感需要在 dog 上验收。
+
+## 临时双站连接
+
+Cloudflare Pages 与 Vercel 的网页通过临时 WebSocket 中继访问 dog 上的模型服务。中继使用 `websockets==15.0.1`，仅转发模型列表及聊天接口，`Origin` 限定为两个看板地址。当前体验不启用账号认证。临时隧道地址重启后变化，需要更新 `playground.mjs` 后重新部署网站。中继地址在 `scripts/playground/temporary_ws_relay.py` 中指定的 18083 端口上启动，连接同机的 8081 模型服务。`mslite-serve` 使用 `--lease-dir /home/zhugd/msl-kanban-ci/leases` 与 Daily 评测共享设备锁。
+
+临时隧道和模型服务当前需要分别保持运行。临时地址并非长期稳定服务，WebSocket 入口的 Origin 限制不是用户认证。不要将真机 App 控制接口暴露给该中继。

@@ -13,7 +13,13 @@ struct Output {
 
 void append(const char *piece, MSLLMFinishReason reason, void *context) {
   auto *out = static_cast<Output *>(context);
-  if (piece) out->text += piece;
+  if (piece && *piece) {
+    out->text += piece;
+    std::fputs("MSL_PIECE ", stdout);
+    for (const unsigned char *p = reinterpret_cast<const unsigned char *>(piece); *p; ++p) std::printf("%02x", *p);
+    std::putchar('\n');
+    std::fflush(stdout);
+  }
   out->reason = reason;
 }
 
