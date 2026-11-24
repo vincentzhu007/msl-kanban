@@ -202,8 +202,10 @@ function createTypewriter(node) {
 
 $('compose').onsubmit = async event => {
   event.preventDefault();
-  const content = $('prompt').value.trim();
+  const draft = $('prompt').value;
+  const content = draft.trim();
   if (!content || busy || !online || preview) return;
+  $('prompt').value = '';
   const next = [...messages, {role:'user', content}];
   const model = $('models').value;
   busy = true; controls(); $('feedback').textContent = '';
@@ -249,11 +251,11 @@ $('compose').onsubmit = async event => {
     await typewriter.drain();
     if (!done) throw Error('生成中断，请重试。');
     messages = [...next, {role:'assistant', content:answer}];
-    if ($('prompt').value.trim() === content) $('prompt').value = '';
     $('feedback').textContent = '';
   } catch (e) {
     if (typewriter) await typewriter.drain();
     $('feedback').textContent = e.message;
+    if (!$('prompt').value) $('prompt').value = draft;
     if (!messages.length) $('empty').hidden = false;
   }
   finally { busy = false; $('pending').hidden = true; $('history').setAttribute('aria-busy','false'); controls(); }
