@@ -1,0 +1,15 @@
+{
+  "id": "daily-20261124-qwen25-15b-msl-q30-kirin9020-manual15b-20261124T174333-q3-c7c0b2-1",
+  "date": "20261124",
+  "recipe_id": "qwen25-15b-msl-q30-kirin9020",
+  "code_commit": "da17e33e800d3ffd15fd61950af8311a371f38e1",
+  "task_url": null,
+  "status": "FAILED",
+  "stage": "MEASURE",
+  "started_at": "2026-11-24T17:43:34.092179+08:00",
+  "build_commit": "415fad80e2f936f73400477d92ac063bcbdd40b2",
+  "build_sha256": "05c304249884d7674a415442eb437042844a53745e3a73f9d66f2c4f6ee438a1",
+  "error_type": "TimeoutError",
+  "reason": "任务未通过校验，未发布新的性能结果。",
+  "finished_at": "2026-11-24T18:34:59.959329+08:00"
+}
