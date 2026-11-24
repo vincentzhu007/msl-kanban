@@ -57,7 +57,7 @@ curl http://127.0.0.1:18081/v1/chat/completions \
 
 ## 接口范围和真机验收
 
-- 文本接口支持 system、user、assistant 多轮消息，采用 Qwen ChatML 和 greedy 解码。单次输出上限为 1024 token。配置 `--tokenizer` 后按模型 tokenizer 计算输入长度，并根据剩余上下文自动缩减输出预算。未配置 tokenizer 时采用 UTF-8 字节数保守估算。
+- 文本接口支持 system、user、assistant 多轮消息，采用 Qwen ChatML 与 Qwen3 非思考模式采样（temperature 0.7、top-p 0.8、top-k 20）。单次输出上限为 1024 token。配置 `--tokenizer` 后按模型 tokenizer 计算输入长度，并根据剩余上下文自动缩减输出预算。未配置 tokenizer 时采用 UTF-8 字节数保守估算。
 - 每次请求独立加载模型并收集完整结果。首版尚未提供 SSE、工具调用和常驻模型。参考接口为 [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md)。
 - 在目标机上发送两轮中文问答，核对第二轮能使用前文；以 max_tokens=1 验证截断原因；拔掉设备后核对 503，再恢复连接重试。
 - 打开 App 后点击输入框，用屏幕键盘输入并提交，拖动查看输出。用第二个浏览器验证占用提示、手动释放和过期回收，并核对旋转后触点映射。

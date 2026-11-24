@@ -41,9 +41,11 @@ int main(int argc, char **argv) {
   if (!model) return 3;
   MSLLMGenerationConfig config{};
   config.max_new_tokens = std::atoi(argv[2]);
-  config.do_sample = false;
-  config.top_k = 1;
-  config.top_p = config.temperature = config.repetition_penalty = 1;
+  config.do_sample = true;
+  config.temperature = 0.7f;
+  config.top_k = 20;
+  config.top_p = 0.8f;
+  config.repetition_penalty = 1.0f;
   Output out;
   auto status = MSLLMBuildModel(model, argv[1]);
   if (status == kMSLLM_SUCCESS) status = MSLLMSetGenerationConfig(model, config);
