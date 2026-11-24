@@ -72,7 +72,7 @@ class PlaygroundTests(unittest.TestCase):
         with self.assertRaises(gateway['Problem']):
             prepare(self.server.settings, dict(body, max_tokens=1025))
         with self.assertRaises(gateway['Problem']):
-            prepare(self.server.settings, dict(body, messages=[{'role':'user', 'content':'a' * 1500}]))
+            prepare(self.server.settings, dict(body, messages=[{'role':'user', 'content':'a' * 2100}]))
 
     def test_shared_device_lease_rejects_simultaneous_daily_job(self):
         with tempfile.TemporaryDirectory() as root:
@@ -83,6 +83,18 @@ class PlaygroundTests(unittest.TestCase):
                 self.assertEqual(error.exception.code, 429)
             with gateway['device_lease'](root, 'phone'):
                 pass
+
+    def test_token_budget_counts_tokens_and_adapts_output(self):
+        class Tokenizer:
+            def encode(self, text, add_special_tokens=False):
+                return SimpleNamespace(ids=[1] * 1200)
+        self.server.settings.tokenizer = Tokenizer()
+        body = {'model':'qwen', 'messages':[{'role':'user', 'content':'长文本' * 600}], 'max_tokens':1024}
+        command = gateway['prepare'](self.server.settings, body)
+        self.assertIn(' 848 ', command[-3])
+        self.server.settings.tokenizer = SimpleNamespace(encode=lambda *a, **k: SimpleNamespace(ids=[1] * 2048))
+        with self.assertRaises(gateway['Problem']):
+            gateway['prepare'](self.server.settings, body)
 
     def test_device_sessions(self):
         screen = gateway['Screen']('phone', 'example.app', 'EntryAbility')

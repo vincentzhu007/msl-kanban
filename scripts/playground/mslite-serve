@@ -72,9 +72,12 @@ def prepare(args, body):
     if args.model_id.lower().split('/')[-1].startswith('qwen3'):
         prompt += '<think>\n\n</think>\n\n'
     raw = prompt.encode()
-    # Conservative byte bound for Qwen byte-level tokenizer, including template.
-    if len(raw) + limit > args.context:
-        raise Problem(400, 'Conversation exceeds the conservative context budget.')
+    tokenizer = getattr(args, 'tokenizer', None)
+    input_tokens = len(tokenizer.encode(prompt, add_special_tokens=False).ids) if tokenizer else len(raw)
+    available = args.context - input_tokens
+    if available < 1:
+        raise Problem(400, '对话超过模型上下文长度，请清空对话后重试。')
+    limit = min(limit, available)
     command = shlex.join(['@/bin/mslite-generate', args.model_path, str(limit), raw.hex()])
     return [sys.executable, '-m', 'binrunner', '-t', args.device, '-p', args.port, 'run', command, '--timeout', '90']
 
@@ -203,10 +206,14 @@ if __name__ == '__main__':
     parser.add_argument('--listen-port', type=int, default=8081)
     parser.add_argument('--lease-dir', help='Daily device lease directory shared with the runner')
     parser.add_argument('--context', type=int, default=2048)
+    parser.add_argument('--tokenizer', help='Tokenizer JSON matching the deployed model')
     parser.add_argument('--screen-device')
     parser.add_argument('--bundle')
     parser.add_argument('--ability')
     args = parser.parse_args()
+    if args.tokenizer:
+        from tokenizers import Tokenizer
+        args.tokenizer = Tokenizer.from_file(args.tokenizer)
     screen_args = (args.screen_device, args.bundle, args.ability)
     if any(screen_args) and not all(screen_args):
         parser.error('Specify screen-device, bundle and ability together.')
