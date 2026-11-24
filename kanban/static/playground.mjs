@@ -1,5 +1,21 @@
 const $ = id => document.getElementById(id);
 const preview = document.body.hasAttribute('data-preview');
+const markdown = window.markdownit({html:false, linkify:false, breaks:true});
+let renderMarkdown = true;
+
+function renderMessage(node) {
+  node.dataset.rawMode = String(!renderMarkdown);
+  if (renderMarkdown) node.innerHTML = markdown.render(node.dataset.raw || '');
+  else node.textContent = node.dataset.raw || '';
+}
+for (const mode of ['markdown', 'raw']) {
+  $('view-' + mode).onclick = () => {
+    renderMarkdown = mode === 'markdown';
+    $('view-markdown').setAttribute('aria-pressed', String(renderMarkdown));
+    $('view-raw').setAttribute('aria-pressed', String(!renderMarkdown));
+    for (const node of document.querySelectorAll('#history .message-content')) renderMessage(node);
+  };
+}
 
 function drawWave() {
   const canvas = $('wave');
@@ -131,7 +147,11 @@ function line(role, content) {
   const block = document.createElement('article'), name = document.createElement('strong');
   name.textContent = role;
   block.className = role === '你' ? 'message-user' : 'message-model';
-  block.append(name, document.createTextNode(content));
+  const message = document.createElement('div');
+  message.className = 'message-content';
+  message.dataset.raw = content;
+  renderMessage(message);
+  block.append(name, message);
   $('history').append(block);
   const history = $('history');
   history.scrollTop = history.scrollHeight;
@@ -183,7 +203,8 @@ function createTypewriter(node) {
     const parts = characters();
     const remaining = parts.length - shown;
     shown += Math.min(remaining, remaining > 160 ? 3 : remaining > 80 ? 2 : 1);
-    node.textContent = parts.slice(0, shown).join('');
+    node.dataset.raw = parts.slice(0, shown).join('');
+    renderMessage(node);
     if (follow) history.scrollTop = history.scrollHeight;
     if (shown < parts.length) timer = setTimeout(tick, 25);
     else if (resolveDrain) { resolveDrain(); resolveDrain = null; }
@@ -223,8 +244,7 @@ $('compose').onsubmit = async event => {
     line('你', content);
     line(model, '');
     const answerBlock = $('history').lastElementChild;
-    const answerText = document.createTextNode('');
-    answerBlock.append(answerText);
+    const answerText = answerBlock.querySelector('.message-content');
     typewriter = createTypewriter(answerText);
     const reader = response.body.getReader(), decoder = new TextDecoder();
     let buffer = '', answer = '', done = false;
