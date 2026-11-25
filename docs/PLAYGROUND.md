@@ -70,3 +70,13 @@ Cloudflare Pages 与 Vercel 的网页通过临时 WebSocket 中继访问 dog 上
 临时隧道和模型服务当前需要分别保持运行。临时地址并非长期稳定服务，WebSocket 入口的 Origin 限制不是用户认证。不要将真机 App 控制接口暴露给该中继。
 
 Qwen3 服务使用与模型匹配的 tokenizer：安装 `tokenizers==0.22.2`，启动时传入 `--tokenizer /path/to/Qwen3-0.6B/tokenizer.json`。
+
+## Qwen3.5 临时常驻服务（2026-11-25）
+
+Playground 的 Qwen3.5 入口提供“加载模型／卸载模型”和“停止生成”。加载后保留手机模型句柄，后续请求重置生成状态并复用模型。停止请求使用随机请求 ID，只取消对应生成；优先调用 `MSLLMAbort`，超过约 3 秒仍未退出则终止 BinRunner 并卸载模型。取消加载同样会释放设备。其他模型目前仍按请求加载。
+
+`qwen35-preview.py` 提供 `/v1/model/load`、`/v1/model/status`、`/v1/model/unload` 和 `/v1/chat/cancel`，经共享 WebSocket 接口供 Cloudflare 与 Vercel 使用。生成时携带 `request_id`（32 位随机十六进制字符串）。停止不会清空聊天记录；网页保留已显示的内容。
+
+常驻程序通过 `experimental/build_qwen35_resident.py` 构建，依赖已验证的 S2 后端归档。手机仅监听回环端口 18947，dog 通过 HDC 的 28947 端口转发访问；避免占用已有手机转发端口。模型加载耗时与 Prefill / Decode 指标分别展示。性能计时不包含模型加载。
+
+本次临时服务部署到 dog 的 `/var/tmp/msl-kanban-playground-20261125`，运行日志也写入该目录；`/home` 分区已满，需要单独维护磁盘容量。现有模型与 BinRunner 路径保持原位置。常驻模型持有 3001 设备租约，卸载后释放；服务重启或手机应用退出后需重新加载。

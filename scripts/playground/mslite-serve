@@ -24,6 +24,9 @@ from server import BASE, Handler as KanbanHandler
 
 
 from screen import Screen, ScreenError
+from cancellation import Generations, GenerationStopped
+
+GENERATIONS = Generations()
 
 
 @contextmanager
@@ -50,7 +53,7 @@ class Problem(Exception):
 
 
 def prepare(args, body):
-    if not isinstance(body, dict) or set(body) - {'model', 'messages', 'max_tokens', 'stream'}:
+    if not isinstance(body, dict) or set(body) - {'model', 'messages', 'max_tokens', 'stream', 'request_id'}:
         raise Problem(400, 'Supported fields: model, messages, max_tokens, stream.')
     if body.get('model') != args.model_id:
         raise Problem(404, 'Unknown model.')
@@ -106,7 +109,7 @@ class Handler(KanbanHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def stream_completion(self, args, command):
+    def stream_completion(self, args, command, generation):
         self.send_response(200)
         self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
         self.send_header('Cache-Control', 'no-cache, no-transform')
@@ -114,7 +117,7 @@ class Handler(KanbanHandler):
         self.end_headers()
         decoder = codecs.getincrementaldecoder('utf-8')()
         finished = None
-        process = subprocess.Popen(command, cwd=args.binrunner, stdout=subprocess.PIPE,
+        process = generation.launch(command, cwd=args.binrunner, stdout=subprocess.PIPE,
                                    stderr=subprocess.DEVNULL, bufsize=0)
         def send(value):
             self.wfile.write(('data: ' + json.dumps(value, ensure_ascii=False) + '\n\n').encode())
@@ -157,7 +160,7 @@ class Handler(KanbanHandler):
                            'owned_by': 'mslite', 'created': 0}]})
                 return
             screen_route = self.path.startswith('/device/')
-            if self.command != 'POST' or not (screen_route or self.path == '/v1/chat/completions'):
+            if self.command != 'POST' or not (screen_route or self.path in ('/v1/chat/completions', '/v1/chat/cancel')):
                 raise Problem(404, 'Unknown endpoint.')
             size = self.headers.get('Content-Length', '')
             if not size.isdecimal() or not 0 < int(size) <= 65536:
@@ -170,18 +173,24 @@ class Handler(KanbanHandler):
                     raise Problem(400, 'Expected a JSON object.')
                 self.reply(200, self.server.screen.request(self.path[8:], body, self.headers.get('X-Device-Session')))
                 return
+            if self.path == '/v1/chat/cancel':
+                self.reply(200, GENERATIONS.cancel(body.get('request_id')))
+                return
+            GENERATIONS.validate(body.get('request_id'))
             command = prepare(args, body)
             if not self.server.slot.acquire(blocking=False):
                 raise Problem(429, 'Device is busy.')
             try:
-                with device_lease(getattr(args, 'lease_dir', None), args.device):
+                with device_lease(getattr(args, 'lease_dir', None), args.device), GENERATIONS.track(body.get('request_id'), args.device) as generation:
                     if body.get('stream', False):
-                        self.stream_completion(args, command)
+                        self.stream_completion(args, command, generation)
                         return
                     completion = generate(args, body)
             finally:
                 self.server.slot.release()
             self.reply(200, completion)
+        except GenerationStopped:
+            self.reply(409, {'error': {'message': '生成已停止。'}})
         except (Problem, ScreenError) as error:
             self.reply(error.code, {'error': {'message': error.message}})
         except (ValueError, RecursionError):
