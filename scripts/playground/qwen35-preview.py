@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Temporary Qwen3.5 resident model API shared by both hosted Playgrounds."""
+import codecs
 import json
 import re
 import threading
@@ -15,6 +16,18 @@ RESIDENT = Resident()
 SLOT = threading.Lock()
 
 STATS_MARKER = '\n\n---\n**本次推理性能（mslite-chat）**'
+
+
+def resident_events(source):
+    # Runtime token fragments are bytes, not necessarily complete UTF-8 characters.
+    decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+    for raw in source:
+        event = json.loads(raw)
+        content = decoder.decode(bytes.fromhex(event.pop('content_hex', '')),
+                                 final=bool(event.get('done')))
+        if content:
+            event['content'] = content
+        yield event
 
 
 def performance_footer(output):
@@ -143,8 +156,7 @@ class Handler(BaseHTTPRequestHandler):
                         self.end_headers()
                         streaming = True
                         done = False
-                        for raw in source:
-                            event = json.loads(raw)
+                        for event in resident_events(source):
                             if event.get('error'):
                                 raise RuntimeError(event['error'])
                             if 'content' in event:

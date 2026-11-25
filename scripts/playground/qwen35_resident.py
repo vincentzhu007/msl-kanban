@@ -13,7 +13,7 @@ BASE = '/home/zhugd/msl-kanban-ci/binrunner-1.4.1'
 DEVICE = '127.0.0.1:3001'
 PORT = 28947
 PHONE_PORT = 18947
-PROGRAM = 'hf-q35-kanban-resident-v2'
+PROGRAM = 'hf-q35-kanban-resident-v3'
 WHOLE = '@/data/storage/el2/base/haps/entry/files/bin/hf-q35-s2-head-l1-20261106-01-whole.msl'
 PACKAGE = '@/data/storage/el2/base/haps/entry/files/bin/qwen35-s2-base-20261125.msl'
 

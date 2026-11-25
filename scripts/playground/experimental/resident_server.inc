@@ -34,6 +34,13 @@ bool SendLine(int fd, const std::string &s) {
   }
   return true;
 }
+std::string HexBytes(const std::string &bytes) {
+  const char *hex = "0123456789abcdef";
+  std::string out;
+  out.reserve(bytes.size() * 2);
+  for (unsigned char c : bytes) { out += hex[c >> 4]; out += hex[c & 15]; }
+  return out;
+}
 bool ReadBytes(int fd, char *p, size_t size) {
   while (size) { auto n = recv(fd, p, size, 0); if (n <= 0) return false; p += n; size -= n; }
   return true;
@@ -131,7 +138,7 @@ void KanbanClient(int fd, MSLLMModelHandle model, double load_ms) {
     if (!sink.prefill_tokens) { sink.prefill_tokens = 1; sink.prefill_ms = ms; }
     else { ++sink.decode_tokens; sink.decode_ms += ms; }
     sink.t_last = now;
-    if (connected && !SendLine(fd, "{\"content\":" + JsonString(token) + "}")) {
+    if (connected && !SendLine(fd, "{\"content_hex\":\"" + HexBytes(token) + "\"}")) {
       connected = false; kanban_cancel.store(true);
     }
   }

@@ -18,7 +18,7 @@
 程序需使用 `br push` 推送到 3001 设备，并用同一组模型参数验证成功后，
 才能切换服务使用的程序。线上更新需要取得设备租约，避免中断请求。
 
-当前常驻版本使用 `build_qwen35_resident.py`，输出 `hf-q35-kanban-resident-v2`，
+当前常驻版本使用 `build_qwen35_resident.py`，输出 `hf-q35-kanban-resident-v3`，
 由 `../qwen35_resident.py` 的 `PROGRAM` 选择。它复用上面的已验证后端归档，
 仅重编译 pipeline、sampler 与聊天入口。用户消息通过回环 TCP 的角色与 UTF-8 长度协议传输，
 不参与命令拼接。模板接口不追加生成前缀，服务显式追加 Qwen3.5 非思考前缀。
@@ -29,3 +29,8 @@ presence penalty 通过临时内部桥接设置；此接口不属于正式 Lite 
 `sampler_check.cc` 验证 top-k 与 top-p 同时生效：固定 seed、3 个候选、top_k=2、
 top_p=0.1 时，1000 次采样应只选择最高概率 token。使用源码 include/src 目录编译，
 分别链接原 sampler.cc 与临时生成的 sampler.cc，可复现修复前失败、修复后通过。
+
+流式 token 片段通过 ASCII 十六进制字段 `content_hex` 传输，由 Python 按请求增量解码 UTF-8；
+不能将 token 片段直接写成 JSON 字符串，尤其是达到输出上限或取消时的尾部字节可能不完整。
+完整的跨片段中文和 emoji 无损拼接；真正无效或最终残缺的编码使用替换字符，保持生成与结束事件可读。
+统计仍按原始 runtime 回调计数，不按拼接后的字符片段计数。

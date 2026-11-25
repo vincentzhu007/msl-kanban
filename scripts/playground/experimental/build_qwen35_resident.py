@@ -39,5 +39,5 @@ wrapper = wrapper.replace('int main(int argc, char **argv) {', 'int main(int arg
 (out/'qwen35-phone-chat.cc').write_text(wrapper)
 compile(out/'qwen35-phone-chat.cc', out/'resident.o', b/'examples/CMakeFiles/qwen35-phone-chat.dir/flags.make', ['-DQWEN35_Q2_EXPERIMENT'])
 link = [str(out/'resident.o') if a=='CMakeFiles/qwen35-phone-chat.dir/qwen35-phone-chat.cc.o' else str(out/'libstats.a') if a=='../src/libmindspore-lite-llm.a' else a for a in link]
-link[link.index('-o')+1] = str(out/'hf-q35-kanban-resident-v2')
+link[link.index('-o')+1] = str(out/'hf-q35-kanban-resident-v3')
 subprocess.run(link, cwd=b/'examples', check=True)
