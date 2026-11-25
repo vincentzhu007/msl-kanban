@@ -1,0 +1,15 @@
+{
+  "id": "daily-20261125-qwen25-05b-msl-q30-kirin9020-45535904192-1",
+  "date": "20261125",
+  "recipe_id": "qwen25-05b-msl-q30-kirin9020",
+  "code_commit": "08860008a436a65a8b20fbbaae2859436922a75e",
+  "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/45535904192",
+  "status": "FAILED",
+  "stage": "PREPARE",
+  "started_at": "2026-11-25T10:57:52.203465+08:00",
+  "build_commit": "f493ab284c12e839badc05b9af1c395af52694f2",
+  "build_sha256": "6b44116adabf1ca2fa15aef306422e5c92e994046e20bcf7d826842af42342c3",
+  "error_type": "DeviceOfflineError",
+  "reason": "测试真机离线（hdc 无法连接），未执行测量，未发布新的性能结果。",
+  "finished_at": "2026-11-25T10:57:54.195165+08:00"
+}
