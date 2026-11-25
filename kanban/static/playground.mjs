@@ -192,7 +192,10 @@ async function loadModels() {
     const prefix = $('phone').value + '/';
     const available = scoped ? data.filter(m => m.id.startsWith(prefix)) : data;
     if (!available.length) throw Error('所选手机尚未登记部署模型。');
-    $('models').replaceChildren(...available.map(m => new Option(scoped ? m.id.slice(prefix.length) : m.id, m.id)));
+    $('models').replaceChildren(...available.map(m => {
+      const name = scoped ? m.id.slice(prefix.length) : m.id;
+      return new Option(name === 'Qwen3.5 · 3001（临时）' ? 'Qwen3.5 35A3B' : name, m.id);
+    }));
     online = true;
     connection(preview ? 'preview' : 'ready', preview ? '离线预览' : '模型服务已连接', preview ? '示例模型仅供查看界面，不会发送请求或操作手机。' : '已获取部署模型；发送消息时将在真机上加载并运行。');
     reset();
