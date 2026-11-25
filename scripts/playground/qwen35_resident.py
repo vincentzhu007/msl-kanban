@@ -33,6 +33,11 @@ class Resident:
             with sock.makefile('rb') as stream:
                 return json.loads(stream.readline(65536))
 
+    def wake(self):
+        prefix = ['hdc','-t',DEVICE,'shell']
+        for command in (['power-shell','wakeup'], ['power-shell','timeout','-o','1800000'], ['aa','start','-b','com.example.binrunner','-a','EntryAbility']):
+            subprocess.run(prefix+command,capture_output=True,timeout=10,check=True)
+
     def _release(self):
         if self.lease:
             self.lease.close(); self.lease = None
@@ -50,6 +55,13 @@ class Resident:
                 self.loading_id = None
                 return {k:v for k,v in result.items() if k != 'request_id'}
             except (OSError, ValueError):
+                try:
+                    self.wake()
+                    result = self.rpc('status', timeout=2)
+                    self.loading_id = None
+                    return {k:v for k,v in result.items() if k != 'request_id'}
+                except (OSError, ValueError):
+                    pass
                 elapsed = time.monotonic() - self.started
                 if self.process.poll() is not None and elapsed > 20:
                     self.stop()
@@ -80,6 +92,7 @@ class Resident:
                 # HDC reports an already-existing mapping as nonzero on some versions.
                 if forwarding.returncode and b'exist' not in forwarding.stdout.lower()+forwarding.stderr.lower():
                     raise RuntimeError('手机服务端口转发失败。')
+                self.wake()
                 self.log = open(str(Path(__file__).resolve().with_name('resident.log')),'ab',buffering=0)
                 command = f'{PROGRAM} --whole-graph-package {WHOLE} --fp16-hardware verified --io-threads 4 {PACKAGE} 1024 -- resident'
                 self.process = subprocess.Popen([sys.executable,'-m','binrunner','-t',DEVICE,'-p','18946','run','--timeout','86400',command], cwd=BASE,stdout=self.log,stderr=self.log)
@@ -102,6 +115,7 @@ class Resident:
                 self.process.terminate()
             self.process.wait(timeout=5)
             subprocess.run(['hdc','-t',DEVICE,'shell','aa','start','-b','com.example.binrunner','-a','EntryAbility'],capture_output=True,timeout=12,check=True)
+            subprocess.run(['hdc','-t',DEVICE,'shell','power-shell','timeout','-r'],capture_output=True,timeout=10)
             self._release()
 
     def cancel(self, request_id):
@@ -111,6 +125,7 @@ class Resident:
                 return
             if self.process is None:
                 return
+            self.wake()
             self.rpc('cancel '+request_id)
             deadline = time.monotonic()+3
             while time.monotonic() < deadline:
@@ -123,6 +138,7 @@ class Resident:
 
     def connect(self, request_id, prompt, limit):
         with self.lock:
+            self.wake()
             if self.status()['state'] != 'ready':
                 raise RuntimeError('请先加载模型，或等待当前生成结束。')
             sock = socket.create_connection(('127.0.0.1',PORT), timeout=5)
