@@ -8,6 +8,7 @@
 #include <unordered_set>
 
 extern "C" size_t MSLLMKanbanInputTokens();
+extern "C" void MSLLMKanbanPresencePenalty(MSLLMModelHandle, float);
 namespace {
 std::mutex kanban_mutex;
 std::string kanban_active;
@@ -58,12 +59,24 @@ void KanbanClient(int fd, MSLLMModelHandle model, double load_ms) {
     else { if (kanban_cancelled.size() > 1024) kanban_cancelled.clear(); kanban_cancelled.insert(id); }
     SendLine(fd, "{\"stopping\":true}"); return;
   }
-  if (op != "generate" || id.size() != 32 || id.find_first_not_of("0123456789abcdef") != std::string::npos ||
-      limit < 1 || limit > 1024 || size == 0 || size > 24000) {
+  if (op != "chat" || id.size() != 32 || id.find_first_not_of("0123456789abcdef") != std::string::npos ||
+      limit < 1 || limit > 1024 || size == 0 || size > 25) {
     SendLine(fd, "{\"error\":\"Invalid request\"}"); return;
   }
-  std::string raw(size, '\0');
-  if (!ReadBytes(fd, &raw[0], size)) return;
+  std::vector<std::string> contents; std::vector<MSLLMChatMessage> messages;
+  contents.reserve(size); messages.reserve(size); size_t total = 0;
+  for (size_t i = 0; i < size; ++i) {
+    std::string part; char ch;
+    while (part.size() < 64 && ReadBytes(fd, &ch, 1) && ch != '\n') part += ch;
+    std::istringstream fields(part); std::string role; size_t length = 0;
+    fields >> role >> length;
+    if ((role != "system" && role != "user" && role != "assistant") || !length || length > 24000 || total + length > 24000) {
+      SendLine(fd, "{\"error\":\"Invalid message\"}"); return;
+    }
+    total += length; contents.emplace_back(length, '\0');
+    if (!ReadBytes(fd, &contents.back()[0], length)) return;
+    messages.push_back({role == "system" ? MSLLM_ROLE_SYSTEM : role == "user" ? MSLLM_ROLE_USER : MSLLM_ROLE_ASSISTANT, contents.back().c_str()});
+  }
   {
     std::lock_guard<std::mutex> lock(kanban_mutex);
     if (!kanban_active.empty()) { SendLine(fd, "{\"error\":\"Device busy\"}"); return; }
@@ -74,13 +87,21 @@ void KanbanClient(int fd, MSLLMModelHandle model, double load_ms) {
     ~Finish() { std::lock_guard<std::mutex> lock(kanban_mutex); kanban_active.clear(); }
   } finish;
   std::string prompt;
-  if (!RenderUserPrompt(model, raw.c_str(), &prompt)) { SendLine(fd, "{\"error\":\"Template failed\"}"); return; }
+  std::vector<char> rendered(65536);
+  if (MSLLMApplyChatTemplate(model, messages.data(), static_cast<int>(messages.size()), rendered.data(), rendered.size()) != kMSLLM_SUCCESS) {
+    SendLine(fd, "{\"error\":\"Template failed\"}"); return;
+  }
+  prompt = rendered.data();
+  // This runtime renders with add_generation_prompt=false. Append the official
+  // Qwen3.5 enable_thinking=false suffix without altering prior assistant turns.
+  prompt += "<|im_start|>assistant\n<think>\n\n</think>\n\n";
   MSLLMGenerationConfig config = {};
-  config.max_new_tokens = limit; config.do_sample = false; config.temperature = 1;
-  config.top_k = 1; config.top_p = 1; config.repetition_penalty = 1;
+  config.max_new_tokens = limit; config.do_sample = true; config.temperature = 0.7f;
+  config.top_k = 20; config.top_p = 0.8f; config.repetition_penalty = 1;
   if (MSLLMSetGenerationConfig(model, config) != kMSLLM_SUCCESS) {
     SendLine(fd, "{\"error\":\"Configuration failed\"}"); return;
   }
+  MSLLMKanbanPresencePenalty(model, 1.5f);
   StreamSink sink;
   sink.t_start = sink.t_last = std::chrono::steady_clock::now();
   std::atomic<bool> worker_done{false};

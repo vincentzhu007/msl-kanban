@@ -13,7 +13,7 @@ BASE = '/home/zhugd/msl-kanban-ci/binrunner-1.4.1'
 DEVICE = '127.0.0.1:3001'
 PORT = 28947
 PHONE_PORT = 18947
-PROGRAM = 'hf-q35-kanban-resident'
+PROGRAM = 'hf-q35-kanban-resident-v2'
 WHOLE = '@/data/storage/el2/base/haps/entry/files/bin/hf-q35-s2-head-l1-20261106-01-whole.msl'
 PACKAGE = '@/data/storage/el2/base/haps/entry/files/bin/qwen35-s2-base-20261125.msl'
 
@@ -63,6 +63,12 @@ class Resident:
                 except (OSError, ValueError):
                     pass
                 elapsed = time.monotonic() - self.started
+                if self.loading_id is None:
+                    if self.process.poll() is not None:
+                        self.error = '模型连接已断开，可能被其他设备任务或应用重启打断，请重新加载。'
+                        self._release()
+                        return {'state':'unloaded', 'error':self.error}
+                    return {'state':'unavailable', 'error':'模型暂时无法连接，请重试连接。'}
                 if self.process.poll() is not None and elapsed > 20:
                     self.stop()
                     self.error = '模型启动失败，请重新加载。'
@@ -136,15 +142,18 @@ class Resident:
             # Prefill may only check abort at its end. Stop the process if it cannot yield promptly.
             self.stop()
 
-    def connect(self, request_id, prompt, limit):
+    def connect(self, request_id, messages, limit):
         with self.lock:
             self.wake()
             if self.status()['state'] != 'ready':
                 raise RuntimeError('请先加载模型，或等待当前生成结束。')
             sock = socket.create_connection(('127.0.0.1',PORT), timeout=5)
             try:
-                payload = prompt.encode()
-                sock.sendall(f'generate {request_id} {limit} {len(payload)}\n'.encode()+payload)
+                payload = f'chat {request_id} {limit} {len(messages)}\n'.encode()
+                for message in messages:
+                    content = message['content'].encode()
+                    payload += f"{message['role']} {len(content)}\n".encode() + content
+                sock.sendall(payload)
                 sock.settimeout(930)
                 return sock
             except Exception:

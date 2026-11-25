@@ -132,9 +132,9 @@ function controls() {
   $('send').disabled = busy || !online || preview || (residentModel() && modelState.state !== 'ready') || !$('prompt').value.trim();
   $('model-lifecycle').hidden = !residentModel();
   $('load-model').disabled = busy || !online || preview || ['loading','checking','generating'].includes(modelState.state);
-  $('load-model').textContent = modelState.state === 'ready' ? '卸载模型' : modelState.state === 'loading' ? '加载中…' : '加载模型';
-  $('model-state').textContent = ({ready:'模型已加载',loading:'正在加载模型…',unloaded:'模型未加载',checking:'正在检查模型状态…',generating:'模型正在生成'})[modelState.state] || '模型未加载';
-  $('model-state-help').textContent = modelState.error || (modelState.state === 'ready' ? '已常驻手机，后续对话复用模型' + (modelState.load_ms ? ' · 加载耗时 ' + (modelState.load_ms / 1000).toFixed(1) + ' 秒' : '') : modelState.state === 'loading' ? '大模型首次加载较慢，请稍候；可点击停止生成取消加载。' : '先加载模型，再发送消息。');
+  $('load-model').textContent = modelState.state === 'ready' ? '卸载模型' : modelState.state === 'loading' ? '加载中…' : modelState.state === 'unavailable' ? '重试连接' : '加载模型';
+  $('model-state').textContent = ({ready:'模型已加载',loading:'正在加载模型…',unloaded:'模型未加载',checking:'正在检查模型状态…',generating:'模型正在生成',unavailable:'模型连接异常'})[modelState.state] || '模型未加载';
+  $('model-state-help').textContent = modelState.error || (modelState.state === 'ready' ? '已常驻手机 · 默认直接回答 · 后续对话复用模型' + (modelState.load_ms ? ' · 加载耗时 ' + (modelState.load_ms / 1000).toFixed(1) + ' 秒' : '') : modelState.state === 'loading' ? '大模型首次加载较慢，请稍候；可点击停止生成取消加载。' : '先加载模型，再发送消息。');
   $('send').textContent = busy ? '处理中…' : '发送 ↑';
   $('send').hidden = !!activeGeneration;
   $('stop-generation').hidden = !activeGeneration;
@@ -335,6 +335,7 @@ async function refreshModelState() {
 }
 $('load-model').onclick = async () => {
   if (busy || !residentModel()) return;
+  if (modelState.state === 'unavailable') { await refreshModelState(); return; }
   const model = $('models').value;
   if (modelState.state === 'ready') {
     busy = true; controls();

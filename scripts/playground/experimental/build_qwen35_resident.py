@@ -18,10 +18,17 @@ llm = (root/'src/pipeline/llm.cc').read_text()
 assert llm.count('*input_ids = e->tokenizer->Encode(prompt);') == 1
 llm = '#include <atomic>\nstatic std::atomic<size_t> kanban_input_tokens{0};\nextern "C" size_t MSLLMKanbanInputTokens() { return kanban_input_tokens.load(); }\n' + llm.replace('*input_ids = e->tokenizer->Encode(prompt);', '*input_ids = e->tokenizer->Encode(prompt);\n  kanban_input_tokens.store(input_ids->size());')
 llm = llm.replace('#include "../llm_types_internal.h"', '#include "llm_types_internal.h"')
+llm += '\nextern "C" void MSLLMKanbanPresencePenalty(MSLLMModelHandle model, float penalty) {\n  auto *engine = reinterpret_cast<InternalEngine *>(model);\n  engine->sampler->SetPresencePenalty(penalty);\n}\n'
 (out/'llm-resident.cc').write_text(llm)
 compile(out/'llm-resident.cc', out/'llm.cc.o', b/'src/CMakeFiles/mslite_llm_static.dir/flags.make')
-# Keep the verified backend objects; only replace the instrumented pipeline object.
-subprocess.run([str(Path(compiler).parent/'llvm-ar'), 'r', str(out/'libstats.a'), str(out/'llm.cc.o')], check=True)
+sampler = (root/'src/sampler/sampler.cc').read_text()
+old = '} else if (strategy_ == MSLLM_SAMPLER_TOP_P && top_p_ > 0.0f && top_p_ < 1.0f) {'
+assert sampler.count(old) == 1
+sampler = sampler.replace(old, '}\n  if ((strategy_ == MSLLM_SAMPLER_TOP_K || strategy_ == MSLLM_SAMPLER_TOP_P) && top_p_ > 0.0f && top_p_ < 1.0f) {')
+(out/'sampler.cc').write_text(sampler)
+compile(out/'sampler.cc', out/'sampler.cc.o', b/'src/CMakeFiles/mslite_llm_static.dir/flags.make')
+# Preserve the verified backend objects while replacing the pipeline and sampler.
+subprocess.run([str(Path(compiler).parent/'llvm-ar'), 'r', str(out/'libstats.a'), str(out/'llm.cc.o'), str(out/'sampler.cc.o')], check=True)
 chat = (root/'examples/mslite-chat.cc').read_text()
 chat = chat.replace('int main(int argc, char **argv) {', '#include "resident_server.inc"\n\nint main(int argc, char **argv) {')
 chat = chat.replace('  MSLLMStatus status = MSLLMBuildModel(model, model_path);', '  auto load_start = std::chrono::steady_clock::now();\n  MSLLMStatus status = MSLLMBuildModel(model, model_path);')
@@ -32,5 +39,5 @@ wrapper = wrapper.replace('int main(int argc, char **argv) {', 'int main(int arg
 (out/'qwen35-phone-chat.cc').write_text(wrapper)
 compile(out/'qwen35-phone-chat.cc', out/'resident.o', b/'examples/CMakeFiles/qwen35-phone-chat.dir/flags.make', ['-DQWEN35_Q2_EXPERIMENT'])
 link = [str(out/'resident.o') if a=='CMakeFiles/qwen35-phone-chat.dir/qwen35-phone-chat.cc.o' else str(out/'libstats.a') if a=='../src/libmindspore-lite-llm.a' else a for a in link]
-link[link.index('-o')+1] = str(out/'hf-q35-kanban-resident')
+link[link.index('-o')+1] = str(out/'hf-q35-kanban-resident-v2')
 subprocess.run(link, cwd=b/'examples', check=True)

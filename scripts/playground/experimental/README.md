@@ -16,5 +16,16 @@
 对象可能与当前头文件布局不一致，已在真机验证中导致模型加载失败。
 
 程序需使用 `br push` 推送到 3001 设备，并用同一组模型参数验证成功后，
-才能修改 `../qwen35-preview.py` 中的 `PROGRAM`。线上更新需要取得设备租约，
-避免中断请求。适配器通过 `--prompt-file` 传递输入，用户文本不参与命令拼接。
+才能切换服务使用的程序。线上更新需要取得设备租约，避免中断请求。
+
+当前常驻版本使用 `build_qwen35_resident.py`，输出 `hf-q35-kanban-resident-v2`，
+由 `../qwen35_resident.py` 的 `PROGRAM` 选择。它复用上面的已验证后端归档，
+仅重编译 pipeline、sampler 与聊天入口。用户消息通过回环 TCP 的角色与 UTF-8 长度协议传输，
+不参与命令拼接。模板接口不追加生成前缀，服务显式追加 Qwen3.5 非思考前缀。
+presence penalty 通过临时内部桥接设置；此接口不属于正式 Lite LLM API。
+当前上游 sampler 的 top-k / top-p 分支互斥，临时构建修正为先 top-k 后 top-p，
+确保两个参数都生效；不修改 daily 构建或原始源码目录。
+
+`sampler_check.cc` 验证 top-k 与 top-p 同时生效：固定 seed、3 个候选、top_k=2、
+top_p=0.1 时，1000 次采样应只选择最高概率 token。使用源码 include/src 目录编译，
+分别链接原 sampler.cc 与临时生成的 sampler.cc，可复现修复前失败、修复后通过。

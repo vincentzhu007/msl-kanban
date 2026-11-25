@@ -37,6 +37,37 @@ def performance_footer(output):
             rows.append(f'- Decode 速度：{count * 1000 / elapsed:.2f} token/s · {count} tokens · 平均 {elapsed / count:.2f} ms/token')
     return '\n'.join(rows) + '\n'
 
+def normalize_messages(messages):
+    if not isinstance(messages, list) or not 1 <= len(messages) <= 24:
+        raise ValueError('对话格式不正确。')
+    result = []
+    for message in messages:
+        if not isinstance(message, dict) or message.get('role') not in ('user','assistant','system') or not isinstance(message.get('content'), str) or not message['content'].strip():
+            raise ValueError('对话格式不正确。')
+        role, content = message['role'], message['content']
+        if '\x00' in content:
+            raise ValueError('输入不能包含空字符。')
+        if role == 'system' and result:
+            raise ValueError('系统消息只能位于对话开头。')
+        if role == 'assistant':
+            content = content.split(STATS_MARKER, 1)[0]
+            if '</think>' in content:
+                content = content.rsplit('</think>', 1)[1]
+            content = re.sub(r'<think>.*?(?:</think>|$)', '', content, flags=re.S).strip()
+            if not content:
+                # A cancelled thinking-only answer isn't a completed conversation turn.
+                if result and result[-1]['role'] == 'user':
+                    result.pop()
+                continue
+        result.append({'role':role, 'content':content})
+    if not result or result[-1]['role'] != 'user':
+        raise ValueError('请以用户消息结束对话。')
+    if result[0]['role'] != 'system':
+        result.insert(0, {'role':'system','content':'You are a helpful assistant.'})
+    if sum(len(m['content'].encode()) for m in result) > 24000:
+        raise ValueError('输入超过临时体验版 24 KB 限制，请缩短内容。')
+    return result
+
 class Handler(BaseHTTPRequestHandler):
     def reply(self, status, body):
         payload = json.dumps(body, ensure_ascii=False).encode()
@@ -87,23 +118,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200, RESIDENT.status())
                 finally:
                     SLOT.release()
-            messages = body.get('messages')
-            if not isinstance(messages,list) or not 1 <= len(messages) <= 24:
-                raise ValueError('对话格式不正确。')
-            parts = []
-            for message in messages:
-                if not isinstance(message,dict) or message.get('role') not in ('user','assistant','system') or not isinstance(message.get('content'),str) or not message['content'].strip():
-                    raise ValueError('对话格式不正确。')
-                content = message['content']
-                if '\x00' in content:
-                    raise ValueError('输入不能包含空字符。')
-                if message['role'] == 'assistant':
-                    content = content.split(STATS_MARKER,1)[0]
-                    content = re.sub(r'<think>.*?</think>', '', content, flags=re.S)
-                parts.append(message['role']+': '+content)
-            prompt = messages[0]['content'] if len(messages)==1 and messages[0]['role']=='user' else '\n\n'.join(parts)
-            if len(prompt.encode()) > 24000:
-                raise ValueError('输入超过临时体验版 24 KB 限制，请缩短内容。')
+            messages = normalize_messages(body.get('messages'))
             limit = body.get('max_tokens',1024)
             if type(limit) is not int or not 1 <= limit <= 1024:
                 raise ValueError('输出长度无效。')
@@ -119,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
                         deadline = time.monotonic()+180
                         while RESIDENT.status()['state']=='loading' and time.monotonic()<deadline:
                             time.sleep(.5)
-                    sock = generation.submit(lambda: RESIDENT.connect(key,prompt,limit))
+                    sock = generation.submit(lambda: RESIDENT.connect(key,messages,limit))
                     with sock, sock.makefile('rb') as source:
                         self.send_response(200)
                         self.send_header('Content-Type','text/event-stream; charset=utf-8')

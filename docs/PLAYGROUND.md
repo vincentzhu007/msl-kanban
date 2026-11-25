@@ -80,3 +80,12 @@ Playground 的 Qwen3.5 入口提供“加载模型／卸载模型”和“停止
 常驻程序通过 `experimental/build_qwen35_resident.py` 构建，依赖已验证的 S2 后端归档。手机仅监听回环端口 18947，dog 通过 HDC 的 28947 端口转发访问；避免占用已有手机转发端口。模型加载耗时与 Prefill / Decode 指标分别展示。性能计时不包含模型加载。
 
 本次临时服务部署到 dog 的 `/var/tmp/msl-kanban-playground-20261125`，运行日志也写入该目录；`/home` 分区已满，需要单独维护磁盘容量。现有模型与 BinRunner 路径保持原位置。常驻模型持有 3001 设备租约，卸载后释放；服务重启或手机应用退出后需重新加载。
+
+
+### 3001 专用与对话恢复
+
+3001 暂时专供 Playground，不在同一手机并行启动 FLUX 或其他 BinRunner 任务。设备租约只能协调遵守租约的调用方，绕过租约启动的任务仍会重启应用并中断服务。
+
+Qwen3.5 临时常驻程序使用真实的 system/user/assistant 消息角色构造多轮模板，剔除历史回答中的思考区段与性能附注；仅包含未完成思考的轮次不重放。当前运行库的模板接口固定 `add_generation_prompt=false`，服务在完整消息之后追加官方非思考回答前缀，不截断已有 assistant 历史。默认直接回答，采样使用 temperature=0.7、top_p=0.8、top_k=20、presence_penalty=1.5、repetition_penalty=1.0，输出上限 1024 tokens。参数来源：[Qwen3.5-35B-A3B 模型说明](https://huggingface.co/Qwen/Qwen3.5-35B-A3B)。
+
+加载超时仅适用于首次加载阶段。模型就绪后暂时断联显示“模型连接异常／重试连接”；进程退出则提示连接断开并允许重新加载，不再按原加载时间误判为超时并强制卸载。
