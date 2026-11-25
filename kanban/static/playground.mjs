@@ -335,7 +335,10 @@ async function refreshModelState() {
 }
 $('load-model').onclick = async () => {
   if (busy || !residentModel()) return;
-  if (modelState.state === 'unavailable') { await refreshModelState(); return; }
+  if (modelState.state === 'unavailable') {
+    await refreshModelState();
+    if (modelState.state !== 'unloaded') return;
+  }
   const model = $('models').value;
   if (modelState.state === 'ready') {
     busy = true; controls();

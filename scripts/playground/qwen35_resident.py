@@ -38,6 +38,35 @@ class Resident:
         for command in (['power-shell','wakeup'], ['power-shell','timeout','-o','1800000'], ['aa','start','-b','com.example.binrunner','-a','EntryAbility']):
             subprocess.run(prefix+command,capture_output=True,timeout=10,check=True)
 
+    def forward(self):
+        result = subprocess.run(['hdc','-t',DEVICE,'fport',f'tcp:{PORT}',f'tcp:{PHONE_PORT}'], capture_output=True,timeout=10)
+        if result.returncode and b'exist' not in result.stdout.lower()+result.stderr.lower():
+            raise OSError('手机服务端口转发失败。')
+
+    def phone_listening(self):
+        """None means the device probe failed; it does not mean the model exited."""
+        try:
+            result = subprocess.run(['hdc','-t',DEVICE,'shell','netstat','-lnt'], capture_output=True,timeout=5)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        output = result.stdout.decode(errors='replace')
+        if result.returncode or 'Local Address' not in output:
+            return None
+        return any(len(fields) >= 6 and fields[0] in ('tcp', 'tcp6')
+                   and fields[3].endswith(f':{PHONE_PORT}') and fields[-1] == 'LISTEN'
+                   for fields in (line.split() for line in output.splitlines()))
+
+    def discard_bridge(self):
+        # The phone listener is already gone. Retire only our host-side waiter.
+        if self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=3)
+        self._release()
+
     def _release(self):
         if self.lease:
             self.lease.close(); self.lease = None
@@ -57,16 +86,21 @@ class Resident:
             except (OSError, ValueError):
                 try:
                     self.wake()
+                    self.forward()
                     result = self.rpc('status', timeout=2)
                     self.loading_id = None
                     return {k:v for k,v in result.items() if k != 'request_id'}
-                except (OSError, ValueError):
+                except (OSError, ValueError, subprocess.SubprocessError):
                     pass
                 elapsed = time.monotonic() - self.started
                 if self.loading_id is None:
                     if self.process.poll() is not None:
-                        self.error = '模型连接已断开，可能被其他设备任务或应用重启打断，请重新加载。'
+                        self.error = '手机模型服务已退出，请重新加载。'
                         self._release()
+                        return {'state':'unloaded', 'error':self.error}
+                    if self.phone_listening() is False:
+                        self.discard_bridge()
+                        self.error = '手机模型服务已退出，请重新加载。'
                         return {'state':'unloaded', 'error':self.error}
                     return {'state':'unavailable', 'error':'模型暂时无法连接，请重试连接。'}
                 if self.process.poll() is not None and elapsed > 20:
@@ -94,10 +128,7 @@ class Resident:
                 raise RuntimeError('手机正在执行其他任务，请稍后加载。')
             self.lease = lease
             try:
-                forwarding = subprocess.run(['hdc','-t',DEVICE,'fport',f'tcp:{PORT}',f'tcp:{PHONE_PORT}'], capture_output=True,timeout=10)
-                # HDC reports an already-existing mapping as nonzero on some versions.
-                if forwarding.returncode and b'exist' not in forwarding.stdout.lower()+forwarding.stderr.lower():
-                    raise RuntimeError('手机服务端口转发失败。')
+                self.forward()
                 self.wake()
                 self.log = open(str(Path(__file__).resolve().with_name('resident.log')),'ab',buffering=0)
                 command = f'{PROGRAM} --whole-graph-package {WHOLE} --fp16-hardware verified --io-threads 4 {PACKAGE} 1024 -- resident'
