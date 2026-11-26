@@ -57,8 +57,37 @@ curl http://127.0.0.1:18081/v1/chat/completions \
 
 ## 接口范围和真机验收
 
-- 文本接口支持 system、user、assistant 多轮消息，采用 Qwen ChatML 和 greedy 解码。单次输出上限为 512 token。当前对 UTF-8 字节数和输出预算做保守上下文检查，中文长输入可能提前触及上限。
+- 文本接口支持 system、user、assistant 多轮消息，采用 Qwen ChatML 与 Qwen3 非思考模式采样（temperature 0.7、top-p 0.8、top-k 20）。单次输出上限为 1024 token。配置 `--tokenizer` 后按模型 tokenizer 计算输入长度，并根据剩余上下文自动缩减输出预算。未配置 tokenizer 时采用 UTF-8 字节数保守估算。
 - 每次请求独立加载模型并收集完整结果。首版尚未提供 SSE、工具调用和常驻模型。参考接口为 [llama.cpp server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md)。
 - 在目标机上发送两轮中文问答，核对第二轮能使用前文；以 max_tokens=1 验证截断原因；拔掉设备后核对 503，再恢复连接重试。
 - 打开 App 后点击输入框，用屏幕键盘输入并提交，拖动查看输出。用第二个浏览器验证占用提示、手动释放和过期回收，并核对旋转后触点映射。
 - 本地接口测试用替身替代 BinRunner 与 HDC。运行 `python3 -m unittest discover -s tests -p test_playground.py`。物理设备的推理质量、模型加载时延和投屏手感需要在 dog 上验收。
+
+## 临时双站连接
+
+Cloudflare Pages 与 Vercel 的网页通过临时 WebSocket 中继访问 dog 上的模型服务。中继使用 `websockets==15.0.1`，仅转发模型列表及聊天接口，`Origin` 限定为两个看板地址。当前体验不启用账号认证。临时隧道地址重启后变化，需要更新 `playground.mjs` 后重新部署网站。中继地址在 `scripts/playground/temporary_ws_relay.py` 中指定的 18083 端口上启动，连接同机的 8081 模型服务。`mslite-serve` 使用 `--lease-dir /home/zhugd/msl-kanban-ci/leases` 与 Daily 评测共享设备锁。
+
+临时隧道和模型服务当前需要分别保持运行。临时地址并非长期稳定服务，WebSocket 入口的 Origin 限制不是用户认证。不要将真机 App 控制接口暴露给该中继。
+
+Qwen3 服务使用与模型匹配的 tokenizer：安装 `tokenizers==0.22.2`，启动时传入 `--tokenizer /path/to/Qwen3-0.6B/tokenizer.json`。
+
+## Qwen3.5 临时常驻服务（2026-11-25）
+
+Playground 的 Qwen3.5 入口提供“加载模型／卸载模型”和“停止生成”。加载后保留手机模型句柄，后续请求重置生成状态并复用模型。停止请求使用随机请求 ID，只取消对应生成；优先调用 `MSLLMAbort`，超过约 3 秒仍未退出则终止 BinRunner 并卸载模型。取消加载同样会释放设备。其他模型目前仍按请求加载。
+
+`qwen35-preview.py` 提供 `/v1/model/load`、`/v1/model/status`、`/v1/model/unload` 和 `/v1/chat/cancel`，经共享 WebSocket 接口供 Cloudflare 与 Vercel 使用。生成时携带 `request_id`（32 位随机十六进制字符串）。停止不会清空聊天记录；网页保留已显示的内容。
+
+常驻程序通过 `experimental/build_qwen35_resident.py` 构建，依赖已验证的 S2 后端归档。手机仅监听回环端口 18947，dog 通过 HDC 的 28947 端口转发访问；避免占用已有手机转发端口。模型加载耗时与 Prefill / Decode 指标分别展示。性能计时不包含模型加载。
+
+本次临时服务部署到 dog 的 `/var/tmp/msl-kanban-playground-20261125`，运行日志也写入该目录；`/home` 分区已满，需要单独维护磁盘容量。现有模型与 BinRunner 路径保持原位置。常驻模型持有 3001 设备租约，卸载后释放；服务重启或手机应用退出后需重新加载。
+
+
+### 3001 专用与对话恢复
+
+3001 暂时专供 Playground，不在同一手机并行启动 FLUX 或其他 BinRunner 任务。设备租约只能协调遵守租约的调用方，绕过租约启动的任务仍会重启应用并中断服务。
+
+Qwen3.5 临时常驻程序使用真实的 system/user/assistant 消息角色构造多轮模板，剔除历史回答中的思考区段与性能附注；仅包含未完成思考的轮次不重放。当前运行库的模板接口固定 `add_generation_prompt=false`，服务在完整消息之后追加官方非思考回答前缀，不截断已有 assistant 历史。默认直接回答，采样使用 temperature=0.7、top_p=0.8、top_k=20、presence_penalty=1.5、repetition_penalty=1.0，输出上限 1024 tokens。参数来源：[Qwen3.5-35B-A3B 模型说明](https://huggingface.co/Qwen/Qwen3.5-35B-A3B)。
+
+加载超时仅适用于首次加载阶段。模型就绪后暂时断联显示“模型连接异常／重试连接”；进程退出则提示连接断开并允许重新加载，不再按原加载时间误判为超时并强制卸载。
+
+手机模型端口已消失而 BinRunner 等待进程尚未退出时，服务通过手机侧监听端口确认退出，仅清理自身的 dog 等待进程和租约，返回“模型服务已退出，请重新加载”。HDC 探测失败视为状态未知，不据此卸载模型；转发丢失时先尝试恢复转发。网页“重试连接”确认模型已退出后直接进入加载流程。

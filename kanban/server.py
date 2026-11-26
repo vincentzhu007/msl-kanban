@@ -114,7 +114,7 @@ class Handler(SimpleHTTPRequestHandler):
             '/detail-filters.mjs', '/visible-refresh.mjs', '/app.js', '/style.css',
             '/trends.js', '/trends.mjs', '/ram-method.mjs', '/audit-view.mjs',
             '/iteration.html', '/iteration.js', '/iteration-config.js', '/iteration.css',
-            '/playground.html', '/playground.css', '/playground.mjs', '/mindspore-logo.svg',
+            '/playground.html', '/playground.css', '/playground.mjs', '/markdown-it.min.js', '/mindspore-logo.svg',
         ):
             if self.command == 'HEAD':
                 super().do_HEAD()

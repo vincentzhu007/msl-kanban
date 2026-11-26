@@ -6,6 +6,7 @@ import socket
 import struct
 import sys
 import threading
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -59,9 +60,41 @@ class PlaygroundTests(unittest.TestCase):
             command = run.call_args.args[0]
             self.assertIn('你好'.encode().hex(), command[command.index('run')+1])
             self.assertEqual(data['choices'][0]['message']['content'], '好')
-            self.assertEqual(self.call('/v1/chat/completions', dict(body, stream=True))[0], 400)
+            self.assertEqual(self.call('/v1/chat/completions', dict(body, stream='yes'))[0], 400)
             self.server.slot.acquire()
             self.assertEqual(self.call('/v1/chat/completions', body)[0], 429)
+
+    def test_output_limit_and_context_budget(self):
+        prepare = gateway['prepare']
+        body = {'model': 'qwen', 'messages': [{'role': 'user', 'content': 'hi'}]}
+        self.assertIn('1024', prepare(self.server.settings, body)[-3])
+        self.assertIn('1024', prepare(self.server.settings, dict(body, max_tokens=1024))[-3])
+        with self.assertRaises(gateway['Problem']):
+            prepare(self.server.settings, dict(body, max_tokens=1025))
+        with self.assertRaises(gateway['Problem']):
+            prepare(self.server.settings, dict(body, messages=[{'role':'user', 'content':'a' * 2100}]))
+
+    def test_shared_device_lease_rejects_simultaneous_daily_job(self):
+        with tempfile.TemporaryDirectory() as root:
+            with gateway['device_lease'](root, 'phone'):
+                with self.assertRaises(gateway['Problem']) as error:
+                    with gateway['device_lease'](root, 'phone'):
+                        pass
+                self.assertEqual(error.exception.code, 429)
+            with gateway['device_lease'](root, 'phone'):
+                pass
+
+    def test_token_budget_counts_tokens_and_adapts_output(self):
+        class Tokenizer:
+            def encode(self, text, add_special_tokens=False):
+                return SimpleNamespace(ids=[1] * 1200)
+        self.server.settings.tokenizer = Tokenizer()
+        body = {'model':'qwen', 'messages':[{'role':'user', 'content':'长文本' * 600}], 'max_tokens':1024}
+        command = gateway['prepare'](self.server.settings, body)
+        self.assertIn(' 848 ', command[-3])
+        self.server.settings.tokenizer = SimpleNamespace(encode=lambda *a, **k: SimpleNamespace(ids=[1] * 2048))
+        with self.assertRaises(gateway['Problem']):
+            gateway['prepare'](self.server.settings, body)
 
     def test_device_sessions(self):
         screen = gateway['Screen']('phone', 'example.app', 'EntryAbility')

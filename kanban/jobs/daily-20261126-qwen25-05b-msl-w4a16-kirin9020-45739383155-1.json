@@ -1,0 +1,15 @@
+{
+  "id": "daily-20261126-qwen25-05b-msl-w4a16-kirin9020-45739383155-1",
+  "date": "20261126",
+  "recipe_id": "qwen25-05b-msl-w4a16-kirin9020",
+  "code_commit": "a3cb483b2e318d0eb499865121c3c9e3cb362e39",
+  "task_url": "https://github.com/vincentzhu007/msl-kanban/actions/runs/45739383155",
+  "status": "FAILED",
+  "stage": "DEPLOY",
+  "started_at": "2026-11-26T10:00:35.797845+08:00",
+  "build_commit": "d950cae263a49b0fce17ae0ce1bc9f0d3814852e",
+  "build_sha256": "da9ffa3bdffa4982aae2c15c40c1bc9d1bae2df994544558410b90128666447b",
+  "error_type": "RuntimeError",
+  "reason": "任务未通过校验，未发布新的性能结果。",
+  "finished_at": "2026-11-26T10:08:12.318615+08:00"
+}

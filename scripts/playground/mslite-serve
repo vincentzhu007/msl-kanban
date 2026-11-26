@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Single-device, text-only OpenAI-compatible endpoint on the dog host."""
 import argparse
+import codecs
+import fcntl
+import hashlib
+from contextlib import contextmanager
 import hmac
 import json
 import os
@@ -20,6 +24,27 @@ from server import BASE, Handler as KanbanHandler
 
 
 from screen import Screen, ScreenError
+from cancellation import Generations, GenerationStopped
+
+GENERATIONS = Generations()
+
+
+@contextmanager
+def device_lease(directory, serial):
+    if directory is None:
+        yield
+        return
+    root = Path(directory)
+    root.mkdir(parents=True, exist_ok=True)
+    with (root / (hashlib.sha256(serial.encode()).hexdigest() + '.lock')).open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise Problem(429, '设备正在执行其他任务，请稍后重试。') from error
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 class Problem(Exception):
@@ -27,17 +52,17 @@ class Problem(Exception):
         self.code, self.message = code, message
 
 
-def generate(args, body):
-    if not isinstance(body, dict) or set(body) - {'model', 'messages', 'max_tokens', 'stream'}:
+def prepare(args, body):
+    if not isinstance(body, dict) or set(body) - {'model', 'messages', 'max_tokens', 'stream', 'request_id'}:
         raise Problem(400, 'Supported fields: model, messages, max_tokens, stream.')
     if body.get('model') != args.model_id:
         raise Problem(404, 'Unknown model.')
-    if body.get('stream', False) is not False:
-        raise Problem(400, 'Streaming is unavailable.')
-    limit = body.get('max_tokens', 128)
+    if type(body.get('stream', False)) is not bool:
+        raise Problem(400, 'stream must be a boolean.')
+    limit = body.get('max_tokens', 1024)
     messages = body.get('messages')
-    if type(limit) is not int or not 1 <= limit <= 512 or not isinstance(messages, list) or not messages:
-        raise Problem(400, 'Provide messages and max_tokens between 1 and 512.')
+    if type(limit) is not int or not 1 <= limit <= 1024 or not isinstance(messages, list) or not messages:
+        raise Problem(400, 'Provide messages and max_tokens between 1 and 1024.')
     prompt = ''
     for item in messages:
         if not isinstance(item, dict) or item.get('role') not in ('system', 'user', 'assistant'):
@@ -47,13 +72,22 @@ def generate(args, body):
             raise Problem(400, 'Expected nonempty text without reserved template markers.')
         prompt += f"<|im_start|>{item['role']}\n{content}<|im_end|>\n"
     prompt += '<|im_start|>assistant\n'
+    if args.model_id.lower().split('/')[-1].startswith('qwen3'):
+        prompt += '<think>\n\n</think>\n\n'
     raw = prompt.encode()
-    # Conservative byte bound for Qwen byte-level tokenizer, including template.
-    if len(raw) + limit > args.context:
-        raise Problem(400, 'Conversation exceeds the conservative context budget.')
+    tokenizer = getattr(args, 'tokenizer', None)
+    input_tokens = len(tokenizer.encode(prompt, add_special_tokens=False).ids) if tokenizer else len(raw)
+    available = args.context - input_tokens
+    if available < 1:
+        raise Problem(400, '对话超过模型上下文长度，请清空对话后重试。')
+    limit = min(limit, available)
     command = shlex.join(['@/bin/mslite-generate', args.model_path, str(limit), raw.hex()])
-    result = subprocess.run([sys.executable, '-m', 'binrunner', '-t', args.device, '-p', args.port,
-                             'run', command, '--timeout', '90'], cwd=args.binrunner,
+    return [sys.executable, '-m', 'binrunner', '-t', args.device, '-p', args.port, 'run', command, '--timeout', '90']
+
+
+def generate(args, body):
+    command = prepare(args, body)
+    result = subprocess.run(command, cwd=args.binrunner,
                             capture_output=True, timeout=100)
     match = re.search(rb'^MSL_REPLY (stop|length) ([0-9a-f]*)\s*$', result.stdout, re.M)
     if result.returncode or not match or re.search(rb'exit=(?!0\b)\d+|timedOut=true', result.stdout):
@@ -75,6 +109,44 @@ class Handler(KanbanHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def stream_completion(self, args, command, generation):
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+        self.send_header('Cache-Control', 'no-cache, no-transform')
+        self.send_header('Connection', 'close')
+        self.end_headers()
+        decoder = codecs.getincrementaldecoder('utf-8')()
+        finished = None
+        process = generation.launch(command, cwd=args.binrunner, stdout=subprocess.PIPE,
+                                   stderr=subprocess.DEVNULL, bufsize=0)
+        def send(value):
+            self.wfile.write(('data: ' + json.dumps(value, ensure_ascii=False) + '\n\n').encode())
+            self.wfile.flush()
+        try:
+            for line in process.stdout:
+                match = re.match(rb'^MSL_PIECE ([0-9a-f]+)\s*$', line)
+                if match:
+                    content = decoder.decode(bytes.fromhex(match[1].decode()))
+                    if content:
+                        send({'choices': [{'delta': {'content': content}, 'finish_reason': None}]})
+                end = re.match(rb'^MSL_REPLY (stop|length) ', line)
+                if end:
+                    finished = end[1].decode()
+            if process.wait(timeout=10) or not finished:
+                send({'error': {'message': 'Device generation failed.'}})
+                return
+            tail = decoder.decode(b'', final=True)
+            if tail:
+                send({'choices': [{'delta': {'content': tail}, 'finish_reason': None}]})
+            send({'choices': [{'delta': {}, 'finish_reason': finished}]})
+            self.wfile.write(b'data: [DONE]\n\n')
+            self.wfile.flush()
+        finally:
+            if process.poll() is None:
+                process.kill()
+            process.wait()
+            self.close_connection = True
+
     def dispatch(self):
         args = self.server.settings
         try:
@@ -88,7 +160,7 @@ class Handler(KanbanHandler):
                            'owned_by': 'mslite', 'created': 0}]})
                 return
             screen_route = self.path.startswith('/device/')
-            if self.command != 'POST' or not (screen_route or self.path == '/v1/chat/completions'):
+            if self.command != 'POST' or not (screen_route or self.path in ('/v1/chat/completions', '/v1/chat/cancel')):
                 raise Problem(404, 'Unknown endpoint.')
             size = self.headers.get('Content-Length', '')
             if not size.isdecimal() or not 0 < int(size) <= 65536:
@@ -101,13 +173,24 @@ class Handler(KanbanHandler):
                     raise Problem(400, 'Expected a JSON object.')
                 self.reply(200, self.server.screen.request(self.path[8:], body, self.headers.get('X-Device-Session')))
                 return
+            if self.path == '/v1/chat/cancel':
+                self.reply(200, GENERATIONS.cancel(body.get('request_id')))
+                return
+            GENERATIONS.validate(body.get('request_id'))
+            command = prepare(args, body)
             if not self.server.slot.acquire(blocking=False):
                 raise Problem(429, 'Device is busy.')
             try:
-                completion = generate(args, body)
+                with device_lease(getattr(args, 'lease_dir', None), args.device), GENERATIONS.track(body.get('request_id'), args.device) as generation:
+                    if body.get('stream', False):
+                        self.stream_completion(args, command, generation)
+                        return
+                    completion = generate(args, body)
             finally:
                 self.server.slot.release()
             self.reply(200, completion)
+        except GenerationStopped:
+            self.reply(409, {'error': {'message': '生成已停止。'}})
         except (Problem, ScreenError) as error:
             self.reply(error.code, {'error': {'message': error.message}})
         except (ValueError, RecursionError):
@@ -130,11 +213,16 @@ if __name__ == '__main__':
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--phone-type', choices=('mate80-pro', 'mate70-pro'), default='mate80-pro')
     parser.add_argument('--listen-port', type=int, default=8081)
+    parser.add_argument('--lease-dir', help='Daily device lease directory shared with the runner')
     parser.add_argument('--context', type=int, default=2048)
+    parser.add_argument('--tokenizer', help='Tokenizer JSON matching the deployed model')
     parser.add_argument('--screen-device')
     parser.add_argument('--bundle')
     parser.add_argument('--ability')
     args = parser.parse_args()
+    if args.tokenizer:
+        from tokenizers import Tokenizer
+        args.tokenizer = Tokenizer.from_file(args.tokenizer)
     screen_args = (args.screen_device, args.bundle, args.ability)
     if any(screen_args) and not all(screen_args):
         parser.error('Specify screen-device, bundle and ability together.')

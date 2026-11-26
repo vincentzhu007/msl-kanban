@@ -1,5 +1,21 @@
 const $ = id => document.getElementById(id);
 const preview = document.body.hasAttribute('data-preview');
+const markdown = window.markdownit({html:false, linkify:false, breaks:true});
+let renderMarkdown = true;
+
+function renderMessage(node) {
+  node.dataset.rawMode = String(!renderMarkdown);
+  if (renderMarkdown) node.innerHTML = markdown.render(node.dataset.raw || '');
+  else node.textContent = node.dataset.raw || '';
+}
+for (const mode of ['markdown', 'raw']) {
+  $('view-' + mode).onclick = () => {
+    renderMarkdown = mode === 'markdown';
+    $('view-markdown').setAttribute('aria-pressed', String(renderMarkdown));
+    $('view-raw').setAttribute('aria-pressed', String(!renderMarkdown));
+    for (const node of document.querySelectorAll('#history .message-content')) renderMessage(node);
+  };
+}
 
 function drawWave() {
   const canvas = $('wave');
@@ -35,7 +51,7 @@ new ResizeObserver(drawWave).observe($('wave'));
 for (const button of document.querySelectorAll('[data-prompt]')) {
   button.onclick = () => {
     $('prompt').value = button.dataset.prompt;
-    $('prompt').focus();
+    $('prompt').focus(); controls();
   };
 }
 $('prompt').onkeydown = event => {
@@ -46,17 +62,62 @@ $('prompt').onkeydown = event => {
 };
 let session = '', messages = [], busy = false, from = null;
 let activeMode = 'chat', online = false, startingScreen = false;
+let activeGeneration = null;
+let modelState = {state:'unloaded'};
+const residentModel = () => $('models').value.startsWith('Qwen3.5');
 $('copy').onclick = async () => {
   try {
     await navigator.clipboard.writeText($('sample').textContent);
     $('feedback').textContent = '命令已复制。';
   } catch { $('feedback').textContent = '请选中示例并复制。'; }
 };
+// Temporary shared tunnel for the two hosted Playground sites.
+const sharedEndpoint = 'wss://identifying-choices-will-transit.trycloudflare.com';
+const hosted = location.hostname === 'msl-kanban.pages.dev' || location.hostname === 'msl-kanban.vercel.app';
+function sharedRequest(path, body, signal) {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(sharedEndpoint);
+    let controller, settled = false, ended = false;
+    const stream = new ReadableStream({
+      start(c) { controller = c; },
+      cancel() { socket.close(); },
+    });
+    const abort = () => {
+      if (ended) return;
+      ended = true;
+      const error = new DOMException('生成已停止', 'AbortError');
+      if (!settled) reject(error);
+      controller.error(error);
+      socket.close();
+    };
+    if (signal?.aborted) { abort(); return; }
+    signal?.addEventListener('abort', abort, {once:true});
+    socket.onopen = () => socket.send(JSON.stringify({path, body, phone:$('phone').value}));
+    socket.onmessage = event => {
+      if (ended) return;
+      try {
+        const item = JSON.parse(event.data);
+        if (item.status) {
+          settled = true;
+          resolve(new Response(stream, {status:item.status, headers:{'Content-Type':item.content_type}}));
+        } else if (item.data !== undefined) controller.enqueue(new TextEncoder().encode(item.data));
+        else if (item.end) { ended = true; controller.close(); socket.close(); }
+        else if (item.error) { ended = true; controller.error(Error(item.error)); socket.close(); if (!settled) reject(Error(item.error)); }
+      } catch (error) { if (!settled) reject(error); else controller.error(error); socket.close(); }
+    };
+    socket.onerror = () => { if (!settled) reject(Error('暂时无法连接模型服务。')); };
+    socket.onclose = () => { signal?.removeEventListener('abort', abort); if (ended) return; if (!settled) reject(Error('暂时无法连接模型服务。')); else if (!ended) controller.error(Error('模型连接中断。')); };
+  });
+}
+function modelFetch(path, body, signal) {
+  if (hosted) return sharedRequest(path, body, signal);
+  return fetch(path, {signal, method: body ? 'POST' : 'GET', headers: {'X-Phone-Type':$('phone').value, ...(body ? {'Content-Type':'application/json'} : {})}, body:body ? JSON.stringify(body) : undefined, cache:'no-store', redirect:'error'});
+}
 async function request(path, body, lease) {
   const headers = {'X-Phone-Type': $('phone').value};
   if (lease) headers['X-Device-Session'] = lease;
   if (body) headers['Content-Type'] = 'application/json';
-  const response = await fetch(path, {
+  const response = hosted && path.startsWith('/v1/') ? await sharedRequest(path, body) : await fetch(path, {
     method: body ? 'POST' : 'GET', headers, body: body && JSON.stringify(body),
     cache: 'no-store', redirect: 'error'
   });
@@ -68,47 +129,82 @@ async function request(path, body, lease) {
 }
 function controls() {
   $('phone').disabled = busy || !!session || startingScreen;
-  $('send').disabled = busy || !online || preview;
-  $('clear').disabled = busy;
-  $('start').disabled = busy || !online || !!session || preview;
-  $('models').disabled = !online || busy;
+  $('send').disabled = busy || !online || preview || (residentModel() && modelState.state !== 'ready') || !$('prompt').value.trim();
+  $('model-lifecycle').hidden = !residentModel();
+  $('load-model').disabled = busy || !online || preview || ['loading','checking','generating'].includes(modelState.state);
+  $('load-model').textContent = modelState.state === 'ready' ? '卸载模型' : modelState.state === 'loading' ? '加载中…' : modelState.state === 'unavailable' ? '重试连接' : '加载模型';
+  $('model-state').textContent = ({ready:'模型已加载',loading:'正在加载模型…',unloaded:'模型未加载',checking:'正在检查模型状态…',generating:'模型正在生成',unavailable:'模型连接异常'})[modelState.state] || '模型未加载';
+  $('model-state-help').textContent = modelState.error || (modelState.state === 'ready' ? '已常驻手机 · 默认直接回答 · 后续对话复用模型' + (modelState.load_ms ? ' · 加载耗时 ' + (modelState.load_ms / 1000).toFixed(1) + ' 秒' : '') : modelState.state === 'loading' ? '大模型首次加载较慢，请稍候；可点击停止生成取消加载。' : '先加载模型，再发送消息。');
+  $('send').textContent = busy ? '处理中…' : '发送 ↑';
+  $('send').hidden = !!activeGeneration;
+  $('stop-generation').hidden = !activeGeneration;
+  $('stop-generation').disabled = !!activeGeneration?.stopping;
+  $('stop-generation').textContent = activeGeneration?.stopping ? '正在停止…' : '■ 停止生成';
+  $('compose-hint').textContent = preview ? '离线预览 · 可编辑提示词，不发送到真机' : !online ? '连接服务后可发送；你可以先编写提示词' : '⌘ / Ctrl + Enter 发送 · Enter 换行';
+  $('chat-context').textContent = online ? $('models').selectedOptions[0]?.textContent + ' · 切换模型将开始新对话' : '等待连接 · 草稿可以先写好';
+  $('retry').disabled = busy;
+  $('copy').disabled = !online || hosted;
+  $('clear').disabled = busy || !messages.length;
+  $('start').disabled = busy || !online || !!session || preview || hosted;
+  $('models').disabled = !online || busy || !!session || startingScreen;
+}
+$('prompt').addEventListener('input', controls);
+function connection(state, title, help) {
+  $('connection').closest('.status').dataset.state = state;
+  $('connection').textContent = title;
+  $('connection-help').textContent = help;
 }
 function sample() {
+  if (hosted) { $('sample').textContent = '网页对话已通过临时共享通路连接真机，HTTP API 暂不对外开放。'; return; }
   const body = {model: $('models').disabled ? '<model-id>' : $('models').value,
-    messages: [{role: 'user', content: '你好'}], max_tokens: 128};
+    messages: [{role: 'user', content: '你好'}], max_tokens: 1024};
   $('sample').textContent = 'curl ' + (preview ? '"$MSLITE_BASE_URL"' : location.origin) + '/v1/chat/completions \\\n  -H "X-Phone-Type: ' + $('phone').value + '" \\\n  -H "Content-Type: application/json" \\\n  --data-binary @- <<\'JSON\'\n' + JSON.stringify(body, null, 2) + '\nJSON';
 }
 function reset() {
   messages = [];
   $('history').replaceChildren();
   $('empty').hidden = false;
+  controls();
 }
 function line(role, content) {
   const block = document.createElement('article'), name = document.createElement('strong');
   name.textContent = role;
-  block.append(name, document.createTextNode(content));
+  block.className = role === '你' ? 'message-user' : 'message-model';
+  const message = document.createElement('div');
+  message.className = 'message-content';
+  message.dataset.raw = content;
+  renderMessage(message);
+  block.append(name, message);
   $('history').append(block);
-  block.scrollIntoView({block:'nearest'});
+  const history = $('history');
+  history.scrollTop = history.scrollHeight;
 }
 async function loadModels() {
   $('retry').hidden = true;
   busy = true; controls();
-  $('connection').textContent = '正在获取部署模型…';
+  connection('loading', '正在连接服务', '正在获取所选设备的部署模型。');
   try {
     const {data} = preview
       ? {data: [{id:'Qwen3-4B'}, {id:'Qwen3-0.6B'}]}
       : await request('/v1/models');
     if (!Array.isArray(data) || !data.length) throw Error('服务未登记模型。');
-    $('models').replaceChildren(...data.map(m => new Option(m.id, m.id)));
+    const scoped = data.some(m => /^(mate80-pro|mate70-pro)\//.test(m.id));
+    const prefix = $('phone').value + '/';
+    const available = scoped ? data.filter(m => m.id.startsWith(prefix)) : data;
+    if (!available.length) throw Error('所选手机尚未登记部署模型。');
+    $('models').replaceChildren(...available.map(m => {
+      const name = scoped ? m.id.slice(prefix.length) : m.id;
+      return new Option(name === 'Qwen3.5 · 3001（临时）' ? 'Qwen3.5-35A3B(实验性)' : name, m.id);
+    }));
     online = true;
-    $('connection').textContent = preview ? '离线预览 · 示例模型，未连接真机' : '';
+    connection(preview ? 'preview' : 'ready', preview ? '离线预览' : '模型服务已连接', preview ? '示例模型仅供查看界面，不会发送请求或操作手机。' : '已获取部署模型；发送消息时将在真机上加载并运行。');
     reset();
   } catch (e) {
     online = false;
     $('models').replaceChildren(new Option('暂无可用模型', ''));
-    $('connection').textContent = e.message;
+    connection('offline', '暂未连接模型服务', e.message + ' 可先浏览界面、编写提示词，服务就绪后点击重新连接。');
     $('retry').hidden = false;
-  } finally { busy = false; controls(); sample(); }
+  } finally { busy = false; controls(); sample(); await refreshModelState(); }
 }
 $('retry').onclick = loadModels;
 $('phone').onchange = () => {
@@ -119,26 +215,182 @@ $('phone').onchange = () => {
   $('models').replaceChildren(new Option('正在加载模型…', ''));
   loadModels();
 };
+// Render buffered text steadily even when the device sends several tokens together.
+function createTypewriter(node) {
+  const segmenter = typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, {granularity: 'grapheme'}) : null;
+  let target = '', shown = 0, timer = null, resolveDrain = null;
+  const characters = () => segmenter
+    ? Array.from(segmenter.segment(target), part => part.segment) : Array.from(target);
+  function tick() {
+    timer = null;
+    const history = $('history');
+    const follow = history.scrollHeight - history.scrollTop - history.clientHeight <= 24;
+    const parts = characters();
+    const remaining = parts.length - shown;
+    shown += Math.min(remaining, remaining > 160 ? 3 : remaining > 80 ? 2 : 1);
+    node.dataset.raw = parts.slice(0, shown).join('');
+    renderMessage(node);
+    if (follow) history.scrollTop = history.scrollHeight;
+    if (shown < parts.length) timer = setTimeout(tick, 25);
+    else if (resolveDrain) { resolveDrain(); resolveDrain = null; }
+  }
+  return {
+    append(text) {
+      target += text;
+      if (timer === null) timer = setTimeout(tick, 25);
+    },
+    stop() {
+      clearTimeout(timer); timer = null;
+      if (resolveDrain) { resolveDrain(); resolveDrain = null; }
+      return node.dataset.raw || '';
+    },
+    drain() {
+      if (timer === null) return Promise.resolve();
+      return new Promise(resolve => { resolveDrain = resolve; });
+    },
+  };
+}
+
 $('compose').onsubmit = async event => {
   event.preventDefault();
-  const content = $('prompt').value.trim();
-  if (!content || busy || !online || preview) return;
+  const draft = $('prompt').value;
+  const content = draft.trim();
+  if (!content || busy || !online || preview || (residentModel() && modelState.state !== 'ready')) return;
+  $('prompt').value = '';
   const next = [...messages, {role:'user', content}];
   const model = $('models').value;
-  busy = true; controls(); $('feedback').textContent = '等待真机生成…';
+  const generation = {id:crypto.randomUUID().replaceAll('-', ''), model, controller:new AbortController(), stopping:false, stopped:false};
+  activeGeneration = generation;
+  busy = true; controls(); $('feedback').textContent = '';
+  $('empty').hidden = true;
+  line('你', content);
+  $('pending').hidden = false; $('history').setAttribute('aria-busy','true');
+  let typewriter;
   try {
-    const result = await request('/v1/chat/completions', {model, messages:next,max_tokens:128});
-    const answer = result.choices[0].message;
-    if (!messages.length) $('history').replaceChildren();
-    messages = [...next, answer];
+    const response = await modelFetch('/v1/chat/completions', {model, messages:next, max_tokens:1024, stream:true, request_id:generation.id}, generation.controller.signal);
+    if (!response.ok) {
+      const error = await response.json();
+      throw Error(error.error?.message || '请求失败，请重新连接。');
+    }
+    if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body)
+      throw Error('服务暂不支持流式输出。');
     $('empty').hidden = true;
-    line('你', content); line(model, answer.content);
-    if ($('prompt').value.trim() === content) $('prompt').value = '';
+    line(model, '');
+    const answerBlock = $('history').lastElementChild;
+    const answerText = answerBlock.querySelector('.message-content');
+    typewriter = createTypewriter(answerText);
+    generation.writer = typewriter;
+    const reader = response.body.getReader(), decoder = new TextDecoder();
+    let buffer = '', answer = '', done = false;
+    while (true) {
+      const chunk = await reader.read();
+      if (generation.stopped) throw new DOMException('生成已停止', 'AbortError');
+      buffer += decoder.decode(chunk.value || new Uint8Array(), {stream: !chunk.done});
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+      for (const event of events) {
+        if (!event.startsWith('data: ')) continue;
+        const data = event.slice(6);
+        if (data === '[DONE]') { done = true; continue; }
+        const item = JSON.parse(data);
+        if (item.error) throw Error(item.error.message);
+        const text = item.choices?.[0]?.delta?.content || '';
+        if (text) {
+          $('pending').hidden = true;
+          answer += text;
+          typewriter.append(text);
+        }
+      }
+      if (chunk.done) break;
+    }
+    await typewriter.drain();
+    if (generation.stopPromise) await generation.stopPromise;
+    if (generation.stopped) throw new DOMException('生成已停止', 'AbortError');
+    if (!done) throw Error('生成中断，请重试。');
+    messages = [...next, {role:'assistant', content:answer}];
     $('feedback').textContent = '';
-  } catch (e) { $('feedback').textContent = e.message; }
-  finally { busy = false; controls(); }
+  } catch (e) {
+    if (generation.stopPromise) await generation.stopPromise;
+    if (generation.stopped) {
+      const partial = typewriter?.stop() || '';
+      messages = partial ? [...next, {role:'assistant', content:partial}] : next;
+      $('feedback').textContent = '已停止生成，已保留当前回复。';
+    } else {
+      if (typewriter) await typewriter.drain();
+      $('feedback').textContent = e.message;
+      if (!$('prompt').value) $('prompt').value = draft;
+    }
+  }
+  finally { activeGeneration = null; busy = false; $('pending').hidden = true; $('history').setAttribute('aria-busy','false'); controls(); await refreshModelState(); }
 };
-$('models').onchange = () => {reset(); sample();};
+async function refreshModelState() {
+  if (!residentModel() || !online || preview) return;
+  const model = $('models').value;
+  modelState = {state:'checking'}; controls();
+  try {
+    const state = await request('/v1/model/status', {model});
+    if ($('models').value === model) modelState = state;
+  } catch (error) {
+    if ($('models').value === model) modelState = {state:'unloaded',error:error.message};
+  }
+  controls();
+}
+$('load-model').onclick = async () => {
+  if (busy || !residentModel()) return;
+  if (modelState.state === 'unavailable') {
+    await refreshModelState();
+    if (modelState.state !== 'unloaded') return;
+  }
+  const model = $('models').value;
+  if (modelState.state === 'ready') {
+    busy = true; controls();
+    try { modelState = await request('/v1/model/unload', {model}); }
+    catch (error) { $('feedback').textContent = error.message; }
+    finally { busy = false; controls(); }
+    return;
+  }
+  const generation = {id:crypto.randomUUID().replaceAll('-', ''), model, kind:'load', controller:new AbortController(), stopping:false, stopped:false};
+  activeGeneration = generation; busy = true;
+  modelState = {state:'loading'}; controls(); $('feedback').textContent = '';
+  try {
+    modelState = await request('/v1/model/load', {model, request_id:generation.id});
+    const deadline = Date.now() + 190000;
+    while (modelState.state === 'loading' && !generation.stopped && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (generation.stopped) break;
+      modelState = await request('/v1/model/status', {model}); controls();
+    }
+    if (generation.stopPromise) await generation.stopPromise;
+    if (generation.stopped) $('feedback').textContent = '已取消模型加载。';
+    else if (modelState.state !== 'ready') throw Error(modelState.error || '模型尚未就绪，请重试。');
+  } catch (error) { $('feedback').textContent = error.message; }
+  finally { activeGeneration = null; busy = false; await refreshModelState(); controls(); }
+};
+$('stop-generation').onclick = async () => {
+  const generation = activeGeneration;
+  if (!generation || generation.stopping) return;
+  generation.stopping = true; controls();
+  generation.stopPromise = (async () => {
+  try {
+    const response = await modelFetch('/v1/chat/cancel', {model:generation.model, request_id:generation.id});
+    const result = await response.json();
+    if (!response.ok || result.status !== 'stopped') throw Error(result.error?.message || '停止失败，请重试。');
+    if (activeGeneration !== generation) return;
+    generation.stopped = true;
+    generation.writer?.stop();
+    generation.controller.abort();
+  } catch (error) {
+    if (activeGeneration === generation) {
+      generation.stopping = false;
+      $('feedback').textContent = '未确认停止：' + error.message;
+      controls();
+    }
+  }
+  })();
+  await generation.stopPromise;
+};
+$('models').onchange = () => {reset(); $('feedback').textContent = ''; sample(); refreshModelState();};
 $('clear').onclick = reset;
 function forget() {
   $('standby').hidden = false;
