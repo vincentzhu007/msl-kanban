@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdtempSync, cpSync, readdirSync, readFileSync, existsSync, rmSync} from 'node:fs';
+import {mkdtempSync, mkdirSync, cpSync, readdirSync, readFileSync, writeFileSync, existsSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -11,8 +11,13 @@ test('clean Vercel build includes every local JavaScript module dependency', () 
   const dir = mkdtempSync(join(tmpdir(), 'kanban-build-test-'));
   try {
     for (const path of ['kanban', 'scripts/kanban']) cpSync(join(root, path), join(dir, path), {recursive: true});
+    const oldViewer = join(dir, 'kanban/static/operators/viewer');
+    mkdirSync(oldViewer, {recursive: true});
+    writeFileSync(join(oldViewer, 'legacy.html'), 'Old locally installed viewer');
     execFileSync(process.execPath, ['scripts/kanban/build_vercel.mjs'], {cwd: dir});
     const output = join(dir, 'build/vercel-kanban');
+    assert.ok(!existsSync(join(output, 'operators/viewer')));
+    assert.ok(existsSync(join(output, 'operators/perfetto.mjs')));
     for (const name of readdirSync(output).filter(n => /\.(m?js)$/.test(n))) {
       const source = readFileSync(join(output, name), 'utf8');
       for (const match of source.matchAll(/\b(?:from\s*|import\s*)['"](\.\.?\/[^'"]+)['"]/g)) {

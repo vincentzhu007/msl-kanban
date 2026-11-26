@@ -50,12 +50,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Referrer-Policy', 'no-referrer')
         self.send_header('X-Content-Type-Options', 'nosniff')
-        path = urlsplit(self.path).path
-        viewer = path.startswith('/operators/viewer/')
-        self.send_header('X-Frame-Options', 'SAMEORIGIN' if viewer else 'DENY')
-        if path == '/operators.html' or viewer:
-            self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
-            self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
+        self.send_header('X-Frame-Options', 'DENY')
         super().end_headers()
 
     def translate_path(self, path):

@@ -1,7 +1,6 @@
 import { readFile, readdir, mkdir, writeFile, copyFile, cp, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { installPerfetto } from './install_perfetto.mjs';
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const source = join(root, 'kanban', 'static');
@@ -102,11 +101,12 @@ async function copyOperators() {
     }
   }
   await copyData('catalog.json');
+  const operatorAssets = join(source, 'operators');
   const pageTarget = join(output, 'operators');
   await rm(pageTarget, {recursive: true, force: true});
-  await cp(join(source, 'operators'), pageTarget, {recursive: true});
-  if (process.argv.includes('--prepare-perfetto')) {
-    await installPerfetto(join(pageTarget, 'viewer'));
-  }
+  await cp(operatorAssets, pageTarget, {
+    recursive: true,
+    filter: path => path !== join(operatorAssets, 'viewer'),
+  });
   await copyFile(join(source, 'operators.html'), join(output, 'operators.html'));
 }

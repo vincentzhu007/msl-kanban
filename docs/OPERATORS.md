@@ -7,15 +7,12 @@
 在 msl-kanban 仓库根目录执行。
 
 ```sh
-# 安装并校验固定版本的 Perfetto UI
-node scripts/kanban/install_perfetto.mjs
-
 python3 kanban/server.py --host 127.0.0.1 --port 18765
 ```
 
 打开 [本地算子性能页](http://127.0.0.1:18765/operators.html)。点选折线中的时间点，再点击「打开 Perfetto」下载并查看对应的流水。窗口从底部拉伸，也可聚焦分隔条后用上下方向键调整。包含指令事件的流水按 BUSY、pop、retire 排列。流水随当前实机规格和运行记录切换，完整仿真和起始窗口在详情中标明。
 
-`node scripts/kanban/build_vercel.mjs --prepare-perfetto` 将页面、数据和固定版本的 Perfetto UI 打包到 `build/vercel-kanban/`，也是 Vercel 的构建命令。构建按 SHA-256 校验入口、资源清单、查看器文件和许可证。已经本地安装时可直接运行 `node scripts/kanban/build_vercel.mjs`，复用现有文件。Python 服务和 Vercel 按路径设置算子页和查看器所需的响应头。
+`node scripts/kanban/build_vercel.mjs` 将页面、数据和流水打包到 `build/vercel-kanban/`，也是 Vercel 的构建命令。查看器由浏览器从 [ui.perfetto.dev](https://ui.perfetto.dev/) 加载。看板读取并解压所选流水，再在浏览器内传给查看器。首次从公网地址打开时，若出现信任提示，可选择「Yes」查看当次流水，或选择「Always trust」记住看板来源。
 
 ## 新增测试结果
 

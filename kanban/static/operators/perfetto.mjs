@@ -1,4 +1,5 @@
-const VIEWER_URL = '/operators/viewer/v59.1-491832c0d/index.html';
+const VIEWER_ORIGIN = 'https://ui.perfetto.dev';
+const VIEWER_URL = VIEWER_ORIGIN + '/#!/?mode=embedded';
 
 export function createTraceViewer($, dataRoot, escape) {
   const container = $('viewer');
@@ -36,8 +37,6 @@ export function createTraceViewer($, dataRoot, escape) {
     $('open-trace').disabled = true;
     status.textContent = '正在载入 Perfetto…';
     try {
-      const viewer = await fetch(VIEWER_URL, {method: 'HEAD', signal});
-      if (!viewer.ok) throw new Error('本环境未配置内嵌查看器，可下载流水文件');
       const response = await fetch(dataRoot + selectedFile(), {signal});
       if (!response.ok) throw new Error('流水文件请求失败（HTTP ' + response.status + '）');
       const data = new Uint8Array(await response.arrayBuffer());
@@ -48,37 +47,30 @@ export function createTraceViewer($, dataRoot, escape) {
       if (signal.aborted) return;
       const iframe = document.createElement('iframe');
       iframe.title = label + ' · Perfetto 流水';
-      iframe.src = VIEWER_URL + '#!/?mode=embedded';
+      iframe.src = VIEWER_URL;
+      iframe.referrerPolicy = 'no-referrer';
       iframe.allowFullscreen = true;
       frame = iframe;
       container.replaceChildren(iframe);
       grip.hidden = false;
-      const ping = setInterval(() => iframe.contentWindow?.postMessage('PING', location.origin), 150);
-      let poll;
+      const ping = setInterval(() => iframe.contentWindow?.postMessage('PING', VIEWER_ORIGIN), 150);
       const timeout = setTimeout(() => {
         cleanup();
-        status.textContent = '查看器加载超时，可重试或下载流水文件。';
+        status.textContent = 'Perfetto 加载超时，请检查能否访问 ui.perfetto.dev，或下载流水文件。';
         $('open-trace').disabled = false;
       }, 90000);
       function reply(event) {
-        if (event.origin !== location.origin || event.source !== iframe.contentWindow ||
+        if (event.origin !== VIEWER_ORIGIN || event.source !== iframe.contentWindow ||
             event.data !== 'PONG' || signal.aborted) return;
-        clearInterval(ping);
-        window.removeEventListener('message', reply);
+        cleanup();
         iframe.contentWindow.postMessage({
-          perfetto: {buffer, title: iframe.title, fileName: 'trace.json', keepApiOpen: true}
-        }, location.origin, [buffer]);
-        status.textContent = '已交给 Perfetto，正在解析流水…';
-        poll = setInterval(() => {
-          if (!iframe.contentDocument?.querySelector('.pf-timeline, .pf-track-tree, .pf-timeline-header, [ref="timeline"]')) return;
-          cleanup();
-          status.textContent = 'Perfetto 流水已载入。';
-          $('open-trace').disabled = false;
-        }, 350);
+          perfetto: {buffer, title: iframe.title, fileName: 'trace.json'}
+        }, VIEWER_ORIGIN, [buffer]);
+        status.textContent = '流水已发送给 Perfetto。若出现信任提示，请在查看器内确认。';
+        $('open-trace').disabled = false;
       }
       function cleanup() {
         clearInterval(ping);
-        clearInterval(poll);
         clearTimeout(timeout);
         window.removeEventListener('message', reply);
         signal.removeEventListener('abort', cleanup);
