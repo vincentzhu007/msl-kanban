@@ -19,7 +19,8 @@
       ],
       "kirin9050": [
         "runs/MsMatmulS8S8/kirin9050/s8s8-9050-20261123-l510.json",
-        "runs/MsMatmulS8S8/kirin9050/s8s8-9050-20261124-pr109.json"
+        "runs/MsMatmulS8S8/kirin9050/s8s8-9050-20261124-pr109.json",
+        "runs/MsMatmulS8S8/kirin9050/s8s8-9050-20261125-pr109-host-route.json"
       ]
     }
   }
