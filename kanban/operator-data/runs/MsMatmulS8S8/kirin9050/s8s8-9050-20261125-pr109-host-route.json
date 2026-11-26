@@ -276,7 +276,70 @@
             ]
           ]
         }
-      ]
+      ],
+      "trace": {
+        "date": "2026-11-26",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 49525,
+        "lanes": {
+          "MTE2": [
+            32911,
+            8
+          ],
+          "SCALAR": [
+            4435,
+            41
+          ],
+          "VEC": [
+            4427,
+            25
+          ],
+          "MTE1": [
+            7425,
+            57
+          ],
+          "CUBE": [
+            31491,
+            28
+          ],
+          "MTE3": [
+            759,
+            17
+          ],
+          "FIXP": [
+            15850,
+            10
+          ]
+        },
+        "source": "PR #109 · f21d6a4 · 实测 OMC 同形状四核。完整仿真，786,432 个 FP16 输出与实机逐位一致。仿真按每核 L1 1,536 KiB、L0B 128 KiB、有序读请求走同一链路配置采集。BUSY 为任一核忙区间的并集。",
+        "file": "traces/0664f4b6efe0a9cfab92647b1b9e7beff2dc9a224a506d4e6ac9dc0cb8242f3d.json.gz",
+        "sha256": "0664f4b6efe0a9cfab92647b1b9e7beff2dc9a224a506d4e6ac9dc0cb8242f3d",
+        "lifecycle": {
+          "file": "traces/baa7178ca1f019715762bb03d33b3f72c99513578c2ac522dc9856ab14c47bb0.json.gz",
+          "sha256": "baa7178ca1f019715762bb03d33b3f72c99513578c2ac522dc9856ab14c47bb0",
+          "counts": {
+            "SCALAR pop": 753,
+            "SCALAR retire": 802,
+            "MTE2 pop": 40,
+            "MTE2 retire": 51,
+            "MTE1 pop": 72,
+            "VEC pop": 24,
+            "MTE1 retire": 72,
+            "CUBE pop": 96,
+            "CUBE retire": 96,
+            "VEC retire": 24,
+            "MTE3 pop": 24,
+            "MTE3 retire": 24,
+            "FIXP pop": 24,
+            "FIXP retire": 48
+          }
+        },
+        "instructions": {
+          "file": "traces/03d97d6b07921051aa6c108afac5770cb5aa54a1052e41d633c8af3de2733f0b.json.gz",
+          "sha256": "03d97d6b07921051aa6c108afac5770cb5aa54a1052e41d633c8af3de2733f0b"
+        }
+      }
     },
     {
       "id": "dit_patch",
@@ -541,7 +604,70 @@
             ]
           ]
         }
-      ]
+      ],
+      "trace": {
+        "date": "2026-11-26",
+        "platform": "kirin9050",
+        "scope": "full",
+        "cycles": 272814,
+        "lanes": {
+          "VEC": [
+            7920,
+            56
+          ],
+          "SCALAR": [
+            95300,
+            3482
+          ],
+          "MTE1": [
+            3542,
+            134
+          ],
+          "CUBE": [
+            119446,
+            726
+          ],
+          "MTE3": [
+            1064,
+            27
+          ],
+          "MTE2": [
+            143549,
+            220
+          ],
+          "FIXP": [
+            270526,
+            1
+          ]
+        },
+        "source": "PR #109 · f21d6a4 · 实测 OMC 同形状四核。完整仿真，13,762,560 个 FP16 输出与实机逐位一致。仿真按每核 L1 1,536 KiB、L0B 128 KiB、有序读请求走同一链路配置采集。BUSY 为任一核忙区间的并集。",
+        "file": "traces/352955c4f441750c6230307f4d3dc25e962c288a148e4667c069b180e894d5e0.json.gz",
+        "sha256": "352955c4f441750c6230307f4d3dc25e962c288a148e4667c069b180e894d5e0",
+        "lifecycle": {
+          "file": "traces/592c6e1cc4829b6ad514d16052c104141265b4d435c4083e6e6300d218a01f79.json.gz",
+          "sha256": "592c6e1cc4829b6ad514d16052c104141265b4d435c4083e6e6300d218a01f79",
+          "counts": {
+            "SCALAR pop": 21253,
+            "SCALAR retire": 22302,
+            "MTE2 pop": 932,
+            "MTE2 retire": 1775,
+            "MTE1 pop": 90,
+            "MTE1 retire": 90,
+            "CUBE pop": 2622,
+            "CUBE retire": 2622,
+            "VEC pop": 30,
+            "VEC retire": 30,
+            "MTE3 pop": 30,
+            "MTE3 retire": 30,
+            "FIXP pop": 864,
+            "FIXP retire": 868
+          }
+        },
+        "instructions": {
+          "file": "traces/04f4eb68c0766027c50a18e9afbf75e2ec08af9a1cce5af3bc3141248a35974e.json.gz",
+          "sha256": "04f4eb68c0766027c50a18e9afbf75e2ec08af9a1cce5af3bc3141248a35974e"
+        }
+      }
     },
     {
       "id": "dit_q",
@@ -806,7 +932,70 @@
             ]
           ]
         }
-      ]
+      ],
+      "trace": {
+        "date": "2026-11-26",
+        "platform": "kirin9050",
+        "scope": "prefix",
+        "cycles": 160000,
+        "lanes": {
+          "MTE2": [
+            152105,
+            17
+          ],
+          "SCALAR": [
+            11408,
+            332
+          ],
+          "MTE1": [
+            39775,
+            205
+          ],
+          "CUBE": [
+            146065,
+            21
+          ],
+          "VEC": [
+            5605,
+            44
+          ],
+          "MTE3": [
+            721,
+            19
+          ],
+          "FIXP": [
+            18849,
+            13
+          ]
+        },
+        "source": "PR #109 · f21d6a4 · 实测 OMC 同形状四核。前 160,000 个周期，覆盖四核的矩阵乘。仿真按每核 L1 1,536 KiB、L0B 128 KiB、有序读请求走同一链路配置采集。BUSY 为任一核忙区间的并集。",
+        "file": "traces/b6db686746b398ee67b129a110b6b307a412042bce48d03b7b07e2a95fa586d4.json.gz",
+        "sha256": "b6db686746b398ee67b129a110b6b307a412042bce48d03b7b07e2a95fa586d4",
+        "lifecycle": {
+          "file": "traces/7ba210b7dc2522a6f43f73b2bdeff8aea38efd98b1956ac291514562fe628b64.json.gz",
+          "sha256": "7ba210b7dc2522a6f43f73b2bdeff8aea38efd98b1956ac291514562fe628b64",
+          "counts": {
+            "SCALAR pop": 1879,
+            "SCALAR retire": 2191,
+            "MTE2 pop": 124,
+            "MTE2 retire": 167,
+            "MTE1 pop": 158,
+            "MTE1 retire": 157,
+            "CUBE pop": 339,
+            "CUBE retire": 317,
+            "VEC pop": 20,
+            "VEC retire": 20,
+            "MTE3 pop": 20,
+            "MTE3 retire": 20,
+            "FIXP pop": 19,
+            "FIXP retire": 36
+          }
+        },
+        "instructions": {
+          "file": "traces/8889918334d0aac0e8bb8478bc54786551346938e8b8ac73045d29396ac0fadd.json.gz",
+          "sha256": "8889918334d0aac0e8bb8478bc54786551346938e8b8ac73045d29396ac0fadd"
+        }
+      }
     },
     {
       "id": "dit_ff",
@@ -1071,7 +1260,70 @@
             ]
           ]
         }
-      ]
+      ],
+      "trace": {
+        "date": "2026-11-26",
+        "platform": "kirin9050",
+        "scope": "prefix",
+        "cycles": 160000,
+        "lanes": {
+          "MTE2": [
+            151991,
+            17
+          ],
+          "SCALAR": [
+            11653,
+            344
+          ],
+          "MTE1": [
+            39564,
+            204
+          ],
+          "CUBE": [
+            146212,
+            18
+          ],
+          "VEC": [
+            5513,
+            45
+          ],
+          "MTE3": [
+            752,
+            20
+          ],
+          "FIXP": [
+            16558,
+            13
+          ]
+        },
+        "source": "PR #109 · f21d6a4 · 实测 OMC 同形状四核。前 160,000 个周期，覆盖四核的矩阵乘。仿真按每核 L1 1,536 KiB、L0B 128 KiB、有序读请求走同一链路配置采集。BUSY 为任一核忙区间的并集。",
+        "file": "traces/e02a742f3d456acae7e07b9ed8b2f92b4192834aa4a03e0f690a6f9cb02db82d.json.gz",
+        "sha256": "e02a742f3d456acae7e07b9ed8b2f92b4192834aa4a03e0f690a6f9cb02db82d",
+        "lifecycle": {
+          "file": "traces/6cc8cde2582599bc7466056a0158f0907e5192d26da71964d49b478556eee77c.json.gz",
+          "sha256": "6cc8cde2582599bc7466056a0158f0907e5192d26da71964d49b478556eee77c",
+          "counts": {
+            "SCALAR pop": 1886,
+            "SCALAR retire": 2202,
+            "MTE2 pop": 124,
+            "MTE2 retire": 170,
+            "MTE1 pop": 158,
+            "MTE1 retire": 157,
+            "CUBE pop": 339,
+            "CUBE retire": 316,
+            "VEC pop": 21,
+            "VEC retire": 21,
+            "MTE3 pop": 21,
+            "MTE3 retire": 21,
+            "FIXP pop": 18,
+            "FIXP retire": 36
+          }
+        },
+        "instructions": {
+          "file": "traces/762809c516ec15e2c3bbe3f185b81055b8e09f90ef1a3ce191b8935f925f76dc.json.gz",
+          "sha256": "762809c516ec15e2c3bbe3f185b81055b8e09f90ef1a3ce191b8935f925f76dc"
+        }
+      }
     },
     {
       "id": "dit_ff_down",
@@ -1336,7 +1588,52 @@
             ]
           ]
         }
-      ]
+      ],
+      "trace": {
+        "date": "2026-11-26",
+        "platform": "kirin9050",
+        "scope": "prefix",
+        "cycles": 160000,
+        "lanes": {
+          "MTE2": [
+            155719,
+            14
+          ],
+          "SCALAR": [
+            9649,
+            218
+          ],
+          "MTE1": [
+            38560,
+            161
+          ],
+          "CUBE": [
+            146183,
+            21
+          ]
+        },
+        "source": "PR #109 · f21d6a4 · 实测 OMC 同形状四核。前 160,000 个周期，覆盖四核的矩阵乘。该窗口尚未观测到 FIXP 写回。仿真按每核 L1 1,536 KiB、L0B 128 KiB、有序读请求走同一链路配置采集。BUSY 为任一核忙区间的并集。",
+        "file": "traces/2bd25589db35b5617be3ffea5bb38d539fd5de9dacd8bf7ae669a2cec8ee702e.json.gz",
+        "sha256": "2bd25589db35b5617be3ffea5bb38d539fd5de9dacd8bf7ae669a2cec8ee702e",
+        "lifecycle": {
+          "file": "traces/217851f7890f4df1de63960870f51a500bcf84bc1b4a3bc2f3e4506adf2d0840.json.gz",
+          "sha256": "217851f7890f4df1de63960870f51a500bcf84bc1b4a3bc2f3e4506adf2d0840",
+          "counts": {
+            "SCALAR pop": 1382,
+            "SCALAR retire": 1752,
+            "MTE2 pop": 114,
+            "MTE2 retire": 144,
+            "MTE1 pop": 126,
+            "MTE1 retire": 126,
+            "CUBE pop": 294,
+            "CUBE retire": 290
+          }
+        },
+        "instructions": {
+          "file": "traces/b5ecefb52d5451b647130a08b23f7abf8e92b1693c166e0a51cd28a96feff80a.json.gz",
+          "sha256": "b5ecefb52d5451b647130a08b23f7abf8e92b1693c166e0a51cd28a96feff80a"
+        }
+      }
     }
   ]
 }
