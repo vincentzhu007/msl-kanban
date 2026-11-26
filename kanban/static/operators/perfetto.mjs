@@ -1,14 +1,65 @@
 const VIEWER_ORIGIN = 'https://ui.perfetto.dev';
 const VIEWER_URL = VIEWER_ORIGIN + '/#!/?mode=embedded';
 
+async function readTrace(url, signal) {
+  const response = await fetch(url, {signal});
+  if (!response.ok) throw new Error('流水文件请求失败（HTTP ' + response.status + '）');
+  const buffer = await response.arrayBuffer();
+  const data = new Uint8Array(buffer);
+  if (data[0] !== 31 || data[1] !== 139) return buffer;
+  const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Response(stream).arrayBuffer();
+}
+
+function waitForViewer(viewer, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const ping = setInterval(() => {
+      if (viewer.closed) {
+        cleanup();
+        reject(new Error('Perfetto 查看器已关闭或连接已中断。'));
+        return;
+      }
+      viewer.postMessage('PING', VIEWER_ORIGIN);
+    }, 150);
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Perfetto 加载超时，请检查能否访问 ui.perfetto.dev，或下载流水文件。'));
+    }, 90000);
+    function reply(event) {
+      if (event.origin !== VIEWER_ORIGIN || event.source !== viewer || event.data !== 'PONG') return;
+      cleanup();
+      resolve();
+    }
+    function abort() {
+      cleanup();
+      reject(signal.reason);
+    }
+    function cleanup() {
+      clearInterval(ping);
+      clearTimeout(timeout);
+      window.removeEventListener('message', reply);
+      signal?.removeEventListener('abort', abort);
+    }
+    window.addEventListener('message', reply);
+    signal?.addEventListener('abort', abort, {once: true});
+  });
+}
+
 export function createTraceViewer($, dataRoot, escape) {
   const container = $('viewer');
   const grip = $('viewer-grip');
   const status = $('trace-status');
   const mode = $('trace-mode');
+  const openButton = $('open-trace');
   let trace, label, traceKey, pending, frame;
+  let statusVersion = 0;
 
   function close() {
+    statusVersion++;
     pending?.abort();
     pending = null;
     frame = null;
@@ -26,61 +77,57 @@ export function createTraceViewer($, dataRoot, escape) {
     $('download-trace').href = dataRoot + file;
     $('download-trace').download = label.replace(/[\\/:*?"<>|]/g, '-') +
       '-' + mode.value + (file.endsWith('.gz') ? '.json.gz' : '.json');
-    $('open-trace').disabled = false;
+    openButton.disabled = false;
     status.textContent = mode.value === 'lifecycle' ? 'pop 和 retire 轨道位于对应流水的 BUSY 下方。' : '';
   }
 
-  async function open() {
-    close();
-    pending = new AbortController();
-    const {signal} = pending;
-    $('open-trace').disabled = true;
-    status.textContent = '正在载入 Perfetto…';
+  async function open(inNewTab) {
+    let viewer;
+    let signal;
+    if (inNewTab) {
+      viewer = window.open(VIEWER_ORIGIN + '/', '_blank');
+      if (!viewer) {
+        statusVersion++;
+        status.textContent = '浏览器拦截了新标签页，请允许本站弹出窗口后重试。';
+        return;
+      }
+    } else {
+      close();
+      pending = new AbortController();
+      signal = pending.signal;
+      openButton.disabled = true;
+    }
+    const version = ++statusVersion;
+    const title = label + ' · Perfetto 流水';
+    status.textContent = inNewTab ? '正在向新标签页发送流水…' : '正在载入 Perfetto…';
     try {
-      const response = await fetch(dataRoot + selectedFile(), {signal});
-      if (!response.ok) throw new Error('流水文件请求失败（HTTP ' + response.status + '）');
-      const data = new Uint8Array(await response.arrayBuffer());
-      const blob = new Blob([data]);
-      const buffer = data[0] === 31 && data[1] === 139
-        ? await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
-        : await blob.arrayBuffer();
-      if (signal.aborted) return;
-      const iframe = document.createElement('iframe');
-      iframe.title = label + ' · Perfetto 流水';
-      iframe.src = VIEWER_URL;
-      iframe.referrerPolicy = 'no-referrer';
-      iframe.allowFullscreen = true;
-      frame = iframe;
-      container.replaceChildren(iframe);
-      grip.hidden = false;
-      const ping = setInterval(() => iframe.contentWindow?.postMessage('PING', VIEWER_ORIGIN), 150);
-      const timeout = setTimeout(() => {
-        cleanup();
-        status.textContent = 'Perfetto 加载超时，请检查能否访问 ui.perfetto.dev，或下载流水文件。';
-        $('open-trace').disabled = false;
-      }, 90000);
-      function reply(event) {
-        if (event.origin !== VIEWER_ORIGIN || event.source !== iframe.contentWindow ||
-            event.data !== 'PONG' || signal.aborted) return;
-        cleanup();
-        iframe.contentWindow.postMessage({
-          perfetto: {buffer, title: iframe.title, fileName: 'trace.json'}
-        }, VIEWER_ORIGIN, [buffer]);
-        status.textContent = '流水已发送给 Perfetto。若出现信任提示，请在查看器内确认。';
-        $('open-trace').disabled = false;
+      const buffer = await readTrace(dataRoot + selectedFile(), signal);
+      signal?.throwIfAborted();
+      if (!inNewTab) {
+        const iframe = document.createElement('iframe');
+        iframe.title = title;
+        iframe.src = VIEWER_URL;
+        iframe.referrerPolicy = 'no-referrer';
+        iframe.allowFullscreen = true;
+        frame = iframe;
+        container.replaceChildren(iframe);
+        grip.hidden = false;
+        viewer = iframe.contentWindow;
       }
-      function cleanup() {
-        clearInterval(ping);
-        clearTimeout(timeout);
-        window.removeEventListener('message', reply);
-        signal.removeEventListener('abort', cleanup);
+      await waitForViewer(viewer, signal);
+      signal?.throwIfAborted();
+      viewer.postMessage({perfetto: {buffer, title, fileName: 'trace.json'}}, VIEWER_ORIGIN, [buffer]);
+      if (version === statusVersion) {
+        const location = inNewTab ? '新标签页' : '查看器';
+        status.textContent = `流水已发送给 Perfetto。若出现信任提示，请在${location}内确认。`;
       }
-      window.addEventListener('message', reply);
-      signal.addEventListener('abort', cleanup, {once: true});
     } catch (error) {
-      if (signal.aborted) return;
-      status.textContent = error.message;
-      $('open-trace').disabled = false;
+      if (!signal?.aborted && version === statusVersion) status.textContent = error.message;
+    } finally {
+      if (signal && !signal.aborted) {
+        pending = null;
+        openButton.disabled = false;
+      }
     }
   }
 
@@ -110,7 +157,8 @@ export function createTraceViewer($, dataRoot, escape) {
     resize(frame.getBoundingClientRect().height + (event.key === 'ArrowDown' ? 32 : -32));
   };
   mode.onchange = updateControls;
-  $('open-trace').onclick = open;
+  openButton.onclick = () => open(false);
+  $('open-trace-tab').onclick = () => open(true);
 
   return {
     show(next, platforms, title) {

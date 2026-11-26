@@ -10,7 +10,7 @@
 python3 kanban/server.py --host 127.0.0.1 --port 18765
 ```
 
-打开 [本地算子性能页](http://127.0.0.1:18765/operators.html)。点选折线中的时间点，再点击「打开 Perfetto」下载并查看对应的流水。窗口从底部拉伸，也可聚焦分隔条后用上下方向键调整。包含指令事件的流水按 BUSY、pop、retire 排列。流水随当前实机规格和运行记录切换，完整仿真和起始窗口在详情中标明。
+打开 [本地算子性能页](http://127.0.0.1:18765/operators.html)。点选折线中的时间点，再点击「打开 Perfetto」在看板内查看流水，或点击「在新标签页打开」将当前流水载入独立的 Perfetto 标签页。内嵌窗口可以从底部拉伸，也可聚焦分隔条后用上下方向键调整。包含指令事件的流水按 BUSY、pop、retire 排列。流水随当前实机规格和运行记录切换，完整仿真和起始窗口在详情中标明。
 
 `node scripts/kanban/build_vercel.mjs` 将页面、数据和流水打包到 `build/vercel-kanban/`，也是 Vercel 的构建命令。查看器由浏览器从 [ui.perfetto.dev](https://ui.perfetto.dev/) 加载。看板读取并解压所选流水，再在浏览器内传给查看器。首次从公网地址打开时，若出现信任提示，可选择「Yes」查看当次流水，或选择「Always trust」记住看板来源。
 
