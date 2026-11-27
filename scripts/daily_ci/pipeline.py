@@ -286,7 +286,7 @@ def prepare_msl(repo, config, build, task, cache):
                '--sysroot=' + str(native / 'sysroot'), '-std=c++17', '-O2', '-static-libstdc++',
                '-I', str(runtime / 'include'), str(repo / 'scripts/edge_slm_bench/bench_recipe.cc'),
                '-Wl,--whole-archive', str(libraries[0]), '-Wl,--no-whole-archive',
-               '-ldl', '-pthread', '-o', str(probe)]
+               '-lz', '-ldl', '-pthread', '-o', str(probe)]
     run_command(command, task / 'compile.log')
     return archive, probe
 
