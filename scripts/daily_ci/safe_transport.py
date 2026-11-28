@@ -122,9 +122,15 @@ def choose_host_port(rows, listeners, preferred):
 
 
 def sandbox_basename(device_path):
-    if not isinstance(device_path, str) or not device_path.startswith('@/bin/'):
-        raise SafeTransportError('device path must stay inside @/bin')
-    name = device_path[len('@/bin/'):]
+    if not isinstance(device_path, str):
+        raise SafeTransportError('device path must be @/name (HAP 1.5.x) or @/bin/name (HAP 1.4.x)')
+    name = None
+    for prefix in ('@/bin/', '@/'):
+        if device_path.startswith(prefix):
+            name = device_path[len(prefix):]
+            break
+    if name is None:
+        raise SafeTransportError('device path must be @/name (HAP 1.5.x) or @/bin/name (HAP 1.4.x)')
     if not name or '/' in name or name in ('.', '..') or '\\' in name:
         raise SafeTransportError('unsafe sandbox name')
     return name

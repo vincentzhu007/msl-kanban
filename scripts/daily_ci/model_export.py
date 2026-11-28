@@ -297,7 +297,7 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
                                               'evidence': json.dumps(evidence, sort_keys=True)}
     result['build'].pop('components', None)  # Never carry old PR identities into a fresh daily model.
     validate(result)
-    env['artifacts']['model'] = {'host_path': str(output), 'device_path': '@/bin/daily-' + recipe['id'] + '.msl',
+    env['artifacts']['model'] = {'host_path': str(output), 'device_path': '@/daily-' + recipe['id'] + '.msl',
                                  'sha256': checksum}
     write_json(task / 'generated-model.json', {'sha256': checksum, 'bytes': output.stat().st_size,
                'source_manifest_sha256': digest(manifest), 'daily_components': components, 'tokenizer': evidence})
