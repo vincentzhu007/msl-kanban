@@ -34,7 +34,7 @@ python3 scripts/daily.py --config /config/tasks/qwen3-4b-msl-s16s4-kirin9030.jso
 `/data` 挂载 dog 的持久化归档目录：
 
 - `packages/<sha256>/`：已验证发布件缓存。
-- `tasks/<run_id>/`：任务状态、构建信息、源码快照、编译日志、编译器身份、配置、原始错误及测量目录索引。
+- `tasks/<run_id>/`：任务状态、构建信息、源码快照、编译日志、编译器身份、配置、原始错误、测量目录索引，以及导出成功时的完整 `model.msl`。该项进程结束时只清理这个目录里的导出中间产物，不碰其他 run。
 - `runs/<recipe-run-id>/`：现有 recipe 生成的锁、原始日志、内存采样、CSV 和看板结果。
 - `completed/`：成功结果索引；日期、发布件、recipe、评测代码 commit 和设备环境均相同才去重（固定竞品次日仍会重测）。force 可以显式复测。
 - `leases/`：整个准备/部署/评测阶段共享的设备锁。其他人工任务也需遵守同一设备使用约定；不强制终止未知进程。
@@ -76,7 +76,11 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 5. 将新模型 SHA256、字节数和 token 证据写入本次解析的 recipe；部署新模型及探针，并核对手机侧 SHA256，再执行连续10次评测。
 6. 失败停在 EXPORT_MODEL/DEPLOY/MEASURE 等对应阶段，不使用旧模型生成成功记录。此前成功数据仍可在看板按历史实测查看。
 
-`tasks/<id>/` 保存每日组件、源权重清单、DDK zip 哈希、Python依赖、导出/编译日志、模型与解析后的recipe。基础 HF 权重仍固定；每日变化的是导出工具、算子和运行库。
+`tasks/<id>/` 保存每日组件清单、源权重清单、DDK zip 哈希、导出/编译日志、解析后的 recipe，以及导出成功时的完整 `model.msl`。基础 HF 权重仍固定；每日变化的是导出工具、算子和运行库。
+
+每一项在 `pipeline.run` 的 `finally` 中清理**当前** `tasks/<run_id>/`，成功、失败、NO_BUILD、SKIPPED 都会执行，在本进程退出、下一项开始之前完成。删除 `.msl_export*`（导出命令仍带 `--keep-artifacts`，所以导出器自己不会删这棵工作树）、`ddk/`、`ddk-source/`、`python/`，以及为编译/导出解压的 `package/`。`packages/<sha256>/` 里的发布件缓存保留。`export.log` 压成 `export.log.gz`。
+
+`model.msl` 只在 `export_model` 成功返回后保留。打包中途失败时，文件头已经是 `.MSL` 也不能留下半截模型，其他 `*.msl` 一并删除。部署时的同 inode 硬链接跟着保留。`status.json`、`error.txt`、`cleanup.json` 和其他小记录留在 dog；`kanban/jobs` 里的任务记录仍按原来的时机写入。不扫描历史 `tasks/`，不删除 `runs/` 测量归档，也不清理别的 recipe 正在使用的目录。
 
 ### Runner 导出环境
 
@@ -87,7 +91,7 @@ llama.cpp 使用 SHA256 固定的归档源码，独立于 MSL 发布件是否存
 - `SOURCE_MODELS_DIR` → `/assets/source-models`（Qwen2.5-0.5B-Instruct、Qwen2.5-1.5B-Instruct、Qwen3-4B、Qwen3-0.6B）。
 - `DDK_PACKAGES_DIR` → `/assets/ddk-packages`（官方 DDK-tools 及两种芯片 plugin zip）。
 
-配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟。未设置 `minimum_free_bytes` 时，任务目录的可用空间缺省门槛是 12GiB。Qwen2.5-1.5B 两项在任务目录上另设 64GiB，并在 `/tmp` 上另设 40GiB；这是两次独立比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，两处读到的可用空间不能相加。不自动删除历史归档。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
+配置必须同步到 `/config/tasks`。GitHub任务超时150分钟，单模型导出超时90分钟。未设置 `minimum_free_bytes` 时，任务目录的可用空间缺省门槛是 12GiB。Qwen2.5-1.5B 两项在任务目录上另设 64GiB，并在 `/tmp` 上另设 40GiB；这是两次独立比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，两处读到的可用空间不能相加。不扫描、不删除其他日期或其他 recipe 的历史归档；只在本项结束时删除本任务目录里的导出中间产物。llama.cpp CPU 对照继续使用固定GGUF，与MSL重新导出策略分开。
 
 ## Qwen2.5-1.5B Kirin9020
 
@@ -107,7 +111,7 @@ recipe 里的 `model.sha256` 与 `build.commit` 是全 0 哨兵。`model.bytes` 
 
 ### 导出环境
 
-只有这两项设置 `export_environment`。导出子进程使用 `/tmp/e15.*` 短目录，使 `$TMPDIR/listener-XXXXXXXX` 短于 107 字节，并在 `source set_ascendc_env.sh` 之后重新导出 `TMPDIR` 和 `PATH`。`PATH` 前置 `/opt/ddk/ddk/ccec_compiler/bin`，因为正式镜像里有 `bisheng`，默认 PATH 找不到它，1.5B 的 JIT 不能靠 0.5B 的缓存命中。目录只删除本进程创建的 `/tmp/e15.*`。`/data` 上该次任务要求至少 64GiB 可用（24GiB 低水位加 40GiB 工作预算），`/tmp` 至少 40GiB。这两道门槛分开比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，读到的可用空间不能相加，40GiB 不是 64GiB 之外的另一份容量。未设置 `minimum_free_bytes` 的其他导出任务仍用 12GiB 缺省。不自动删归档。两项高峰不要重叠；第一项结束后再决定是否发第二项。
+只有这两项设置 `export_environment`。导出子进程使用 `/tmp/e15.*` 短目录，使 `$TMPDIR/listener-XXXXXXXX` 短于 107 字节，并在 `source set_ascendc_env.sh` 之后重新导出 `TMPDIR` 和 `PATH`。`PATH` 前置 `/opt/ddk/ddk/ccec_compiler/bin`，因为正式镜像里有 `bisheng`，默认 PATH 找不到它，1.5B 的 JIT 不能靠 0.5B 的缓存命中。目录只删除本进程创建的 `/tmp/e15.*`。`/data` 上该次任务要求至少 64GiB 可用（24GiB 低水位加 40GiB 工作预算），`/tmp` 至少 40GiB。这两道门槛分开比较。正式容器里 `/tmp` 与 `/data` 可能在同一存储池，读到的可用空间不能相加，40GiB 不是 64GiB 之外的另一份容量。未设置 `minimum_free_bytes` 的其他导出任务仍用 12GiB 缺省。不删除历史归档；本项结束时仍会删掉该任务目录中的 `.msl_export*`、`ddk/` 和 `ddk-source/`。两项高峰不要重叠；第一项结束后再决定是否发第二项。
 
 ### 私有部署文件
 

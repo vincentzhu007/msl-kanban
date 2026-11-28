@@ -403,7 +403,7 @@ jobs:
                   state = json.loads(matches[0].read_text())
                   out.write(f"Daily status: **{state['status']}**, stage: **{state['stage']}**\n")
                   out.write(state.get('reason', '') + '\n')
-                  out.write('Full artifacts remain on dog. Git publication and Vercel deployment are separate stages.\n')
+                  out.write('The task record, logs, and a complete model.msl (only when export accepted one) remain on dog. Export intermediates in this task directory are removed when the job finishes. Git publication and Vercel deployment are separate stages.\n')
               else:
                   out.write('No task record was generated; inspect setup or configuration errors.\n')
           PY

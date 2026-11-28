@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import tarfile
@@ -118,6 +119,122 @@ class DailyTests(unittest.TestCase):
         self.assertNotIn('provenance',public['model'])
         self.assertEqual(public['device'],'dog-kirin9020')
         self.assertIn('provenance',result['model'])
+
+    def _drive_until_export(self, tmp, export_side_effect, discover_result=None):
+        repo = Path(tmp) / 'repo'
+        repo.mkdir()
+        source = Path(tmp) / 'source'
+        source.mkdir()
+        (source / 'config.json').write_text('{}')
+        (source / 'model.safetensors').write_bytes(b'weights')
+        config = json.loads((ROOT / 'config/daily-qwen25-9020.example.json').read_text())
+        root = Path(tmp) / 'archive'
+        config['archive_root'] = str(root)
+        config['model_generation'] = {
+            'mode': 'master_daily', 'source_model': str(source), 'quant_type': 'q4_0'}
+        historical = root / 'tasks' / 'daily-20261127-qwen3-4b-msl-s16s4-kirin9030-45932557883-1'
+        historical.mkdir(parents=True)
+        (historical / '.msl_export_historical').mkdir()
+        (historical / 'model.msl').write_bytes(b'.MSL' + b'historical')
+        (root / 'packages' / 'abc').mkdir(parents=True)
+        (root / 'packages' / 'abc' / 'package.tar.gz').write_bytes(b'cached')
+        (root / 'runs' / 'old').mkdir(parents=True)
+        (root / 'runs' / 'old' / 'sample.csv').write_text('ok\n')
+
+        def check_output(command, **kwargs):
+            if command[0] == 'git':
+                return 'c' * 40 + '\n'
+            raise RuntimeError('toolchain failed')
+
+        def prepare(repo, config, build, task, cache):
+            probe = task / 'recipe-msl'
+            probe.write_bytes(b'probe')
+            return root / 'packages' / 'abc' / 'package.tar.gz', probe
+
+        found = discover_result
+        if found is None:
+            found = {'commit': 'a' * 40, 'source_url': 'https://example.invalid/package', 'sha256': 'b' * 64}
+        with patch('daily_ci.pipeline.run_command'), \
+             patch('daily_ci.pipeline.subprocess.check_output', side_effect=check_output), \
+             patch('daily_ci.pipeline.discover', return_value=found), \
+             patch('daily_ci.pipeline.device_output', return_value='OpenHarmony-6.1.1.120'), \
+             patch('daily_ci.pipeline.prepare_msl', side_effect=prepare), \
+             patch('daily_ci.pipeline.export_model', side_effect=export_side_effect):
+            code = run(repo, ROOT / 'recipes/qwen25-05b-msl-w4a16-kirin9020.json', config, '20261128')
+        tasks = [path for path in (root / 'tasks').iterdir() if path != historical]
+        self.assertEqual(len(tasks), 1)
+        return code, tasks[0], historical, root
+
+    def test_failed_export_drops_partial_model_before_the_next_recipe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = Path(tmp) / 'assets'
+            outside.mkdir()
+            (outside / 'model.safetensors').write_bytes(b'weights')
+
+            def explode(repo, recipe, env, config, task, build, run_command, write_json):
+                work = task / '.msl_export_lljk7il0'
+                work.mkdir()
+                (work / 'weights').symlink_to(outside / 'model.safetensors')
+                (task / 'ddk').mkdir()
+                (task / 'ddk-source').mkdir()
+                (task / 'python').mkdir()
+                (task / 'package').mkdir()
+                (task / 'model.msl').write_bytes(b'.MSL' + b'\x00' * 4096)
+                (task / 'export.log').write_text('OSError: [Errno 28] No space left on device\n')
+                (task / 'generated-model.json').write_text('{}\n')
+                raise RuntimeError('No space left on device')
+
+            code, task, historical, root = self._drive_until_export(tmp, explode)
+            self.assertEqual(code, 1)
+            self.assertFalse((task / 'model.msl').exists())
+            self.assertFalse((task / '.msl_export_lljk7il0').exists())
+            for name in ['ddk', 'ddk-source', 'python', 'package']:
+                self.assertFalse((task / name).exists(), name)
+            self.assertTrue((task / 'error.txt').is_file())
+            self.assertIn('No space left on device', (task / 'error.txt').read_text())
+            self.assertEqual((task / 'generated-model.json').read_text(), '{}\n')
+            record = json.loads((task / 'cleanup.json').read_text())
+            self.assertFalse(record['retain_requested'])
+            self.assertFalse(record['model_kept'])
+            self.assertEqual((outside / 'model.safetensors').read_bytes(), b'weights')
+            self.assertTrue((historical / '.msl_export_historical').is_dir())
+            self.assertTrue((historical / 'model.msl').is_file())
+            self.assertEqual((root / 'packages' / 'abc' / 'package.tar.gz').read_bytes(), b'cached')
+            self.assertEqual((root / 'runs' / 'old' / 'sample.csv').read_text(), 'ok\n')
+            status = json.loads(next((Path(tmp) / 'repo' / 'kanban' / 'jobs').glob('*.json')).read_text())
+            self.assertEqual((status['status'], status['stage']), ('FAILED', 'EXPORT_MODEL'))
+
+    def test_later_failure_keeps_the_model_export_already_accepted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            def accepted(repo, recipe, env, config, task, build, run_command, write_json):
+                (task / '.msl_export_ok').mkdir()
+                (task / 'ddk').mkdir()
+                (task / 'package').mkdir()
+                model = task / 'model.msl'
+                model.write_bytes(b'.MSL' + b'accepted-model-payload')
+                os.link(model, task / 'daily-qwen25-05b-msl-w4a16-kirin9020.msl')
+                (task / 'extra.msl').write_bytes(b'.MSL' + b'not-the-result-file')
+                (task / 'export.log').write_text('export finished\n')
+                return recipe, {'exporter': {'filename': 'wheel', 'sha256': 'd' * 64}}
+
+            code, task, historical, root = self._drive_until_export(tmp, accepted)
+            self.assertEqual(code, 1)
+            self.assertEqual((task / 'model.msl').read_bytes(), b'.MSL' + b'accepted-model-payload')
+            self.assertTrue((task / 'daily-qwen25-05b-msl-w4a16-kirin9020.msl').is_file())
+            self.assertFalse((task / 'extra.msl').exists())
+            self.assertFalse((task / '.msl_export_ok').exists())
+            self.assertFalse((task / 'ddk').exists())
+            self.assertFalse((task / 'package').exists())
+            self.assertFalse((task / 'export.log').exists())
+            self.assertTrue((task / 'export.log.gz').is_file())
+            self.assertTrue((task / 'recipe-msl').is_file())
+            record = json.loads((task / 'cleanup.json').read_text())
+            self.assertTrue(record['retain_requested'])
+            self.assertTrue(record['model_kept'])
+            self.assertTrue((historical / 'model.msl').is_file())
+            status = json.loads(next((Path(tmp) / 'repo' / 'kanban' / 'jobs').glob('*.json')).read_text())
+            self.assertEqual(status['status'], 'FAILED')
+            self.assertNotIn('private', json.dumps(status))
 
 
 class DeviceOutputTests(unittest.TestCase):
