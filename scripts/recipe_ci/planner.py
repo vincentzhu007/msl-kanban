@@ -9,6 +9,20 @@ MSL_RAM_BASELINE = 'pre-model-create-pss-v1'
 RAM_BASELINES = {'none', 'pre-runtime-pss-v1', MSL_RAM_BASELINE}
 
 
+def _ok_device_path(path):
+    """Accept HAP 1.5.x files-root @/name and HAP 1.4.x @/bin/name."""
+    if not isinstance(path, str) or '..' in path:
+        return False
+    if not all(c.isalnum() or c in '@/_-.' for c in path):
+        return False
+    for prefix in ('@/bin/', '@/'):
+        if path.startswith(prefix):
+            name = path[len(prefix):]
+            return bool(name) and '/' not in name
+    return False
+
+
+
 def resolve(recipe, environment, *, verify_files=True, ram_baseline=None):
     keys(environment, ['schema_version', 'host', 'device', 'binrunner', 'output_root', 'artifacts'])
     require(environment['schema_version'] == 1, 'Unsupported environment version')
@@ -31,9 +45,8 @@ def resolve(recipe, environment, *, verify_files=True, ram_baseline=None):
         require(Path(artifact['host_path']).is_absolute(), f'{name}: host_path must be absolute')
         if name in ['model', 'probe', 'runtime_so']:
             path = artifact.get('device_path', '')
-            require(path.startswith('@/bin/') and len(path) > 6 and
-                    all(c.isalnum() or c in '@/_-.' for c in path) and '..' not in path,
-                    f'{name}: device_path must be an app @/bin path')
+            require(_ok_device_path(path),
+                    f'{name}: device_path must be an app @/name (HAP 1.5.x) or @/bin/name (HAP 1.4.x) path')
         if verify_files:
             require(sha256_file(artifact['host_path']) == artifact['sha256'], f'{name}: host artifact checksum mismatch')
     require(artifacts['model']['sha256'] == recipe['model']['sha256'], 'Recipe/model checksum mismatch')

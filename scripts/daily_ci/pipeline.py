@@ -459,7 +459,7 @@ def run(repo, recipe_path, config, day, force=False):
                 recipe['build'] = {**{k: build[k] for k in ['commit', 'source_url', 'sha256'] if k in build}, **({'components': recipe['build']['components']} if 'components' in recipe['build'] else {})}
                 recipe['description'] = ('Master daily exporter/operators regenerated model' if regenerated else 'Daily runtime with fixed archived model')
                 env['output_root'] = str(root / 'runs')
-                env['artifacts']['probe'] = {'host_path': str(probe), 'device_path': '@/bin/' + probe.name, 'sha256': sha256_file(probe)}
+                env['artifacts']['probe'] = {'host_path': str(probe), 'device_path': '@/' + probe.name, 'sha256': sha256_file(probe)}
                 env['artifacts']['runtime'] = {'host_path': str(archive), 'sha256': build['sha256']}
                 lock = resolve(recipe, env)
                 write_new(task / 'resolved-recipe.json', lock)

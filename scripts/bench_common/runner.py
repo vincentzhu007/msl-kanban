@@ -66,9 +66,9 @@ def run_profile(profile, argv=None):
     command = [args.binary, args.model]
     if profile["backend"] == "msl":
         command.append("5")
-    command.append("@/bin/" + args.log)
+    command.append("@/" + args.log)
     if "command_template" in profile:
-        command = [part.replace("{device_log}", "@/bin/" + args.log) for part in profile["command_template"]]
+        command = [part.replace("{device_log}", "@/" + args.log) for part in profile["command_template"]]
     if "resolved_recipe" in profile:
         (out / "resolved-recipe.json").write_text(json.dumps(profile["resolved_recipe"], indent=2))
     (out / "run-config.json").write_text(json.dumps(vars(args), indent=2))
@@ -91,7 +91,7 @@ def run_profile(profile, argv=None):
             check_sampler()
             if time.monotonic() >= deadline:
                 break
-            pull_args = ["pull", args.log, str(out / "inference.log")]
+            pull_args = ["pull", "@/" + args.log, str(out / "inference.log")]
             pull_timeout = min(30, max(.01, deadline - time.monotonic()))
             try:
                 if profile.get("transport") is None:

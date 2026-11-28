@@ -13,6 +13,8 @@ from bench_common.runner import run_profile
 from .planner import resolve, write_new
 from .recipe import require, digest
 from .device_ready import awake_device
+from .binrunner_compat import require_cli_hap_aligned
+from .sha256sum_deploy import ensure_sha256sum
 
 
 @contextmanager
@@ -41,6 +43,9 @@ def execute(lock, transport=None):
     device = env['device']
     with device_lease(root / '.leases', device['serial']), awake_device(device['serial']):
         prefix = ['python3', '-m', 'binrunner', '-t', device['serial'], '-p', device['port']]
+        require_cli_hap_aligned(env['binrunner'], device['serial'], device['port'], transport)
+        ensure_sha256sum(env, transport=transport, log_dir=root / 'verification',
+                         prebuilt=env.get('sha256sum_prebuilt'))
         procs = subprocess.run(['hdc', '-t', device['serial'], 'shell', 'ps -A -o PID,COMM'],
                                check=True, capture_output=True, text=True, timeout=10).stdout
         require(not any(line.split()[-1].strip('[]') == process for line in procs.splitlines() if line.split()),
