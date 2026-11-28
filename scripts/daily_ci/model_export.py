@@ -4,6 +4,7 @@ No source patches, PR overlays or fallback models. Each task owns its Python tar
 DDK tree, source manifest, export logs and output model.
 """
 import copy
+import gzip
 import json
 import os
 import re
@@ -261,6 +262,9 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
                '--model', str(source), '--output', str(output), '--target', target,
                '--quant-type', settings['quant_type'], '--max-length', str(recipe['workload']['context_tokens']),
                '--chunk-size', str(settings.get('chunk_size', 64)), '--keep-artifacts']
+    # The exporter keeps .msl_export* because of --keep-artifacts. Leave the flag
+    # so the export command itself stays the same; pipeline.run removes that
+    # worktree at the end of this task on both success and failure.
     managed = prepare_export_environment(settings)
     if managed is not None:
         export_env = managed.apply(export_env)
@@ -298,3 +302,178 @@ def export_model(repo, recipe, env, config, task, build, run_command, write_json
     write_json(task / 'generated-model.json', {'sha256': checksum, 'bytes': output.stat().st_size,
                'source_manifest_sha256': digest(manifest), 'daily_components': components, 'tokenizer': evidence})
     return result, components
+
+
+# Working trees created inside one tasks/<run_id>/ directory. The cached package
+# under packages/<sha256>/ and measurement files under runs/ are not in this set.
+INTERMEDIATE_DIRECTORY_NAMES = frozenset({'ddk', 'ddk-source', 'python', 'package'})
+EXPORT_WORK_PREFIX = '.msl_export'
+MODEL_FILENAME = 'model.msl'
+# Same bar export_model uses before it will return: magic plus more than 24 bytes.
+# A larger file that still starts with .MSL can be a truncated pack, so the caller
+# may set retain_model only after export_model returns.
+MINIMUM_MODEL_BYTES = 25
+
+
+def _atomic_json(path, value):
+    temporary = path.with_name(path.name + '.tmp')
+    if temporary.is_symlink():
+        temporary.unlink()
+    temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n')
+    temporary.replace(path)
+
+
+def _cleanup_error(name, detail):
+    return {'path': name, 'error': detail}
+
+
+def _rmtree_nofollow(path):
+    """Remove path and its real children. Symlinks are unlinked, not followed."""
+    if path.is_symlink():
+        path.unlink()
+        return
+    if path.is_dir():
+        for child in list(path.iterdir()):
+            _rmtree_nofollow(child)
+        path.rmdir()
+        return
+    path.unlink()
+
+
+def cleanup_task_workdir(task, *, retain_model):
+    """Delete this task's export working files. Never walks out of `task`.
+
+    `retain_model` is true only after export_model has accepted model.msl.
+    Header magic alone does not keep a file: a failed pack can leave a partial
+    model.msl that already starts with .MSL. Other task directories, the
+    package cache, and runs/ are not touched.
+    """
+    try:
+        return _cleanup_task_workdir(Path(task), retain_model=bool(retain_model))
+    except Exception as exc:
+        summary = {'retain_requested': bool(retain_model), 'model_kept': False,
+                   'removed': [], 'errors': [_cleanup_error('', type(exc).__name__)]}
+        print(json.dumps({'cleanup': summary}, ensure_ascii=False), flush=True)
+        return summary
+
+
+def _cleanup_task_workdir(task, *, retain_model):
+    removed, errors = [], []
+    summary = {'retain_requested': retain_model, 'model_kept': False, 'removed': removed, 'errors': errors}
+
+    def finish():
+        print(json.dumps({'cleanup': summary}, ensure_ascii=False), flush=True)
+        return summary
+
+    if task.is_symlink() or not task.is_dir():
+        errors.append(_cleanup_error(task.name, 'not-a-directory'))
+        return finish()
+    if task.parent.name != 'tasks' or not re.fullmatch(r'daily-[A-Za-z0-9-]+', task.name):
+        errors.append(_cleanup_error(task.name, 'refusing-non-task-directory'))
+        return finish()
+
+    def contained(path):
+        if path.is_symlink():
+            return False
+        try:
+            path.resolve().relative_to(task.resolve())
+        except (OSError, ValueError):
+            return False
+        return path.parent.resolve() == task.resolve()
+
+    def remove(path):
+        name = path.name
+        try:
+            if not path.exists() and not path.is_symlink():
+                return
+            if path.is_symlink() or not path.is_dir():
+                if path.parent.resolve() != task.resolve():
+                    errors.append(_cleanup_error(name, 'outside-task'))
+                    return
+                path.unlink()
+            else:
+                if not contained(path):
+                    errors.append(_cleanup_error(name, 'outside-task'))
+                    return
+                _rmtree_nofollow(path)
+            removed.append(name)
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            errors.append(_cleanup_error(name, type(exc).__name__ + (': ' + exc.strerror if exc.strerror else '')))
+
+    try:
+        children = list(task.iterdir())
+    except OSError as exc:
+        errors.append(_cleanup_error(task.name, type(exc).__name__))
+        children = []
+    for child in children:
+        if child.name in INTERMEDIATE_DIRECTORY_NAMES or child.name.startswith(EXPORT_WORK_PREFIX):
+            remove(child)
+
+    model = task / MODEL_FILENAME
+    keep_inode = None
+    if retain_model and model.is_file() and not model.is_symlink():
+        try:
+            stat_result = model.stat()
+            with model.open('rb') as stream:
+                magic = stream.read(4)
+            if stat_result.st_size >= MINIMUM_MODEL_BYTES and magic == b'.MSL' and contained(model):
+                summary['model_kept'] = True
+                keep_inode = (stat_result.st_dev, stat_result.st_ino)
+            else:
+                remove(model)
+        except OSError as exc:
+            errors.append(_cleanup_error(model.name, type(exc).__name__))
+    try:
+        msl_files = [path for path in task.glob('*.msl')]
+    except OSError as exc:
+        errors.append(_cleanup_error('*.msl', type(exc).__name__))
+        msl_files = []
+    for path in msl_files:
+        if summary['model_kept'] and path.name == MODEL_FILENAME:
+            continue
+        if summary['model_kept'] and keep_inode is not None and path.is_file() and not path.is_symlink():
+            try:
+                stat_result = path.stat()
+            except OSError as exc:
+                errors.append(_cleanup_error(path.name, type(exc).__name__))
+                continue
+            if (stat_result.st_dev, stat_result.st_ino) == keep_inode:
+                continue
+        remove(path)
+
+    log = task / 'export.log'
+    if log.is_symlink():
+        remove(log)
+    elif log.is_file() and contained(log):
+        gzip_path = task / 'export.log.gz'
+        temporary = task / 'export.log.gz.tmp'
+        try:
+            if temporary.is_symlink():
+                temporary.unlink()
+            with log.open('rb') as source, gzip.open(temporary, 'wb') as destination:
+                shutil.copyfileobj(source, destination)
+            if gzip_path.is_symlink():
+                gzip_path.unlink()
+            temporary.replace(gzip_path)
+            log.unlink()
+            removed.append(log.name)
+        except OSError as exc:
+            errors.append(_cleanup_error(log.name, type(exc).__name__))
+            if temporary.is_symlink() or temporary.exists():
+                try:
+                    if temporary.is_symlink() or temporary.is_file():
+                        temporary.unlink()
+                except OSError:
+                    pass
+
+    removed.sort()
+    record = task / 'cleanup.json'
+    try:
+        if record.is_symlink():
+            record.unlink()
+        _atomic_json(record, summary)
+    except OSError as exc:
+        errors.append(_cleanup_error(record.name, type(exc).__name__))
+    return finish()

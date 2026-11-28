@@ -1,4 +1,7 @@
+import gzip
+import inspect
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -10,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from daily_ci.model_export import (
     extract_zip, source_manifest, export_model, run_export, restore_ddk_header_link,
     listener_path_length, prepare_export_environment, wrap_export_command,
+    cleanup_task_workdir,
 )
 
 
@@ -111,3 +115,124 @@ class ModelExportTests(unittest.TestCase):
             finally:
                 managed.cleanup()
             self.assertFalse(Path(managed.tmpdir).exists())
+
+    def test_export_command_still_asks_the_exporter_to_keep_artifacts(self):
+        self.assertIn("'--keep-artifacts'", inspect.getsource(export_model))
+
+    def test_cleanup_keeps_validated_model_and_drops_export_worktrees(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = root / 'source-models'
+            outside.mkdir()
+            (outside / 'model.safetensors').write_bytes(b'weights')
+            task = root / 'tasks' / 'daily-20261128-qwen3-4b-msl-s16s4-kirin9030-1-1'
+            task.mkdir(parents=True)
+            sibling = root / 'tasks' / 'daily-20261127-qwen3-4b-msl-s16s4-kirin9030-9-1'
+            sibling.mkdir()
+            (sibling / '.msl_export_historical').mkdir()
+            (sibling / 'model.msl').write_bytes(b'.MSL' + b'historical-model')
+            (root / 'packages' / 'abc').mkdir(parents=True)
+            (root / 'packages' / 'abc' / 'package.tar.gz').write_bytes(b'cached')
+            (root / 'runs' / 'old').mkdir(parents=True)
+            (root / 'runs' / 'old' / 'sample.csv').write_text('ok\n')
+            work = task / '.msl_export_lljk7il0'
+            work.mkdir()
+            (work / 'blob').write_bytes(b'x' * 128)
+            (work / 'weights').symlink_to(outside / 'model.safetensors')
+            (work / 'source').symlink_to(outside, target_is_directory=True)
+            (task / 'ddk').mkdir()
+            (task / 'ddk' / 'tools').write_text('compiler')
+            (task / 'ddk-source').mkdir()
+            (task / 'python').mkdir()
+            (task / 'package').mkdir()
+            # Not the ddk worktree. A nearby symlink must stay, and its target too.
+            linked = task / 'ddk-link'
+            linked.symlink_to(outside, target_is_directory=True)
+            model = task / 'model.msl'
+            payload = b'.MSL' + b'complete-model-bytes!!'
+            model.write_bytes(payload)
+            os.link(model, task / 'daily-qwen3-4b-msl-s16s4-kirin9030.msl')
+            (task / 'extra.msl').write_bytes(b'.MSL' + b'different-copy-of-model')
+            (task / 'export.log').write_text('export finished\n')
+            (task / 'status.json').write_text('{"status":"SUCCEEDED"}\n')
+            (task / 'generated-model.json').write_text('{}\n')
+            (task / 'source.tar.gz').write_bytes(b'snapshot')
+            summary = cleanup_task_workdir(task, retain_model=True)
+            self.assertTrue(summary['model_kept'])
+            self.assertEqual(model.read_bytes(), payload)
+            self.assertEqual((task / 'daily-qwen3-4b-msl-s16s4-kirin9030.msl').stat().st_ino, model.stat().st_ino)
+            self.assertFalse((task / 'extra.msl').exists())
+            for name in ['.msl_export_lljk7il0', 'ddk', 'ddk-source', 'python', 'package', 'export.log']:
+                self.assertFalse((task / name).exists(), name)
+            self.assertEqual(gzip.open(task / 'export.log.gz', 'rt').read(), 'export finished\n')
+            self.assertEqual((task / 'status.json').read_text(), '{"status":"SUCCEEDED"}\n')
+            self.assertTrue((task / 'generated-model.json').is_file())
+            self.assertEqual((task / 'source.tar.gz').read_bytes(), b'snapshot')
+            self.assertEqual((outside / 'model.safetensors').read_bytes(), b'weights')
+            self.assertTrue(outside.is_dir())
+            self.assertTrue(linked.is_symlink())
+            self.assertTrue((sibling / '.msl_export_historical').is_dir())
+            self.assertTrue((sibling / 'model.msl').is_file())
+            self.assertEqual((root / 'packages' / 'abc' / 'package.tar.gz').read_bytes(), b'cached')
+            self.assertEqual((root / 'runs' / 'old' / 'sample.csv').read_text(), 'ok\n')
+            recorded = json.loads((task / 'cleanup.json').read_text())
+            self.assertTrue(recorded['retain_requested'])
+            self.assertTrue(recorded['model_kept'])
+            self.assertEqual(recorded['errors'], [])
+            again = cleanup_task_workdir(task, retain_model=True)
+            self.assertTrue(again['model_kept'])
+            self.assertEqual(model.read_bytes(), payload)
+
+    def test_cleanup_drops_partial_model_when_export_did_not_succeed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = root / 'outside'
+            outside.mkdir()
+            (outside / 'precious').write_text('keep')
+            task = root / 'tasks' / 'daily-20261128-qwen3-4b-msl-s16s4-kirin9030-46094530629-1'
+            task.mkdir(parents=True)
+            (task / 'ddk').symlink_to(outside, target_is_directory=True)
+            work = task / '.msl_export_lljk7il0'
+            work.mkdir()
+            (work / 'partial.bin').write_bytes(b'y' * 64)
+            # Pack wrote the header and then died with ENOSPC. Magic is not completeness.
+            (task / 'model.msl').write_bytes(b'.MSL' + b'\x00' * 4096)
+            (task / 'export.log').symlink_to(outside / 'precious')
+            (task / 'error.txt').write_text('No space left on device\n')
+            (task / 'status.json').write_text('{"status":"FAILED"}\n')
+            summary = cleanup_task_workdir(task, retain_model=False)
+            self.assertFalse(summary['model_kept'])
+            self.assertFalse(summary['retain_requested'])
+            self.assertFalse((task / 'model.msl').exists())
+            self.assertFalse(work.exists())
+            self.assertFalse((task / 'ddk').exists())
+            self.assertFalse((task / 'export.log').exists())
+            self.assertEqual((outside / 'precious').read_text(), 'keep')
+            self.assertEqual((task / 'error.txt').read_text(), 'No space left on device\n')
+            self.assertEqual((task / 'status.json').read_text(), '{"status":"FAILED"}\n')
+            self.assertEqual(summary['errors'], [])
+
+    def test_cleanup_refuses_directories_that_are_not_this_task(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for relative in ['tasks/not-a-run', 'other/daily-20261128-qwen3-4b-1-1']:
+                directory = root / relative
+                directory.mkdir(parents=True)
+                (directory / 'ddk').mkdir()
+                (directory / '.msl_export_nope').mkdir()
+                (directory / 'model.msl').write_bytes(b'.MSL' + b'leave-this-file-alone')
+                summary = cleanup_task_workdir(directory, retain_model=False)
+                self.assertEqual(summary['errors'][0]['error'], 'refusing-non-task-directory')
+                self.assertTrue((directory / 'ddk').is_dir())
+                self.assertTrue((directory / '.msl_export_nope').is_dir())
+                self.assertTrue((directory / 'model.msl').is_file())
+
+    def test_cleanup_does_not_keep_a_short_magic_file_just_because_retention_was_requested(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            task = Path(tmp) / 'tasks' / 'daily-20261128-qwen3-06b-msl-s16s4-kirin9030-2-1'
+            task.mkdir(parents=True)
+            (task / 'model.msl').write_bytes(b'.MSL')
+            summary = cleanup_task_workdir(task, retain_model=True)
+            self.assertTrue(summary['retain_requested'])
+            self.assertFalse(summary['model_kept'])
+            self.assertFalse((task / 'model.msl').exists())

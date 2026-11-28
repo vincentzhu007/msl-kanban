@@ -22,7 +22,7 @@ from recipe_ci.device_ready import awake_device
 from recipe_ci.planner import resolve, write_new
 from recipe_ci.recipe import load, digest, sha256_file, require
 from recipe_ci.results import summarize_recipe, unstable_baseline_warning
-from .model_export import export_model, source_manifest
+from .model_export import cleanup_task_workdir, export_model, source_manifest
 from .safe_transport import (
     SAFE_TASKS, SafeTransportError, listening_tcp_ports, open_safe_session, plan_host_port,
     read_fport_listing, requires_safe_norestart, sandbox_basename,
@@ -400,6 +400,7 @@ def run(repo, recipe_path, config, day, force=False):
         write_json(task / 'status.json', status)
         print(json.dumps({'status': status['status'], 'stage': status['stage']}, ensure_ascii=False), flush=True)
 
+    model_retained = False
     try:
         update()
         run_command(['git', 'archive', '--format=tar.gz', '--output=' + str(task / 'source.tar.gz'), code], task / 'source.log', cwd=repo)
@@ -446,6 +447,9 @@ def run(repo, recipe_path, config, day, force=False):
                 if regenerated:
                     update(stage='EXPORT_MODEL')
                     recipe, components = export_model(repo, recipe, env, config, task, build, run_command, write_json)
+                    # export_model already rejected a missing or invalid model.msl.
+                    # A later deploy/measure failure must still keep that file.
+                    model_retained = True
                     build = dict(build, model_generation='master_daily', daily_components=components)
                 native = Path(config['native'])
                 write_json(task / 'toolchain.json', {'compiler': subprocess.check_output(
@@ -493,5 +497,14 @@ def run(repo, recipe_path, config, day, force=False):
         return 1
     finally:
         status['finished_at'] = datetime.now(timezone(timedelta(hours=8))).isoformat()
-        write_json(task / 'status.json', status)
-        write_json(repo / 'kanban/jobs' / (run_id + '.json'), status)
+        write_error = None
+        try:
+            write_json(task / 'status.json', status)
+            write_json(repo / 'kanban/jobs' / (run_id + '.json'), status)
+        except Exception as error:
+            write_error = error
+        # Current task only. Runs after success, failure, NO_BUILD, and SKIPPED,
+        # before this process exits and the next serial recipe starts.
+        cleanup_task_workdir(task, retain_model=model_retained)
+        if write_error is not None:
+            raise write_error
